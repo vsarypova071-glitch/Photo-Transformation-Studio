@@ -15,11 +15,10 @@
    onGenerate: (customPrompt: string) => void;
  }
  
- const CATEGORIES: { id: StyleCategory; label: string }[] = [
-   { id: 'realistic', label: 'РЕАЛИЗМ' },
-   { id: 'wild', label: 'СИЛА' },
-   { id: 'futuristic', label: 'ФУТУРИЗМ' }
- ];
+const CATEGORIES: { id: StyleCategory; label: string }[] = [
+  { id: 'realistic', label: 'РЕАЛИЗМ (12)' },
+  { id: 'wild', label: 'СИЛА' }
+];
  
  export default function StylesScreen({
    styles,
