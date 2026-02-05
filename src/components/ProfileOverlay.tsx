@@ -1,4 +1,5 @@
- import { User } from '../types';
+import React from 'react';
+import { User } from '../types';
  
  interface ProfileOverlayProps {
    user: User;
