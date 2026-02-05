@@ -1,7 +1,10 @@
 
-import { PlanType, User, Job, Style } from '../types';
-import { PACKAGES, STYLES } from '../constants';
+ import { PlanType, User, Job, Style } from './types';
+ import { PACKAGES, STYLES } from './constants';
 import { GoogleGenAI } from "@google/genai";
+ import { createLogger } from './src/utils/logger';
+ 
+ const log = createLogger('BackendService');
 
 const STORAGE_KEYS = {
   USER: 'ai_studio_user_data',
@@ -40,10 +43,13 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 class BackendService {
   private getTgUserId(): string {
     const tg = (window as any).Telegram?.WebApp;
-    return tg?.initDataUnsafe?.user?.id ? `tg_${tg.initDataUnsafe.user.id}` : 'guest_local_user';
+    const userId = tg?.initDataUnsafe?.user?.id ? `tg_${tg.initDataUnsafe.user.id}` : 'guest_local_user';
+    log.debug('getTgUserId', { userId });
+    return userId;
   }
 
   private async compressImage(base64Str: string, quality = 0.9): Promise<string> {
+    log.info('Compressing image', { quality, originalSize: base64Str.length });
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
@@ -65,16 +71,25 @@ class BackendService {
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
         }
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        const result = canvas.toDataURL('image/jpeg', quality);
+        log.info('Image compressed', { newSize: result.length });
+        resolve(result);
       };
-      img.onerror = () => resolve(base64Str);
+      img.onerror = (e) => {
+        log.error('Image compression failed', e);
+        resolve(base64Str);
+      };
     });
   }
 
   getUser(): User {
     const userId = this.getTgUserId();
     const stored = localStorage.getItem(`${STORAGE_KEYS.USER}_${userId}`);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const user = JSON.parse(stored);
+      log.debug('User loaded from storage', { userId, plan: user.plan, credits: user.remainingCredits });
+      return user;
+    }
 
     const newUser: User = {
       id: userId,
@@ -83,29 +98,39 @@ class BackendService {
       allowedStylesCount: 0,
       history: []
     };
+    log.info('Created new user', { userId });
     this.saveUser(newUser);
     return newUser;
   }
 
   private saveUser(user: User) {
+    log.debug('Saving user', { userId: user.id, plan: user.plan, credits: user.remainingCredits });
     localStorage.setItem(`${STORAGE_KEYS.USER}_${user.id}`, JSON.stringify(user));
   }
 
   activateCode(code: string): { success: boolean; message: string } {
     const planType = ACCESS_CODES[code];
-    if (!planType) return { success: false, message: 'Неверный код доступа' };
+    if (!planType) {
+      log.warn('Invalid access code attempted', { code });
+      return { success: false, message: 'Неверный код доступа' };
+    }
     const user = this.getUser();
     const pkg = PACKAGES.find(p => p.id === planType)!;
     user.plan = planType;
     user.remainingCredits += pkg.credits;
     user.allowedStylesCount = pkg.stylesLimit;
     this.saveUser(user);
+    log.info('Code activated', { code, plan: planType, newCredits: user.remainingCredits });
     return { success: true, message: `Пакет ${pkg.name} активирован!` };
   }
 
   async createJob(image: string, styleIds: string[], customPrompt?: string, intensity = 70, isFullBody = false): Promise<Job> {
+    log.info('Creating job', { styleIds, intensity, isFullBody, hasCustomPrompt: !!customPrompt });
     const user = this.getUser();
-    if (user.remainingCredits <= 0) throw new Error('INSUFFICIENT_CREDITS');
+    if (user.remainingCredits <= 0) {
+      log.error('Insufficient credits', { userId: user.id, credits: user.remainingCredits });
+      throw new Error('INSUFFICIENT_CREDITS');
+    }
 
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await this.compressImage(image, 0.95);
@@ -125,14 +150,19 @@ class BackendService {
     this.saveJobs([newJob]);
     user.remainingCredits -= 1;
     this.saveUser(user);
+    log.info('Job created', { jobId, remainingCredits: user.remainingCredits });
 
     this.processJob(jobId, false, intensity).catch(console.error);
     return newJob;
   }
 
   async refineJob(baseImage: string, editPrompt: string): Promise<Job> {
+    log.info('Creating refine job', { editPrompt: editPrompt.substring(0, 50) + '...' });
     const user = this.getUser();
-    if (user.remainingCredits <= 0) throw new Error('INSUFFICIENT_CREDITS');
+    if (user.remainingCredits <= 0) {
+      log.error('Insufficient credits for refine', { userId: user.id });
+      throw new Error('INSUFFICIENT_CREDITS');
+    }
 
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await this.compressImage(baseImage, 0.95);
@@ -155,12 +185,14 @@ class BackendService {
     this.saveJobs([newJob]);
     user.remainingCredits -= 1;
     this.saveUser(user);
+    log.info('Refine job created', { jobId });
 
     this.processJob(jobId, true).catch(console.error);
     return newJob;
   }
 
   private async processJob(jobId: string, isRefinement = false, intensity = 70) {
+    log.info('Processing job', { jobId, isRefinement, intensity });
     const jobs = this.getJobs();
     const jobIndex = jobs.findIndex(j => j.id === jobId);
     if (jobIndex === -1) return;
@@ -171,7 +203,8 @@ class BackendService {
     try {
       const job = jobs[jobIndex];
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      
+      log.debug('Initializing AI', { hasApiKey: !!process.env.API_KEY });
+
       const negativePrompt = "distorted face, extra fingers, cartoonish, low resolution, blurry skin, fake eyes, inconsistent lighting, plastic look, double head, weird anatomy";
       const identityRules = `
         CORE IDENTITY LOCK:
@@ -213,7 +246,8 @@ class BackendService {
       }
 
       const base64Data = job.originalImage.split(',')[1];
-      
+      log.debug('Sending request to AI', { systemInstructionLength: systemInstruction.length });
+
       const response = await withRetry(async () => {
         return await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
@@ -226,6 +260,7 @@ class BackendService {
           config: { imageConfig: { aspectRatio: job.isFullBody ? "9:16" : "3:4" } }
         });
       });
+      log.debug('AI response received', { hasCandidates: !!response.candidates });
 
       const results: string[] = [];
       if (response.candidates && response.candidates[0].content.parts) {
@@ -236,7 +271,10 @@ class BackendService {
         }
       }
 
-      if (results.length === 0) throw new Error("EMPTY_AI_RESPONSE");
+      if (results.length === 0) {
+        log.error('Empty AI response', { jobId });
+        throw new Error("EMPTY_AI_RESPONSE");
+      }
 
       const finalJobs = this.getJobs();
       const finalIndex = finalJobs.findIndex(j => j.id === jobId);
@@ -244,9 +282,10 @@ class BackendService {
         finalJobs[finalIndex].results = results;
         finalJobs[finalIndex].status = 'done';
         this.saveJobs(finalJobs);
+        log.info('Job completed successfully', { jobId, resultsCount: results.length });
       }
     } catch (e: any) {
-      console.error('Job failed:', e);
+      log.error('Job failed', { jobId, error: e?.message, stack: e?.stack });
       const finalJobs = this.getJobs();
       const finalIndex = finalJobs.findIndex(j => j.id === jobId);
       if (finalIndex !== -1) {
@@ -261,14 +300,18 @@ class BackendService {
 
   getJobs(): Job[] {
     const stored = localStorage.getItem(STORAGE_KEYS.JOBS);
-    return stored ? JSON.parse(stored) : [];
+    const jobs = stored ? JSON.parse(stored) : [];
+    log.debug('getJobs', { count: jobs.length });
+    return jobs;
   }
 
   private saveJobs(jobs: Job[]) {
+    log.debug('saveJobs', { count: jobs.length });
     localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
   }
 
   deleteJob(id: string) {
+    log.info('Deleting job', { id });
     const jobs = this.getJobs().filter(j => j.id !== id);
     this.saveJobs(jobs);
   }

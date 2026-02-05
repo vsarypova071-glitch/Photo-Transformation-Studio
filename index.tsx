@@ -1,7 +1,10 @@
 
-import { backend } from './services/backendApi';
-import { STYLES } from './constants';
-import { PlanType, StyleCategory } from './types';
+ import { backend } from './backendApi';
+ import { STYLES } from './constants';
+ import { PlanType, StyleCategory } from './types';
+ import { createLogger } from './src/utils/logger';
+ 
+ const log = createLogger('MainApp');
 
 /**
  * APPLICATION STATE
