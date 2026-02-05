@@ -1,4 +1,6 @@
- interface WelcomeScreenProps {
+import React from 'react';
+
+interface WelcomeScreenProps {
    onStart: () => void;
  }
  
