@@ -1,66 +1,71 @@
- @tailwind base;
- @tailwind components;
- @tailwind utilities;
- 
- :root {
-   --background: 222.2 84% 4.9%;
-   --foreground: 210 40% 98%;
-   --card: 222.2 84% 4.9%;
-   --card-foreground: 210 40% 98%;
-   --popover: 222.2 84% 4.9%;
-   --popover-foreground: 210 40% 98%;
-   --primary: 217.2 91.2% 59.8%;
-   --primary-foreground: 222.2 47.4% 11.2%;
-   --secondary: 217.2 32.6% 17.5%;
-   --secondary-foreground: 210 40% 98%;
-   --muted: 217.2 32.6% 17.5%;
-   --muted-foreground: 215 20.2% 65.1%;
-   --accent: 217.2 32.6% 17.5%;
-   --accent-foreground: 210 40% 98%;
-   --destructive: 0 62.8% 30.6%;
-   --destructive-foreground: 210 40% 98%;
-   --border: 217.2 32.6% 17.5%;
-   --input: 217.2 32.6% 17.5%;
-   --ring: 224.3 76.3% 48%;
-   --radius: 0.5rem;
- }
- 
- * {
-   box-sizing: border-box;
- }
- 
- body {
-   @apply bg-background text-foreground antialiased overflow-x-hidden;
-   font-family: 'Inter', sans-serif;
- }
- 
- .glass {
-   @apply bg-slate-900/80 backdrop-blur-xl border border-white/5;
- }
- 
- .btn-primary {
-   @apply bg-primary text-primary-foreground py-5 rounded-full font-black text-sm uppercase tracking-wide shadow-2xl;
-   @apply transition-all active:scale-95 hover:opacity-90;
-   @apply disabled:opacity-50 disabled:cursor-not-allowed;
- }
- 
- .gradient-text {
-   @apply bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent;
- }
- 
- .screen {
-   @apply min-h-screen hidden;
- }
- 
- .screen.active {
-   @apply flex;
- }
- 
- .no-scrollbar::-webkit-scrollbar {
-   display: none;
- }
- 
- .no-scrollbar {
-   -ms-overflow-style: none;
-   scrollbar-width: none;
- }
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-white/5;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground py-5 rounded-full font-black text-sm uppercase tracking-wide shadow-2xl;
+    @apply transition-all active:scale-95 hover:opacity-90;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent;
+  }
+
+  .screen {
+    @apply min-h-screen hidden;
+  }
+
+  .screen.active {
+    @apply flex;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
