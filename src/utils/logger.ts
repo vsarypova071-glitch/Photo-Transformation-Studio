@@ -88,18 +88,23 @@
  // Default logger instance
  export const logger = new Logger('App');
  
- // Global error handler
- if (typeof window !== 'undefined') {
-   window.onerror = (message, source, lineno, colno, error) => {
-     const errorLogger = new Logger('GlobalError');
-     errorLogger.error('Uncaught error', { message, source, lineno, colno, stack: error?.stack });
-     return false;
-   };
+ // Init function for global error handlers
+ export const initLogger = () => {
+   if (typeof window !== 'undefined') {
+     window.onerror = (message, source, lineno, colno, error) => {
+       const errorLogger = new Logger('GlobalError');
+       errorLogger.error('Uncaught error', { message, source, lineno, colno, stack: error?.stack });
+       return false;
+     };
  
-   window.onunhandledrejection = (event) => {
-     const errorLogger = new Logger('UnhandledPromise');
-     errorLogger.error('Unhandled promise rejection', { reason: event.reason });
-   };
- }
+     window.onunhandledrejection = (event) => {
+       const errorLogger = new Logger('UnhandledPromise');
+       errorLogger.error('Unhandled promise rejection', { reason: event.reason });
+     };
+     
+     const initLog = new Logger('Logger');
+     initLog.info('Global error handlers initialized');
+   }
+ };
  
  export default Logger;
