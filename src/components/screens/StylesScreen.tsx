@@ -42,7 +42,7 @@ export default function StylesScreen({
   return <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
        <div className="flex justify-between items-center mb-8 text-slate-50">
          <div>
-           <h2 className="text-2xl font-black uppercase tracking-tight">Стиль образа</h2>
+           <h2 className="text-2xl font-black uppercase tracking-tight font-serif">Стиль образа</h2>
            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200">Выберите направление</p>
          </div>
          <button onClick={onBack} className="text-[10px] font-bold border-b border-border text-slate-100">
