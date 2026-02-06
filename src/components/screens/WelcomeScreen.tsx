@@ -17,7 +17,7 @@ export default function WelcomeScreen({
         
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-7 text-left">
-          <p className="text-[9px] uppercase tracking-[0.4em] font-light mb-4 text-slate-100">
+          <p className="text-[9px] uppercase tracking-[0.4em] mb-4 text-slate-50 font-normal">
             AI Photo Studio
           </p>
           
