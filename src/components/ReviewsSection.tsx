@@ -27,7 +27,7 @@ const REVIEWS: Review[] = [{
 }];
 export default function ReviewsSection() {
   return <section className="w-full mt-10 mb-6">
-      <h3 className="text-center mb-4 font-serif text-2xl font-bold text-slate-50">Отзывы клиентов</h3>
+      <h3 className="text-center mb-4 font-serif text-2xl font-bold text-slate-100">Отзывы клиентов</h3>
       
       <div className="overflow-x-auto scrollbar-hide -mx-6 px-6">
         <div className="flex gap-3 pb-2" style={{
