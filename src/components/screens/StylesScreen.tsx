@@ -45,7 +45,7 @@ export default function StylesScreen({
            <h2 className="text-2xl font-black uppercase tracking-tight">Стиль образа</h2>
            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200">Выберите направление</p>
          </div>
-         <button onClick={onBack} className="text-[10px] font-bold text-muted-foreground border-b border-border">
+         <button onClick={onBack} className="text-[10px] font-bold border-b border-border text-slate-100">
            НАЗАД
          </button>
        </div>
