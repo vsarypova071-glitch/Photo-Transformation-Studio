@@ -23,7 +23,7 @@ export default function WelcomeScreen({
           
           <h1 className="text-[2rem] font-extralight leading-[1.2] mb-2 tracking-wide text-slate-50">
             Ваш идеальный<br />
-            <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50">
+            <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50 bg-slate-50">
               образ уже здесь
             </span>
           </h1>
@@ -44,11 +44,11 @@ export default function WelcomeScreen({
       <div className="flex gap-3 mb-8 text-[10px]">
         <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-2.5 rounded-full">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]"></span>
-          <span className="text-white/50 tracking-wide">Реалистичные фото</span>
+          <span className="tracking-wide text-slate-50">Реалистичные фото</span>
         </div>
         <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 px-4 py-2.5 rounded-full">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.5)]"></span>
-          <span className="text-white/50 tracking-wide">12 стилей</span>
+          <span className="tracking-wide text-slate-50">12 стилей</span>
         </div>
       </div>
 
