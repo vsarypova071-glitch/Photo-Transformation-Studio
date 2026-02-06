@@ -20,22 +20,20 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
         
         {/* Content overlay */}
-        <div className="absolute bottom-8 left-6 right-6 text-left">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-black text-primary-foreground text-sm shadow-lg">
-              AI
-            </div>
-            <span className="text-primary font-black text-xs uppercase tracking-widest">Photo Studio</span>
-          </div>
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-left">
+          <p className="text-white/60 text-[10px] uppercase tracking-[0.3em] font-light mb-3">
+            AI Photo Studio
+          </p>
           
-          <h1 className="text-4xl font-black leading-tight mb-4 text-white">
+          <h1 className="text-3xl font-extralight leading-snug mb-3 text-white tracking-wide">
             Премиум<br/>
-            <span className="gradient-text">Фотосессия</span>
+            <span className="font-normal italic text-white/90">Фотосессия</span>
           </h1>
           
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Создайте потрясающие фото для Instagram с помощью искусственного интеллекта. 
-            12 эксклюзивных стилей.
+          <div className="w-8 h-[1px] bg-white/30 mb-4" />
+          
+          <p className="text-white/50 text-xs font-light leading-relaxed tracking-wide">
+            12 эксклюзивных стилей · AI технологии
           </p>
         </div>
       </div>
