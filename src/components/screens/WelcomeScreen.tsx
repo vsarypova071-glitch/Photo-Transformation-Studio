@@ -7,7 +7,7 @@ interface WelcomeScreenProps {
 export default function WelcomeScreen({
   onStart
 }: WelcomeScreenProps) {
-  return <section className="min-h-screen flex flex-col items-center px-5 py-10">
+  return <section className="min-h-screen flex flex-col items-center px-5 py-10 rounded-2xl">
       {/* Hero Card */}
       <div className="relative w-full max-w-sm aspect-[3/4] mb-10 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
         <img src={heroCover} className="object-cover w-full h-full scale-105" alt="Фотосессия" />
@@ -57,7 +57,7 @@ export default function WelcomeScreen({
         ✦ Создать свой образ
       </button>
       
-      <p className="text-white/25 text-[10px] mt-5 tracking-widest uppercase">
+      <p className="text-[10px] mt-5 tracking-widest uppercase text-slate-50">
         Загрузите фото · Выберите стиль · Восхищайтесь
       </p>
 
