@@ -1,21 +1,16 @@
 import React from 'react';
 import ReviewsSection from '../ReviewsSection';
 import heroCover from '@/assets/hero-cover.jpeg';
-
 interface WelcomeScreenProps {
   onStart: () => void;
 }
-
-export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
-  return (
-    <section className="min-h-screen flex flex-col items-center px-5 py-10">
+export default function WelcomeScreen({
+  onStart
+}: WelcomeScreenProps) {
+  return <section className="min-h-screen flex flex-col items-center px-5 py-10">
       {/* Hero Card */}
       <div className="relative w-full max-w-sm aspect-[3/4] mb-10 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
-        <img 
-          src={heroCover} 
-          className="object-cover w-full h-full scale-105" 
-          alt="Фотосессия"
-        />
+        <img src={heroCover} className="object-cover w-full h-full scale-105" alt="Фотосессия" />
         {/* Multi-layer gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-900/20" />
@@ -26,8 +21,8 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             AI Photo Studio
           </p>
           
-          <h1 className="text-[2rem] font-extralight leading-[1.2] mb-2 text-white tracking-wide">
-            Ваш идеальный<br/>
+          <h1 className="text-[2rem] font-extralight leading-[1.2] mb-2 tracking-wide text-slate-50">
+            Ваш идеальный<br />
             <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent">
               образ уже здесь
             </span>
@@ -36,7 +31,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           <div className="w-10 h-[1px] bg-gradient-to-r from-white/40 to-transparent my-4" />
           
           <p className="text-white/45 text-[11px] font-light leading-relaxed tracking-wider">
-            Фотосессия мечты за 2 минуты.<br/>
+            Фотосессия мечты за 2 минуты.<br />
             Без фотографа. Без студии. Просто магия.
           </p>
         </div>
@@ -58,10 +53,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       </div>
 
       {/* CTA Button - shimmer */}
-      <button 
-        onClick={onStart} 
-        className="btn-shimmer w-full max-w-sm py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95"
-      >
+      <button onClick={onStart} className="btn-shimmer w-full max-w-sm py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95">
         ✦ Создать свой образ
       </button>
       
@@ -71,6 +63,5 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
       {/* Reviews Section */}
       <ReviewsSection />
-    </section>
-  );
+    </section>;
 }
