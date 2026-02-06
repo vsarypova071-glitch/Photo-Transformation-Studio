@@ -39,10 +39,10 @@ export default function StylesScreen({
   const [customPrompt, setCustomPrompt] = useState('');
   const filteredStyles = styles.filter(s => s.category === activeCategory);
   const canGenerate = selectedStyles.length > 0 || customPrompt.trim() !== '';
-  return <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64 text-blue-100">
-       <div className="flex justify-between items-center mb-8">
+  return <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
+       <div className="flex justify-between items-center mb-8 text-slate-50">
          <div>
-           <h2 className="text-2xl font-black uppercase tracking-tight font-sans">Стиль образа</h2>
+           <h2 className="text-2xl font-black uppercase tracking-tight">Стиль образа</h2>
            <p className="text-[10px] text-primary font-bold uppercase tracking-widest mt-1">Выберите направление</p>
          </div>
          <button onClick={onBack} className="text-[10px] font-bold text-muted-foreground border-b border-border">
