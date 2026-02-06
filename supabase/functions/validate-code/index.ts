@@ -170,6 +170,15 @@ Deno.serve(async (req) => {
         )
       }
       
+      // Check code expiration
+      if (accessCode.expires_at && new Date(accessCode.expires_at) < new Date()) {
+        console.log('Expired code attempted:', code)
+        return new Response(
+          JSON.stringify({ success: false, message: 'Срок действия кода истёк' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
       // Check if code was already redeemed by this user
       const { data: existingRedemption } = await supabaseAdmin
         .from('code_redemptions')
