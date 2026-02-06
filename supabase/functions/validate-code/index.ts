@@ -1,11 +1,27 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Dynamic CORS - allow known origins
+const allowedOrigins = [
+  'https://id-preview--6affbc0d-4b19-468e-83f8-5a6a9f72626a.lovable.app',
+  'https://photo-transformation-studio.lovable.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  const allowOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+  
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+    'Access-Control-Allow-Credentials': 'true',
+  }
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -14,26 +30,49 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Create service role client for database operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
     
-    const { action, userId, code } = await req.json()
+    // Validate JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization')
+    let authenticatedUserId: string | null = null
     
-    console.log(`Action: ${action}, userId: ${userId}`)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '')
+      
+      // Create client with user's token to validate
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } }
+      })
+      
+      const { data, error } = await supabaseAuth.auth.getUser()
+      if (!error && data?.user) {
+        authenticatedUserId = data.user.id
+        console.log('Authenticated user:', authenticatedUserId)
+      }
+    }
     
-    if (!userId) {
+    const { action, code } = await req.json()
+    
+    console.log(`Action: ${action}, authenticated: ${!!authenticatedUserId}`)
+    
+    // For all actions, require authentication
+    if (!authenticatedUserId) {
+      console.log('Unauthorized request - no valid auth token')
       return new Response(
-        JSON.stringify({ success: false, message: 'User ID required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, message: 'Требуется авторизация' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     if (action === 'get_user') {
       // Get or create user credits using upsert to handle race conditions
-      const { data: user, error: upsertError } = await supabase
+      const { data: user, error: upsertError } = await supabaseAdmin
         .from('user_credits')
         .upsert({
-          user_id: userId,
+          user_id: authenticatedUserId,
           plan: 'FREE',
           remaining_credits: 0,
           allowed_styles_count: 0
@@ -47,10 +86,10 @@ Deno.serve(async (req) => {
       if (upsertError) {
         // If upsert failed, try to fetch existing user
         console.log('Upsert returned error, fetching existing user:', upsertError.message)
-        const { data: existingUser, error: fetchError } = await supabase
+        const { data: existingUser, error: fetchError } = await supabaseAdmin
           .from('user_credits')
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', authenticatedUserId)
           .single()
         
         if (fetchError || !existingUser) {
@@ -80,7 +119,7 @@ Deno.serve(async (req) => {
       }
       
       // Find the code in database
-      const { data: accessCode, error: codeError } = await supabase
+      const { data: accessCode, error: codeError } = await supabaseAdmin
         .from('access_codes')
         .select('*')
         .eq('code', code)
@@ -101,11 +140,11 @@ Deno.serve(async (req) => {
       }
       
       // Check if code was already redeemed by this user
-      const { data: existingRedemption } = await supabase
+      const { data: existingRedemption } = await supabaseAdmin
         .from('code_redemptions')
         .select('id')
         .eq('code_id', accessCode.id)
-        .eq('user_id', userId)
+        .eq('user_id', authenticatedUserId)
         .maybeSingle()
       
       if (existingRedemption) {
@@ -116,17 +155,17 @@ Deno.serve(async (req) => {
       }
       
       // Get or create user
-      let { data: user } = await supabase
+      let { data: user } = await supabaseAdmin
         .from('user_credits')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', authenticatedUserId)
         .maybeSingle()
       
       if (!user) {
-        const { data: newUser, error: createErr } = await supabase
+        const { data: newUser, error: createErr } = await supabaseAdmin
           .from('user_credits')
           .insert({
-            user_id: userId,
+            user_id: authenticatedUserId,
             plan: accessCode.plan_type,
             remaining_credits: accessCode.credits,
             allowed_styles_count: accessCode.styles_limit
@@ -138,14 +177,14 @@ Deno.serve(async (req) => {
         user = newUser
       } else {
         // Update existing user
-        const { data: updatedUser, error: updateErr } = await supabase
+        const { data: updatedUser, error: updateErr } = await supabaseAdmin
           .from('user_credits')
           .update({
             plan: accessCode.plan_type,
             remaining_credits: user.remaining_credits + accessCode.credits,
             allowed_styles_count: accessCode.styles_limit
           })
-          .eq('user_id', userId)
+          .eq('user_id', authenticatedUserId)
           .select()
           .single()
         
@@ -154,11 +193,11 @@ Deno.serve(async (req) => {
       }
       
       // Record the redemption
-      await supabase
+      await supabaseAdmin
         .from('code_redemptions')
         .insert({
           code_id: accessCode.id,
-          user_id: userId
+          user_id: authenticatedUserId
         })
       
       const planNames: Record<string, string> = {
@@ -167,7 +206,7 @@ Deno.serve(async (req) => {
         'VIP': 'VIP'
       }
       
-      console.log('Code activated:', { code, userId, plan: accessCode.plan_type })
+      console.log('Code activated:', { code, authenticatedUserId, plan: accessCode.plan_type })
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -180,10 +219,10 @@ Deno.serve(async (req) => {
 
     if (action === 'use_credit') {
       // Deduct a credit from user
-      const { data: user, error: fetchErr } = await supabase
+      const { data: user, error: fetchErr } = await supabaseAdmin
         .from('user_credits')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', authenticatedUserId)
         .maybeSingle()
       
       if (fetchErr) throw fetchErr
@@ -195,16 +234,16 @@ Deno.serve(async (req) => {
         )
       }
       
-      const { data: updatedUser, error: updateErr } = await supabase
+      const { data: updatedUser, error: updateErr } = await supabaseAdmin
         .from('user_credits')
         .update({ remaining_credits: user.remaining_credits - 1 })
-        .eq('user_id', userId)
+        .eq('user_id', authenticatedUserId)
         .select()
         .single()
       
       if (updateErr) throw updateErr
       
-      console.log('Credit used:', { userId, newBalance: updatedUser.remaining_credits })
+      console.log('Credit used:', { authenticatedUserId, newBalance: updatedUser.remaining_credits })
       return new Response(
         JSON.stringify({ success: true, user: updatedUser }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -220,7 +259,7 @@ Deno.serve(async (req) => {
     console.error('Edge function error:', error)
     return new Response(
       JSON.stringify({ success: false, message: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     )
   }
 })
