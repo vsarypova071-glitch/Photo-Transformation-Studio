@@ -30,7 +30,7 @@ export default function WelcomeScreen({
           
           <div className="w-10 h-[1px] bg-gradient-to-r from-white/40 to-transparent my-4" />
           
-          <p className="text-white/45 text-[11px] font-light leading-relaxed tracking-wider">
+          <p className="text-[11px] font-light leading-relaxed tracking-wider text-slate-50">
             Фотосессия мечты за 2 минуты.<br />
             Без фотографа. Без студии. Просто магия.
           </p>
