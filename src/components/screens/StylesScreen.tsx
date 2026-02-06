@@ -43,7 +43,7 @@ export default function StylesScreen({
        <div className="flex justify-between items-center mb-8 text-slate-50">
          <div>
            <h2 className="text-2xl font-black uppercase tracking-tight font-serif">Стиль образа</h2>
-           <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200">Выберите направление</p>
+           <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200 font-serif">Выберите направление</p>
          </div>
          <button onClick={onBack} className="text-[10px] font-bold border-b border-border text-slate-100">
            НАЗАД
