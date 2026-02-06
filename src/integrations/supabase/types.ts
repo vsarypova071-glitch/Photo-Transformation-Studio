@@ -19,6 +19,7 @@ export type Database = {
           code: string
           created_at: string
           credits: number
+          expires_at: string | null
           id: string
           is_active: boolean
           plan_type: string
@@ -28,6 +29,7 @@ export type Database = {
           code: string
           created_at?: string
           credits: number
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           plan_type: string
@@ -37,6 +39,7 @@ export type Database = {
           code?: string
           created_at?: string
           credits?: number
+          expires_at?: string | null
           id?: string
           is_active?: boolean
           plan_type?: string
