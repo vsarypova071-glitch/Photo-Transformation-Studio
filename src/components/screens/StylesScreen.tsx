@@ -75,7 +75,7 @@ export default function StylesScreen({
        <div onClick={onFullBodyToggle} className="glass p-6 rounded-[2.5rem] border-border mb-6 flex items-center justify-between cursor-pointer active:scale-95 transition-all">
          <div>
            <p className="text-[10px] font-black text-primary uppercase tracking-widest">ФОРМАТ: ВО ВЕСЬ РОСТ</p>
-           <p className="text-[8px] text-muted-foreground font-bold uppercase mt-1">Видны обувь и полный силуэт</p>
+           <p className="text-[8px] font-bold uppercase mt-1 text-slate-50">Видны обувь и полный силуэт</p>
          </div>
          <div className={`w-12 h-6 rounded-full relative transition-colors ${isFullBody ? 'bg-primary' : 'bg-secondary'}`}>
            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isFullBody ? 'left-7' : 'left-1'}`} />
