@@ -29,45 +29,44 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_user') {
-      // Get or create user credits
-      const { data: existingUser, error: fetchError } = await supabase
+      // Get or create user credits using upsert to handle race conditions
+      const { data: user, error: upsertError } = await supabase
         .from('user_credits')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle()
+        .upsert({
+          user_id: userId,
+          plan: 'FREE',
+          remaining_credits: 0,
+          allowed_styles_count: 0
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true
+        })
+        .select()
+        .single()
       
-      if (fetchError) {
-        console.error('Error fetching user:', fetchError)
-        throw fetchError
-      }
-      
-      if (existingUser) {
+      if (upsertError) {
+        // If upsert failed, try to fetch existing user
+        console.log('Upsert returned error, fetching existing user:', upsertError.message)
+        const { data: existingUser, error: fetchError } = await supabase
+          .from('user_credits')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+        
+        if (fetchError || !existingUser) {
+          console.error('Error fetching user after upsert:', fetchError)
+          throw fetchError || new Error('User not found')
+        }
+        
         return new Response(
           JSON.stringify({ success: true, user: existingUser }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
       
-      // Create new user
-      const { data: newUser, error: createError } = await supabase
-        .from('user_credits')
-        .insert({
-          user_id: userId,
-          plan: 'FREE',
-          remaining_credits: 0,
-          allowed_styles_count: 0
-        })
-        .select()
-        .single()
-      
-      if (createError) {
-        console.error('Error creating user:', createError)
-        throw createError
-      }
-      
-      console.log('Created new user:', newUser)
+      console.log('User retrieved/created:', user?.user_id)
       return new Response(
-        JSON.stringify({ success: true, user: newUser }),
+        JSON.stringify({ success: true, user }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
