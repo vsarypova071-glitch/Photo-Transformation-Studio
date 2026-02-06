@@ -1,5 +1,4 @@
 import { PlanType, User, Job } from '../types';
-import { PACKAGES } from '../lib/constants';
 import { createLogger } from '../utils/logger';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -41,19 +40,22 @@ async function compressImage(base64Str: string, quality = 0.9): Promise<string> 
 }
 
 class BackendService {
-  private getTgUserId(): string {
-    const tg = (window as any).Telegram?.WebApp;
-    const userId = tg?.initDataUnsafe?.user?.id ? `tg_${tg.initDataUnsafe.user.id}` : 'guest_local_user';
-    log.debug('getTgUserId', { hasUserId: !!userId });
-    return userId;
+  private async getAuthUserId(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id ?? null;
   }
 
   async getUser(): Promise<User> {
-    const userId = this.getTgUserId();
+    const userId = await this.getAuthUserId();
+    
+    if (!userId) {
+      log.warn('No authenticated user');
+      throw new Error('NOT_AUTHENTICATED');
+    }
     
     try {
       const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'get_user', userId }
+        body: { action: 'get_user' }
       });
       
       if (error) {
@@ -76,24 +78,21 @@ class BackendService {
       
       throw new Error('Failed to get user data');
     } catch (error) {
-      log.error('Failed to fetch user, using fallback', { error });
-      // Fallback for offline/error scenarios
-      return {
-        id: userId,
-        plan: PlanType.FREE,
-        remainingCredits: 0,
-        allowedStylesCount: 0,
-        history: []
-      };
+      log.error('Failed to fetch user', { error });
+      throw error;
     }
   }
 
   async activateCode(code: string): Promise<{ success: boolean; message: string }> {
-    const userId = this.getTgUserId();
+    const userId = await this.getAuthUserId();
+    
+    if (!userId) {
+      return { success: false, message: 'Требуется авторизация' };
+    }
     
     try {
       const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'activate_code', userId, code }
+        body: { action: 'activate_code', code }
       });
       
       if (error) {
@@ -113,11 +112,16 @@ class BackendService {
   }
 
   private async useCredit(): Promise<boolean> {
-    const userId = this.getTgUserId();
+    const userId = await this.getAuthUserId();
+    
+    if (!userId) {
+      log.error('No authenticated user for credit use');
+      return false;
+    }
     
     try {
       const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'use_credit', userId }
+        body: { action: 'use_credit' }
       });
       
       if (error) {
@@ -135,6 +139,11 @@ class BackendService {
   async createJob(image: string, styleIds: string[], customPrompt?: string, intensity = 70, isFullBody = false): Promise<Job> {
     log.info('Creating job', { styleIds, intensity, isFullBody });
     
+    const userId = await this.getAuthUserId();
+    if (!userId) {
+      throw new Error('NOT_AUTHENTICATED');
+    }
+    
     // Validate credits server-side
     const creditUsed = await this.useCredit();
     if (!creditUsed) {
@@ -145,7 +154,6 @@ class BackendService {
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await compressImage(image, 0.95);
     const jobId = Math.random().toString(36).substring(7);
-    const userId = this.getTgUserId();
     
     const newJob: Job = {
       id: jobId,
@@ -169,6 +177,11 @@ class BackendService {
   async refineJob(baseImage: string, editPrompt: string): Promise<Job> {
     log.info('Creating refine job');
     
+    const userId = await this.getAuthUserId();
+    if (!userId) {
+      throw new Error('NOT_AUTHENTICATED');
+    }
+    
     // Validate credits server-side
     const creditUsed = await this.useCredit();
     if (!creditUsed) {
@@ -179,7 +192,6 @@ class BackendService {
     const optimizedImage = await compressImage(baseImage, 0.95);
     const jobId = 'refine_' + Math.random().toString(36).substring(7);
     const isFullBodyRefinement = editPrompt.toLowerCase().includes('full-length');
-    const userId = this.getTgUserId();
 
     const newJob: Job = {
       id: jobId,

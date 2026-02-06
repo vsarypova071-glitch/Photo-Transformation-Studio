@@ -3,6 +3,7 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory, User, PlanType } from './types';
 import { createLogger } from './utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 import WelcomeScreen from './components/screens/WelcomeScreen';
 import UploadScreen from './components/screens/UploadScreen';
 import StylesScreen from './components/screens/StylesScreen';
@@ -10,6 +11,7 @@ import ProcessingScreen from './components/screens/ProcessingScreen';
 import ResultsScreen from './components/screens/ResultsScreen';
 import ProfileOverlay from './components/ProfileOverlay';
 import Header from './components/Header';
+import AuthPage from './pages/AuthPage';
 
 const log = createLogger('App');
 
@@ -24,6 +26,7 @@ const defaultUser: User = {
 };
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [screen, setScreen] = useState<Screen>('welcome');
   const [user, setUser] = useState<User>(defaultUser);
   const [uploadedImage, setUploadedImage] = useState('');
@@ -35,20 +38,52 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check authentication state on mount
   useEffect(() => {
-    const initUser = async () => {
-      try {
-        const userData = await backend.getUser();
-        setUser(userData);
-        log.info('App initialized', { screen, userId: userData.id });
-      } catch (error) {
-        log.error('Failed to initialize user', error);
-      } finally {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      log.info('Auth state changed', { event, hasSession: !!session });
+      setIsAuthenticated(!!session);
+      
+      if (!session) {
+        setUser(defaultUser);
         setIsLoading(false);
       }
-    };
-    initUser();
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      if (!session) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Load user data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      initUser();
+    }
+  }, [isAuthenticated]);
+
+  const initUser = async () => {
+    try {
+      setIsLoading(true);
+      const userData = await backend.getUser();
+      setUser(userData);
+      log.info('App initialized', { screen, userId: userData.id });
+    } catch (error) {
+      log.error('Failed to initialize user', error);
+      // If not authenticated error, sign out
+      if (error instanceof Error && error.message === 'NOT_AUTHENTICATED') {
+        await supabase.auth.signOut();
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const syncUser = async () => {
     try {
@@ -58,6 +93,13 @@ function App() {
     } catch (error) {
       log.error('Failed to sync user', error);
     }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(defaultUser);
+    setScreen('welcome');
+    setShowProfile(false);
   };
 
   const navigateTo = (newScreen: Screen) => {
@@ -146,16 +188,34 @@ function App() {
     navigateTo('upload');
   };
 
-  const handleActivateVip = async () => {
-    const result = await backend.activateCode('CODE-VIP-999');
+  const handleActivateCode = async (code: string) => {
+    const result = await backend.activateCode(code);
     if (result.success) {
       await syncUser();
     }
-    alert(result.message);
+    return result;
   };
 
   const currentJob = backend.getJobs().find(j => j.id === currentJobId);
 
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
+    return (
+      <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth page if not authenticated
+  if (!isAuthenticated) {
+    return <AuthPage onAuthSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  // Show loading while fetching user data
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl flex items-center justify-center">
@@ -222,7 +282,8 @@ function App() {
         <ProfileOverlay
           user={user}
           onClose={() => setShowProfile(false)}
-          onActivateVip={handleActivateVip}
+          onActivateCode={handleActivateCode}
+          onSignOut={handleSignOut}
         />
       )}
 
