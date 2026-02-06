@@ -8,6 +8,9 @@ const STORAGE_KEYS = {
   JOBS: 'ai_studio_jobs_data'
 };
 
+// Use sessionStorage for sensitive image data (auto-clears on tab close)
+const useSessionStorage = true;
+
 async function compressImage(base64Str: string, quality = 0.9): Promise<string> {
   log.info('Compressing image', { quality, originalSize: base64Str.length });
   return new Promise((resolve) => {
@@ -236,12 +239,28 @@ class BackendService {
   }
 
   getJobs(): Job[] {
-    const stored = localStorage.getItem(STORAGE_KEYS.JOBS);
+    // Try sessionStorage first (more secure), fall back to localStorage
+    const storage = useSessionStorage ? sessionStorage : localStorage;
+    const stored = storage.getItem(STORAGE_KEYS.JOBS);
     return stored ? JSON.parse(stored) : [];
   }
 
   private saveJobs(jobs: Job[]) {
-    localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
+    // Use sessionStorage for sensitive image data (auto-clears on tab close)
+    const storage = useSessionStorage ? sessionStorage : localStorage;
+    storage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(jobs));
+    
+    // Also clear any old localStorage data if we're using sessionStorage
+    if (useSessionStorage) {
+      localStorage.removeItem(STORAGE_KEYS.JOBS);
+    }
+  }
+  
+  // Clean up old jobs (called periodically or on logout)
+  clearJobData() {
+    sessionStorage.removeItem(STORAGE_KEYS.JOBS);
+    localStorage.removeItem(STORAGE_KEYS.JOBS);
+    log.info('Job data cleared');
   }
 }
 
