@@ -1,5 +1,6 @@
 import React from 'react';
 import ReviewsSection from '../ReviewsSection';
+import heroCover from '@/assets/hero-cover.jpeg';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -11,7 +12,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       {/* Hero Image */}
       <div className="relative w-full max-w-sm aspect-[3/4] mb-8 rounded-[2.5rem] overflow-hidden shadow-2xl">
         <img 
-          src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=800" 
+          src={heroCover} 
           className="object-cover w-full h-full" 
           alt="Фотосессия"
         />
