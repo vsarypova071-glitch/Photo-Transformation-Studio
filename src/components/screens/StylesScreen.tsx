@@ -12,7 +12,7 @@
    onIntensityChange: (val: number) => void;
    onFullBodyToggle: () => void;
    onBack: () => void;
-   onGenerate: (customPrompt: string) => void;
+   onGenerate: () => void;
  }
  
 const CATEGORIES: { id: StyleCategory; label: string }[] = [
@@ -134,7 +134,7 @@ const CATEGORIES: { id: StyleCategory; label: string }[] = [
        {/* Fixed Bottom Button */}
        <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto">
          <button 
-           onClick={() => onGenerate(customPrompt)}
+           onClick={onGenerate}
            disabled={!canGenerate}
            className="btn-primary w-full"
          >

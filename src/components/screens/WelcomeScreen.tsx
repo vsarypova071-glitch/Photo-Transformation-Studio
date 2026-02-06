@@ -1,4 +1,5 @@
 import React from 'react';
+import ReviewsSection from '../ReviewsSection';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -20,10 +21,10 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         {/* Content overlay */}
         <div className="absolute bottom-8 left-6 right-6 text-left">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center font-black text-white text-sm shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center font-black text-primary-foreground text-sm shadow-lg">
               AI
             </div>
-            <span className="text-blue-400 font-black text-xs uppercase tracking-widest">Photo Studio</span>
+            <span className="text-primary font-black text-xs uppercase tracking-widest">Photo Studio</span>
           </div>
           
           <h1 className="text-4xl font-black leading-tight mb-4 text-white">
@@ -40,13 +41,13 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
       {/* Features */}
       <div className="flex gap-4 mb-8 text-xs">
-        <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-full">
+        <div className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-full">
           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span className="text-slate-300">Реалистичные фото</span>
+          <span className="text-muted-foreground">Реалистичные фото</span>
         </div>
-        <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-full">
-          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-          <span className="text-slate-300">12 стилей</span>
+        <div className="flex items-center gap-2 bg-secondary px-4 py-2 rounded-full">
+          <span className="w-2 h-2 rounded-full bg-primary"></span>
+          <span className="text-muted-foreground">12 стилей</span>
         </div>
       </div>
 
@@ -58,9 +59,12 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         🚀 Начать фотосессию
       </button>
       
-      <p className="text-slate-500 text-xs mt-4">
+      <p className="text-muted-foreground text-xs mt-4">
         Загрузите фото → Выберите стиль → Получите результат
       </p>
+
+      {/* Reviews Section */}
+      <ReviewsSection />
     </section>
   );
 }
