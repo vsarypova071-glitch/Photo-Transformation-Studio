@@ -50,7 +50,7 @@ export default function ReviewsSection() {
               </div>
               
               {/* Text */}
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm leading-relaxed text-slate-100">
                 "{review.text}"
               </p>
             </div>)}
