@@ -19,7 +19,7 @@ export default function UploadScreen({
     }
   };
   return <section className="min-h-screen flex items-center justify-center px-8 py-24 flex-col">
-       <h2 className="text-3xl font-black mb-3 uppercase tracking-tighter">Загрузите фото</h2>
+       <h2 className="text-3xl mb-3 uppercase tracking-tighter font-extralight font-serif">Загрузите фото</h2>
        <p className="text-sm mb-12 text-center text-slate-50">
          AI создаст безупречный образ, идеально подходящий вашей фигуре.
        </p>
