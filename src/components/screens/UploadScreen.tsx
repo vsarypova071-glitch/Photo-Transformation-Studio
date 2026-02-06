@@ -20,7 +20,7 @@ export default function UploadScreen({
   };
   return <section className="min-h-screen flex items-center justify-center px-8 py-24 flex-col">
        <h2 className="text-3xl mb-3 uppercase tracking-tighter font-sans font-normal">Загрузите фото</h2>
-       <p className="text-sm mb-12 text-center text-slate-50 font-medium">
+       <p className="text-sm mb-12 text-center text-slate-50 font-medium font-serif">
          AI создаст безупречный образ, идеально подходящий вашей фигуре.
        </p>
        <div className="w-full max-w-sm aspect-square relative rounded-[3rem] border-2 border-dashed border-border flex flex-col items-center justify-center bg-secondary/40 cursor-pointer overflow-hidden group hover:border-primary transition-all">
