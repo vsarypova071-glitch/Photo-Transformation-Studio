@@ -14,7 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_codes: {
+        Row: {
+          code: string
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          plan_type: string
+          styles_limit: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          plan_type: string
+          styles_limit: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          plan_type?: string
+          styles_limit?: number
+        }
+        Relationships: []
+      }
+      code_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "access_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_credits: {
+        Row: {
+          allowed_styles_count: number
+          created_at: string
+          id: string
+          plan: string
+          remaining_credits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_styles_count?: number
+          created_at?: string
+          id?: string
+          plan?: string
+          remaining_credits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_styles_count?: number
+          created_at?: string
+          id?: string
+          plan?: string
+          remaining_credits?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
