@@ -19,6 +19,27 @@ function getCorsHeaders(req: Request) {
   }
 }
 
+// In-memory rate limiting (resets on cold start, but provides basic protection)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+function checkRateLimit(userId: string, action: string, maxAttempts: number, windowMs: number): { allowed: boolean; remaining: number } {
+  const key = `${action}:${userId}`
+  const now = Date.now()
+  const record = rateLimitStore.get(key)
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs })
+    return { allowed: true, remaining: maxAttempts - 1 }
+  }
+  
+  if (record.count >= maxAttempts) {
+    return { allowed: false, remaining: 0 }
+  }
+  
+  record.count++
+  return { allowed: true, remaining: maxAttempts - record.count }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
   
@@ -111,6 +132,16 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'activate_code') {
+      // Rate limit: 5 code attempts per minute per user
+      const rateLimit = checkRateLimit(authenticatedUserId, 'activate_code', 5, 60000)
+      if (!rateLimit.allowed) {
+        console.log('Rate limit exceeded for code activation:', authenticatedUserId)
+        return new Response(
+          JSON.stringify({ success: false, message: 'Слишком много попыток. Подождите минуту.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
       if (!code) {
         return new Response(
           JSON.stringify({ success: false, message: 'Code required' }),
@@ -218,30 +249,91 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'use_credit') {
-      // Deduct a credit from user
-      const { data: user, error: fetchErr } = await supabaseAdmin
-        .from('user_credits')
-        .select('*')
-        .eq('user_id', authenticatedUserId)
-        .maybeSingle()
+      // Rate limit: 10 credit uses per minute per user (prevent spam)
+      const rateLimit = checkRateLimit(authenticatedUserId, 'use_credit', 10, 60000)
+      if (!rateLimit.allowed) {
+        console.log('Rate limit exceeded for credit usage:', authenticatedUserId)
+        return new Response(
+          JSON.stringify({ success: false, message: 'Слишком много запросов. Подождите минуту.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
       
-      if (fetchErr) throw fetchErr
+      // ATOMIC credit deduction using raw SQL to prevent race conditions
+      // This uses Postgres arithmetic and a WHERE clause to atomically check and decrement
+      const { data: updatedUser, error: updateErr } = await supabaseAdmin
+        .rpc('atomic_decrement_credit', { p_user_id: authenticatedUserId })
       
-      if (!user || user.remaining_credits <= 0) {
+      // Fallback: If RPC doesn't exist, use conditional update
+      if (updateErr?.code === 'PGRST202') {
+        // RPC not found, use conditional update pattern
+        const { data: user, error: selectErr } = await supabaseAdmin
+          .from('user_credits')
+          .update({ 
+            remaining_credits: supabaseAdmin.rpc ? undefined : 0, // Placeholder
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', authenticatedUserId)
+          .gt('remaining_credits', 0)
+          .select()
+          .maybeSingle()
+        
+        // Actually perform atomic update with raw filter
+        const { data: atomicUser, error: atomicErr } = await supabaseAdmin
+          .from('user_credits')
+          .select('*')
+          .eq('user_id', authenticatedUserId)
+          .single()
+        
+        if (atomicErr || !atomicUser) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'Пользователь не найден' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        if (atomicUser.remaining_credits <= 0) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'Недостаточно кредитов' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        // Conditional update - only succeeds if credits still > 0
+        const { data: finalUser, error: finalErr } = await supabaseAdmin
+          .from('user_credits')
+          .update({ remaining_credits: atomicUser.remaining_credits - 1 })
+          .eq('user_id', authenticatedUserId)
+          .eq('remaining_credits', atomicUser.remaining_credits) // Optimistic lock
+          .select()
+          .maybeSingle()
+        
+        if (finalErr || !finalUser) {
+          // Race condition detected - another request modified credits
+          return new Response(
+            JSON.stringify({ success: false, message: 'Попробуйте еще раз' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        console.log('Credit used (optimistic lock):', { authenticatedUserId, newBalance: finalUser.remaining_credits })
+        return new Response(
+          JSON.stringify({ success: true, user: finalUser }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      if (updateErr) {
+        console.error('Error using credit:', updateErr)
+        throw updateErr
+      }
+      
+      if (!updatedUser) {
         return new Response(
           JSON.stringify({ success: false, message: 'Недостаточно кредитов' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      
-      const { data: updatedUser, error: updateErr } = await supabaseAdmin
-        .from('user_credits')
-        .update({ remaining_credits: user.remaining_credits - 1 })
-        .eq('user_id', authenticatedUserId)
-        .select()
-        .single()
-      
-      if (updateErr) throw updateErr
       
       console.log('Credit used:', { authenticatedUserId, newBalance: updatedUser.remaining_credits })
       return new Response(

@@ -96,6 +96,9 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    // Clear sensitive data from storage before signing out
+    backend.clearJobData();
+    
     await supabase.auth.signOut();
     setUser(defaultUser);
     setScreen('welcome');
