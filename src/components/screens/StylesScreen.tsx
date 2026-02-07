@@ -99,7 +99,7 @@ export default function StylesScreen({
  
        {/* Fixed Bottom Button */}
        <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto">
-          <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer w-full py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer-light w-full py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
             ✦ Создать шедевр
           </button>
        </div>

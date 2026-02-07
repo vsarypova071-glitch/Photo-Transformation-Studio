@@ -140,7 +140,6 @@ function App() {
               setUploadedImage(img);
               navigateTo('styles');
             }}
-            onBack={() => navigateTo('welcome')}
           />
         )}
         
