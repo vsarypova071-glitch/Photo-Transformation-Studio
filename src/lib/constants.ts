@@ -11,6 +11,7 @@ import newYorkPowerImg from '@/assets/styles/new-york-power.png';
 import luxuryResortImg from '@/assets/styles/luxury-resort.png';
 import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
 import businessEliteImg from '@/assets/styles/business-elite.png';
+import royalPresenceImg from '@/assets/styles/royal-presence.png';
 
 export const STYLES: Style[] = [
   // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
@@ -118,7 +119,7 @@ export const STYLES: Style[] = [
     category: 'wild',
     description: 'Сила и величие', 
     prompt: 'Majestic portrait with polar bear. Photorealistic cinematic lighting. Luxurious winter couture. Powerful protective symbolism. Dramatic composition. High-end fantasy fashion photography.', 
-    previewUrl: 'https://images.unsplash.com/photo-1534823983341-d4e6e4aa046c?auto=format&fit=crop&q=80&w=800' 
+    previewUrl: royalPresenceImg 
   }
 ];
 

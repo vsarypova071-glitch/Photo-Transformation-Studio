@@ -21,7 +21,7 @@ const CATEGORIES: {
   label: 'РЕАЛИЗМ (12)'
 }, {
   id: 'wild',
-  label: 'СИЛА'
+  label: 'ПРЕМИУМ'
 }];
 export default function StylesScreen({
   styles,
