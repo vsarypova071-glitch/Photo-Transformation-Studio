@@ -26,7 +26,7 @@ const REVIEWS: Review[] = [{
   id: '3',
   name: 'Елена С.',
   avatar: avatar3,
-  text: 'Очень быстро и удобно. Стили просто шикарные, особенно футуристичные!',
+  text: 'Очень быстро и удобно. Стили просто шикарные, особенно элегантные!',
   rating: 5
 }];
 export default function ReviewsSection() {
