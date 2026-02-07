@@ -139,7 +139,8 @@ function App() {
             onImageSelected={(img) => {
               setUploadedImage(img);
               navigateTo('styles');
-            }} 
+            }}
+            onBack={() => navigateTo('welcome')}
           />
         )}
         
