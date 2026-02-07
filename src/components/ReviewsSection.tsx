@@ -1,4 +1,8 @@
 import React from 'react';
+import avatar1 from '@/assets/avatars/avatar1.png';
+import avatar2 from '@/assets/avatars/avatar2.png';
+import avatar3 from '@/assets/avatars/avatar3.png';
+
 interface Review {
   id: string;
   name: string;
@@ -9,19 +13,19 @@ interface Review {
 const REVIEWS: Review[] = [{
   id: '1',
   name: 'Анна М.',
-  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&h=100',
+  avatar: avatar1,
   text: 'Невероятное качество! Фото получились как из профессиональной студии 🔥',
   rating: 5
 }, {
   id: '2',
   name: 'Дмитрий К.',
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&h=100',
+  avatar: avatar2,
   text: 'Использую для Instagram — подписчики думают, что я на реальной съёмке!',
   rating: 5
 }, {
   id: '3',
   name: 'Елена С.',
-  avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&h=100',
+  avatar: avatar3,
   text: 'Очень быстро и удобно. Стили просто шикарные, особенно футуристичные!',
   rating: 5
 }];

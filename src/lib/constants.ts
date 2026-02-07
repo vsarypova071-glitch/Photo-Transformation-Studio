@@ -10,6 +10,7 @@ import scandinavianMinimalImg from '@/assets/styles/scandinavian-minimal.png';
 import newYorkPowerImg from '@/assets/styles/new-york-power.png';
 import luxuryResortImg from '@/assets/styles/luxury-resort.png';
 import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
+import businessEliteImg from '@/assets/styles/business-elite.png';
 
 export const STYLES: Style[] = [
   // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
@@ -43,7 +44,7 @@ export const STYLES: Style[] = [
     category: 'realistic',
     description: 'Уровень Forbes', 
     prompt: 'Executive portrait photography. Clean professional lighting. Premium tailored business attire. Confident powerful stance. Modern office or neutral background. Canon EOS R5, 85mm f/1.2. Forbes cover quality.', 
-    previewUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800' 
+    previewUrl: businessEliteImg 
   },
   { 
     id: 'old_money', 
