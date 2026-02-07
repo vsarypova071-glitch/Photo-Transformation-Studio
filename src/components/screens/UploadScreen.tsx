@@ -3,9 +3,8 @@ interface UploadScreenProps {
   onImageSelected: (base64: string) => void;
 }
 export default function UploadScreen({
-  onImageSelected,
-  onBack
-}: UploadScreenProps & { onBack?: () => void }) {
+  onImageSelected
+}: UploadScreenProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -19,10 +18,9 @@ export default function UploadScreen({
       reader.readAsDataURL(file);
     }
   };
-  return <section className="min-h-screen flex items-center justify-center px-8 py-24 flex-col relative">
-       {onBack && <button onClick={onBack} className="absolute top-8 left-6 text-[10px] font-bold border-b border-border text-slate-100 font-serif uppercase tracking-widest">Назад</button>}
+  return <section className="min-h-screen flex items-center justify-center px-8 py-24 flex-col">
        <h2 className="text-3xl mb-3 uppercase tracking-tighter font-sans font-normal">Загрузите фото</h2>
-       <p className="text-sm mb-12 text-center font-medium font-serif text-slate-200">
+       <p className="text-sm mb-12 text-center font-medium font-serif text-blue-100">
          AI создаст безупречный образ, идеально подходящий вашей фигуре.
        </p>
        <div className="w-full max-w-sm aspect-square relative rounded-[3rem] border-2 border-dashed border-border flex flex-col items-center justify-center bg-secondary/40 cursor-pointer overflow-hidden group hover:border-primary transition-all">
@@ -32,8 +30,8 @@ export default function UploadScreen({
                  <path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                </svg>
              </div>
-              <div className="btn-shimmer py-3 px-6 rounded-full text-sm font-semibold text-white uppercase tracking-widest mb-3">✦ Выбрать селфи</div>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Лицо останется реальным</p>
+             <p className="text-lg font-bold text-foreground mb-2 uppercase">Выбрать селфи</p>
+             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Лицо останется реальным</p>
            </div> : <div className="flex flex-col items-center">
              <div className="w-12 h-12 border-4 border-primary border-t-transparent animate-spin rounded-full mb-4" />
              <p className="text-xs font-bold text-muted-foreground uppercase">Сжатие...</p>
