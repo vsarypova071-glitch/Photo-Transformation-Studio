@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReviewsSection from '../ReviewsSection';
 import heroCover from '@/assets/hero-cover.png';
 interface WelcomeScreenProps {
@@ -7,6 +7,13 @@ interface WelcomeScreenProps {
 export default function WelcomeScreen({
   onStart
 }: WelcomeScreenProps) {
+  const [showText, setShowText] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowText(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
   return <section className="min-h-screen flex flex-col items-center px-5 py-10 rounded-2xl">
       {/* Hero Card */}
       <div className="relative w-full max-w-sm aspect-[3/4] mb-10 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
@@ -22,7 +29,16 @@ export default function WelcomeScreen({
           </p>
           
           <h1 className="font-extralight leading-[1.2] mb-2 tracking-wide text-3xl text-indigo-500">
-            Ваш идеальный<br />
+            <span
+              className={`inline-block transition-all duration-1000 ease-out ${
+                showText
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-6'
+              }`}
+            >
+              Ваш идеальный
+            </span>
+            <br />
             <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50 bg-slate-50 text-2xl">
               образ уже здесь
             </span>
