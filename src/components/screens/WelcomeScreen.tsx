@@ -21,9 +21,9 @@ export default function WelcomeScreen({
             AI Photo Studio
           </p>
           
-          <h1 className="font-extralight leading-[1.2] mb-2 tracking-wide text-3xl">
-            <span className="shimmer-text">Ваш идеальный</span><br />
-            <span className="shimmer-text font-medium text-2xl">
+          <h1 className="font-extralight leading-[1.2] mb-2 tracking-wide text-3xl text-indigo-200">
+            Ваш идеальный<br />
+            <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50 bg-slate-50 text-2xl">
               образ уже здесь
             </span>
           </h1>
