@@ -22,7 +22,7 @@ export default function WelcomeScreen({
           </p>
           
           <h1 className="font-extralight leading-[1.2] mb-2 tracking-wide text-3xl text-blue-200">
-            Ваш идеальный<br />
+            <span className="inline-block bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer-text_3s_ease-in-out_infinite]">Ваш идеальный</span><br />
             <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50 bg-slate-50 text-2xl">
               образ уже здесь
             </span>
