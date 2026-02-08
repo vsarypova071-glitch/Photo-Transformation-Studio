@@ -1,6 +1,6 @@
 import React from 'react';
 import ReviewsSection from '../ReviewsSection';
-import heroCover from '@/assets/hero-cover.jpeg';
+import heroCover from '@/assets/hero-cover.png';
 interface WelcomeScreenProps {
   onStart: () => void;
 }
