@@ -32,7 +32,7 @@ export default function WelcomeScreen({
           
           <p className="text-[11px] font-light leading-relaxed tracking-wider text-slate-50 font-sans">
             Фотосессия мечты за 1 минуту.<br />
-            Без фотографа. Без студии. Просто магия.
+            ​Премиум-фотосессия без студии и фотографа     
           </p>
         </div>
 
