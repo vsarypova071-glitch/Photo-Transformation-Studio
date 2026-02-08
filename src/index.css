@@ -75,26 +75,6 @@ body {
   50% { background-position: 100% 50%; }
 }
 
-.hero-3d-float {
-  animation: hero-3d 8s ease-in-out infinite;
-  transform-style: preserve-3d;
-}
-
-@keyframes hero-3d {
-  0%, 100% {
-    transform: scale(1.08) translateY(0) rotateY(0deg) rotateX(0deg);
-  }
-  25% {
-    transform: scale(1.12) translateY(-6px) rotateY(2deg) rotateX(1deg);
-  }
-  50% {
-    transform: scale(1.1) translateY(-3px) rotateY(-1deg) rotateX(-0.5deg);
-  }
-  75% {
-    transform: scale(1.12) translateY(-6px) rotateY(-2deg) rotateX(1deg);
-  }
-}
-
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

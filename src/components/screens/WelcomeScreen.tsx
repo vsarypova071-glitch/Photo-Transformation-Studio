@@ -9,8 +9,8 @@ export default function WelcomeScreen({
 }: WelcomeScreenProps) {
   return <section className="min-h-screen flex flex-col items-center px-5 py-10 rounded-2xl">
       {/* Hero Card */}
-      <div className="relative w-full max-w-sm aspect-[3/4] mb-10 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]" style={{ perspective: '800px' }}>
-        <img src={heroCover} className="object-cover w-full h-full hero-3d-float" alt="Фотосессия" />
+      <div className="relative w-full max-w-sm aspect-[3/4] mb-10 rounded-[2rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
+        <img src={heroCover} className="object-cover w-full h-full scale-105" alt="Фотосессия" />
         {/* Multi-layer gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-purple-900/20" />
