@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { UserAnalysis } from "../types";
+import { buildPrompt } from "./lib/promptBuilder";
 
 // Всегда бери ключ с бэкенда/секретов. Не храни ключ на фронте.
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY as string });
@@ -94,50 +95,12 @@ export async function generateFashionPhoto(
   const ai = getAI();
   const modelName = "gemini-3-pro-image-preview";
 
-  const identityRules = `
-IDENTITY / LIKENESS RULES (do not morph the face):
-- Preserve overall facial structure and key traits from the reference image.
-- No face reshaping, no "beautification", no age change.
-- Keep eye shape, nose geometry, cheekbone structure, jawline consistent.
-- Keep natural skin texture (pores), no plastic/airbrushed skin.
-- Same person / strong likeness required.
-`.trim();
-
-  const production = `
-PRODUCTION (luxury photoshoot):
-- Wardrobe: high-end couture tailoring, premium fabrics (cashmere, silk, fine wool), clean fit.
-- Posture: confident, elegant, high-status.
-- Environment: ${styleKeywords}.
-- Lighting: premium studio / editorial lighting, realistic shadows, cinematic depth.
-- Composition: ${framing}, camera angle: ${angle}.
-- Output: photorealistic RAW look, high detail, natural colors.
-- No text, no logos, no magazine cover layout.
-`.trim();
+const finalPrompt = buildPrompt({
+  styleKeywords,
+  isPremium: false
+});
 
   const markers = (analysis.uniqueFeatures ?? []).join(", ");
-
-  const finalPrompt = `
-You are a top-tier fashion photographer.
-Goal: create a photorealistic luxury portrait that matches the person in the provided reference image.
-
-Subject notes (from analysis):
-- gender: ${analysis.gender}
-- face shape: ${analysis.faceShape}
-- hair: ${analysis.hairColor}, ${analysis.hairLength}
-- eyes: ${analysis.eyeColor}
-- key facial markers to keep: ${markers}
-
-Client wishes:
-${userWishes && userWishes.trim().length > 0 ? userWishes : "Elegant luxury portrait, natural expression."}
-
-${identityRules}
-
-${production}
-
-NEGATIVE:
-different person, weak likeness, generic face, face morphing, altered nose, altered cheekbones, altered jaw, doll-like skin,
-cartoon, CGI, painting, blur, low-res, artifacts, watermark, logo, text.
-`.trim();
 
   const imageData = stripDataUrlPrefix(originalImageBase64);
 
