@@ -3,6 +3,7 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory } from './types';
 import { createLogger } from './utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 import WelcomeScreen from './components/screens/WelcomeScreen';
 import UploadScreen from './components/screens/UploadScreen';
 import StylesScreen from './components/screens/StylesScreen';
@@ -157,20 +158,50 @@ function App() {
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}
             onTestGenerate={async () => {
+              if (selectedStyles.length === 0) {
+                alert('Выберите хотя бы один стиль');
+                return;
+              }
               navigateTo('processing');
               try {
-                const job = await backend.createJob(
-                  uploadedImage,
-                  selectedStyles,
-                  '',
-                  intensity,
-                  isFullBody
-                );
-                setCurrentJobId(job.id);
-                pollJob(job.id);
+                // Прямой вызов edge function без авторизации и кредитов
+                const stylePrompts = selectedStyles
+                  .map(id => STYLES.find(s => s.id === id)?.prompt)
+                  .filter(Boolean)
+                  .join('\n');
+
+                const { data, error } = await supabase.functions.invoke('generate-photo', {
+                  body: {
+                    imageBase64: uploadedImage,
+                    stylePrompt: stylePrompts || 'Luxury fashion portrait photography',
+                    isPremium: false,
+                    customPrompt: '',
+                  }
+                });
+
+                if (error || !data?.imageUrl) {
+                  throw new Error(data?.error || error?.message || 'Ошибка генерации');
+                }
+
+                // Сохраняем результат как фейковый job
+                const testJobId = 'test_' + Date.now();
+                const testJob = {
+                  id: testJobId,
+                  userId: 'test',
+                  status: 'done' as const,
+                  styleIds: selectedStyles,
+                  isFullBody,
+                  originalImage: uploadedImage,
+                  results: [data.imageUrl],
+                  createdAt: Date.now(),
+                };
+                // Сохраняем в sessionStorage напрямую
+                sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([testJob]));
+                setCurrentJobId(testJobId);
+                navigateTo('results');
               } catch (e: any) {
                 log.error('Test generation failed', e);
-                alert(e?.message === 'INSUFFICIENT_CREDITS' ? 'Нет кредитов' : 'Ошибка генерации');
+                alert('Ошибка: ' + (e?.message || 'Неизвестная ошибка'));
                 navigateTo('styles');
               }
             }}
