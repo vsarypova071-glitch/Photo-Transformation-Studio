@@ -23,14 +23,14 @@ export default function WelcomeScreen({
           
           <h1 className="font-extralight leading-[1.2] mb-2 tracking-wide text-3xl text-blue-200">
             <span className="inline-block bg-gradient-to-r from-blue-200 via-white to-blue-300 bg-[length:200%_100%] bg-clip-text animate-[shimmer-text_3s_ease-in-out_infinite] text-violet-200">Ваш идеальный</span><br />
-            <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-slate-50 bg-slate-50 text-2xl">
-              образ уже здесь
+            <span className="font-medium bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text bg-slate-50 text-2xl text-slate-50">
+              образ. Ваш стиль.   
             </span>
           </h1>
           
           <div className="w-10 h-[1px] bg-gradient-to-r from-white/40 to-transparent my-4" />
           
-          <p className="text-[11px] font-light leading-relaxed tracking-wider text-slate-50 font-sans">
+          <p className="text-[11px] font-light leading-relaxed tracking-wider font-sans text-slate-50">
             Фотосессия мечты за 1 минуту.<br />
             ​Премиум-фотосессия без студии и фотографа     
           </p>
