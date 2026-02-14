@@ -224,18 +224,51 @@ class BackendService {
     jobs[jobIndex].status = 'running';
     this.saveJobs(jobs);
 
-    // Simulate processing (replace with actual AI call)
-    setTimeout(() => {
+    try {
+      const job = jobs[jobIndex];
+      
+      // Build style prompt from selected style IDs
+      const { STYLES } = await import('../lib/constants');
+      const selectedStylePrompts = job.styleIds
+        .map(id => STYLES.find(s => s.id === id)?.prompt)
+        .filter(Boolean)
+        .join('\n');
+      
+      const stylePrompt = selectedStylePrompts || 'Luxury fashion portrait photography';
+
+      const { data, error } = await supabase.functions.invoke('generate-photo', {
+        body: {
+          imageBase64: job.originalImage,
+          stylePrompt,
+          isPremium: false,
+          customPrompt: job.customPrompt || '',
+        }
+      });
+
+      const finalJobs = this.getJobs();
+      const finalIndex = finalJobs.findIndex(j => j.id === jobId);
+      if (finalIndex === -1) return;
+
+      if (error || !data?.imageUrl) {
+        log.error('AI generation failed', { error, data });
+        finalJobs[finalIndex].status = 'error';
+        this.saveJobs(finalJobs);
+        return;
+      }
+
+      finalJobs[finalIndex].results = [data.imageUrl];
+      finalJobs[finalIndex].status = 'done';
+      this.saveJobs(finalJobs);
+      log.info('Job completed with AI generation', { jobId });
+    } catch (err) {
+      log.error('processJob error', err);
       const finalJobs = this.getJobs();
       const finalIndex = finalJobs.findIndex(j => j.id === jobId);
       if (finalIndex !== -1) {
-        // Mock result - in production this would be AI-generated
-        finalJobs[finalIndex].results = [finalJobs[finalIndex].originalImage];
-        finalJobs[finalIndex].status = 'done';
+        finalJobs[finalIndex].status = 'error';
         this.saveJobs(finalJobs);
-        log.info('Job completed', { jobId });
       }
-    }, 3000);
+    }
   }
 
   getJobs(): Job[] {
