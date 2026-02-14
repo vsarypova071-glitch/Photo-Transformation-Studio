@@ -156,6 +156,24 @@ function App() {
             onFullBodyToggle={() => setIsFullBody(!isFullBody)}
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}
+            onTestGenerate={async () => {
+              navigateTo('processing');
+              try {
+                const job = await backend.createJob(
+                  uploadedImage,
+                  selectedStyles,
+                  '',
+                  intensity,
+                  isFullBody
+                );
+                setCurrentJobId(job.id);
+                pollJob(job.id);
+              } catch (e: any) {
+                log.error('Test generation failed', e);
+                alert(e?.message === 'INSUFFICIENT_CREDITS' ? 'Нет кредитов' : 'Ошибка генерации');
+                navigateTo('styles');
+              }
+            }}
           />
         )}
 
