@@ -15,103 +15,6 @@ function getRandomGarment() {
   ];
 }
 
-const IDENTITY_LOCK = `
-IDENTITY PRESERVATION RULES:
-- The uploaded image is the identity reference.
-- Maintain the exact facial structure.
-- Do not modify nose geometry.
-- Do not alter cheekbone structure.
-- Keep original jawline shape.
-- Preserve eye spacing and eyelid form.
-- No beautification.
-- No face reshaping.
-- Natural skin texture only.
-`;
-
-const ULTRA_CLEAN_RULES = `
-STRICT OUTPUT RULES:
-- No text.
-- No letters.
-- No typography.
-- No logos.
-- No branding.
-- No magazine layouts.
-- No headlines.
-- No graphic overlays.
-- No watermarks.
-- Clean professional photograph only.
-`;
-
-const PREMIUM_ENHANCEMENT = `
-PREMIUM PRODUCTION QUALITY:
-- Cinematic lighting with depth.
-- Professional high-fashion posing.
-- Micro-detail couture fabric textures.
-- Luxury depth of field.
-- Ultra realistic skin rendering.
-- Advanced shadow modeling.
-`;
-
-const STYLE_LIGHTING_MAP: Record<string, string> = {
-  "Quiet Luxury": `
-Soft diffused window light.
-Warm neutral tones.
-Low contrast.
-Gentle shadow transitions.
-`,
-
-  "New York Power": `
-High contrast directional lighting.
-Sharper shadows.
-Urban reflective highlights.
-Cool undertones.
-`,
-
-  "Golden Hour Glow": `
-Warm backlighting.
-Golden rim light.
-Soft flare diffusion.
-Sunset atmosphere.
-`,
-
-  "Luxury Editorial": `
-Dramatic sculpted lighting.
-Hard key light.
-Deep shadows.
-Museum-like contrast.
-`
-};
-
-const STYLE_BACKGROUND_MAP: Record<string, string> = {
-  "Quiet Luxury": `
-Luxury penthouse interior.
-Soft natural daylight.
-Textured stone, warm wood, neutral palette.
-Minimalistic but expensive environment.
-`,
-
-  "New York Power": `
-Modern skyscraper interior.
-Glass reflections.
-City lights in background.
-Urban night atmosphere.
-`,
-
-  "Golden Hour Glow": `
-Rooftop at sunset.
-Soft skyline horizon.
-Warm atmosphere.
-Natural depth perspective.
-`,
-
-  "Luxury Editorial": `
-Minimalist art museum space.
-Architectural concrete textures.
-Clean geometry.
-High-fashion campaign setting.
-`
-};
-
 export function buildPrompt({
   styleKeywords,
   isPremium
@@ -122,81 +25,108 @@ export function buildPrompt({
 
   const garment = getRandomGarment();
 
-  const styleLighting =
-    STYLE_LIGHTING_MAP[styleKeywords] ??
-    "High-end editorial studio lighting.";
-
-  const styleBackground =
-    STYLE_BACKGROUND_MAP[styleKeywords] ??
-    "Luxury neutral studio background.";
-
   return `
-You are a world-class luxury fashion photographer.
+You are an elite fashion photographer working at luxury campaign level.
 
-Create a hyper-realistic high-end fashion portrait.
+CRITICAL PRIORITY:
+The uploaded image is the identity reference.
+The final image must clearly match the same person.
 
-STYLE:
+IDENTITY CONTROL (highest priority over style):
+- Preserve exact facial bone structure.
+- Preserve nose geometry.
+- Preserve cheekbone placement.
+- Preserve jawline shape.
+- Preserve eye spacing and eyelid structure.
+- Do NOT redesign or reinterpret facial anatomy.
+- No beautification.
+- No facial slimming or reshaping.
+- No age change.
+- Natural skin texture only.
+- No plastic smoothing.
+- The person must be instantly recognizable.
+- Identity priority overrides stylistic exaggeration.
+
+STYLE DIRECTION:
 ${styleKeywords}
 
-GARMENT CONSTRUCTION:
+WARDROBE & SILHOUETTE:
 ${garment}
+- Structured luxury tailoring.
+- Realistic garment weight.
+- Natural fabric folds.
+- Couture-level construction.
+- Premium materials (cashmere, silk, fine wool, structured satin).
+- No synthetic shine.
+- No fast-fashion aesthetic.
 
-${IDENTITY_LOCK}
-
-${ULTRA_CLEAN_RULES}
-
-${isPremium ? PREMIUM_ENHANCEMENT : ""}
-
-LIGHTING ARCHITECTURE:
-${styleLighting}
-Directional sculpted key light with controlled falloff.
-Subject-background separation.
+LIGHTING DESIGN:
+High-end editorial lighting.
+Directional sculpted key light.
+Controlled shadow falloff across cheekbones.
+Soft rim light separation from background.
+Natural skin tonality.
 Balanced highlight roll-off.
 No flat lighting.
 No harsh flash.
 No blown highlights.
-Natural skin tonality.
-No oversharpening.
-No plastic glow.
+Cinematic contrast without oversharpening.
 
-BACKGROUND ARCHITECTURE:
-${styleBackground}
-No artificial CGI look.
-Real physical environment.
-Proper light interaction with surroundings.
+ENVIRONMENT:
+Luxury campaign setting.
+Real architectural depth.
+Physical environment with realistic light interaction.
+No flat studio emptiness.
+No artificial CGI feel.
 
-TEXTILE & MATERIAL REALISM:
-Luxury couture construction.
-Structured silhouette with dimensional tailoring.
-Visible micro-fabric texture.
-Natural fabric behavior (weight, folds, gravity).
-Premium materials only (cashmere, silk, fine wool, structured satin).
-No synthetic shine.
-No fast-fashion appearance.
-
-DEPTH & SPATIAL QUALITY:
-Cinematic depth of field.
-Foreground/background separation.
-Subtle background blur.
-Realistic environmental light interaction.
+DEPTH & REALISM:
+Three-dimensional facial planes.
+Foreground-background separation.
+Subtle depth of field.
 High dynamic range rendering.
 Natural color grading.
-Three-dimensional realism.
+No AI gloss.
+No digital overprocessing.
 
-PRODUCTION LEVEL:
-Luxury campaign aesthetic.
-Editorial magazine quality.
-Confident, high-status posture.
-Natural but powerful presence.
-Ultra clean composition.
-No artificial AI gloss.
+POSE & PRESENCE:
+Confident posture.
+High-status body language.
+Natural but powerful expression.
+Magazine-level composition.
+
+${isPremium ? `
+PREMIUM MODE:
+Micro-shadow facial sculpting.
+Advanced cinematic light shaping.
+Enhanced textile micro-texture realism.
+Luxury campaign lighting precision.
+Subtle atmospheric depth layers.
+` : ""}
+
+NEGATIVE CONTROL:
+different person,
+face redesign,
+anatomical distortion,
+beautified facial proportions,
+AI face smoothing,
+cartoon,
+CGI,
+low detail,
+plastic skin,
+watermark,
+text,
+logo,
+typography,
+magazine layout,
+graphic overlays.
 
 Camera:
 - 85mm or 135mm portrait lens
-- RAW photography style
-- Professional studio lighting
+- RAW photography look
+- Professional studio-grade lighting
 - High resolution detail
 - Strictly photorealistic
 `;
 }
+
 
