@@ -51,9 +51,17 @@ FACE CLONING — NON-NEGOTIABLE:
 - Clone EXACT age appearance — not one year younger or older.
 - The face must pass facial recognition software as the SAME person.
 
+BODY — DO NOT CHANGE:
+- Keep EXACT body proportions, weight, and build from the reference photo.
+- Do NOT make the person thinner, heavier, taller, or shorter.
+- Do NOT add muscle mass or change body shape in any way.
+- The body silhouette must match the original person exactly.
+
 HAIR — SAME BUT GROOMED:
 - Keep EXACT hair color, texture (straight/wavy/curly), density, length, parting.
-- Style it beautifully — as if a luxury salon groomed it for this exact photoshoot.
+- Do NOT make hair longer or shorter than in the reference photo.
+- Do NOT add volume or thickness that isn't in the original.
+- Style it beautifully within the existing length — as if groomed for this photoshoot.
 - Natural shine and movement. No synthetic or plastic look.
 
 ENERGY & LIFE — THE PHOTO MUST BREATHE:
@@ -121,7 +129,7 @@ ${isPremium ? `
 ████████████████████████████████████████
 ██  NEVER DO THIS                     ██
 ████████████████████████████████████████
-different person, changed face shape, altered bone structure, different nose, different eyes, beautified features, slimmed face, smoothed skin, changed eye color, changed age, cartoon, CGI, 3D render, anime, illustration, painting, watermark, text, logo, magazine layout, plastic skin, wax figure, lifeless eyes, dead expression, mannequin pose, multiple people, distorted limbs.
+different person, changed face shape, altered bone structure, different nose, different eyes, beautified features, slimmed face, smoothed skin, changed eye color, changed age, made older, made younger, added weight, made heavier, made thinner, changed body proportions, longer hair, shorter hair, added hair volume, cartoon, CGI, 3D render, anime, illustration, painting, watermark, text, logo, magazine layout, plastic skin, wax figure, lifeless eyes, dead expression, mannequin pose, multiple people, distorted limbs.
 `.trim();
 }
 
