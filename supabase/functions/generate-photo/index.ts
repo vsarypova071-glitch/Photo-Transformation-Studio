@@ -6,49 +6,49 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// 30+ unique outfits grouped by category for maximum variety
+// 2026 luxury fashion — modern, stylish, NO old-fashioned elements
 const GARMENT_CATEGORIES = {
-  blazers: [
-    "double-breasted navy blazer in Italian wool with gold buttons",
-    "oversized camel blazer in cashmere-wool blend with patch pockets",
-    "fitted black tuxedo jacket with satin peak lapels",
-    "chalk-stripe charcoal blazer with notch lapels in English wool",
-    "cream linen blazer with tortoiseshell buttons, slightly relaxed fit",
+  power_chic: [
+    "sleek oversized blazer in soft beige with rolled sleeves over a silky camisole, effortlessly chic",
+    "tailored cropped blazer in off-white with open front, high-waisted wide-leg trousers",
+    "deconstructed asymmetric blazer in dove grey, one shoulder slightly dropped, modern edge",
+    "double-breasted blazer dress in caramel, belted at waist, bare legs, power feminine",
+    "relaxed-fit ivory suit with slightly oversized jacket, no shirt underneath, confident and clean",
   ],
-  dresses: [
-    "midi wrap dress in emerald silk charmeuse with subtle draping",
-    "minimalist black sheath dress with architectural neckline in matte crepe",
-    "burgundy A-line dress in heavy duchess satin with hidden pockets",
-    "ivory column dress in Japanese crepe with invisible seaming",
-    "navy blue cocktail dress with asymmetric hemline in stretch wool",
+  modern_elegant: [
+    "slip dress in liquid champagne satin, thin straps, low back, minimalist luxury",
+    "one-shoulder midi dress in rich chocolate brown with subtle draping",
+    "fitted knit midi dress in cream with side slit, showing collarbone and shoulders",
+    "halter-neck silk top in ivory tucked into high-waisted tailored black trousers",
+    "open-back maxi dress in soft sage green, flowing fabric, effortless movement",
   ],
-  suits: [
-    "charcoal pinstripe suit in super 180s wool with slim-cut trousers",
-    "all-white linen suit with relaxed blazer and wide-leg trousers",
-    "forest green velvet suit with shawl collar for evening",
-    "powder blue Italian suit with mother-of-pearl buttons",
-    "black three-piece suit in mohair blend with satin-back waistcoat",
+  editorial_cool: [
+    "oversized white cotton shirt partially unbuttoned tucked into leather shorts, modern editorial",
+    "structured crop top in black paired with high-waisted palazzo pants in sand",
+    "minimalist bodysuit in nude tone with tailored wide-leg trousers in charcoal",
+    "off-shoulder knit sweater in soft camel, asymmetric neckline, relaxed luxury",
+    "sleeveless turtleneck in ribbed cream cashmere with leather belt at waist",
   ],
-  tops: [
-    "cream silk pussy-bow blouse with French cuffs",
-    "black cashmere turtleneck, fitted, with visible knit texture",
-    "white crisp cotton shirt with spread collar, slightly open",
-    "dusty rose draped chiffon blouse with delicate pintucks",
-    "striped Breton top in fine-gauge merino, navy and white",
+  summer_luxury: [
+    "lightweight linen co-ord set in warm terracotta — cropped shirt and relaxed trousers",
+    "flowing silk maxi skirt in ocean blue with simple white tank top, resort luxury",
+    "cotton wrap top in white with high-waisted linen trousers in natural beige",
+    "sleek jumpsuit in soft olive with thin belt, open neckline, summer power",
+    "draped one-shoulder top in peach silk with wide-leg cream pants, golden hour vibes",
   ],
-  outerwear: [
-    "camel cashmere overcoat, knee-length, with belt",
-    "black leather biker jacket in supple lambskin with silver hardware",
-    "dove grey wool cape with oversized collar",
-    "olive green trench coat in water-resistant gabardine",
-    "faux-fur coat in champagne tone, cropped to waist",
+  evening_modern: [
+    "sleek column dress in black with high slit and clean neckline, no embellishments",
+    "backless silk dress in deep burgundy, floor-length, minimal and stunning",
+    "tailored tuxedo jumpsuit in midnight navy, plunging neckline, sharp shoulders",
+    "asymmetric one-shoulder gown in emerald, modern cut, no beading or sequins",
+    "fitted velvet midi dress in deep wine, square neckline, sleek and powerful",
   ],
-  evening: [
-    "floor-length gown in midnight blue silk with plunging back",
-    "sequined cocktail top in gold paired with black cigarette trousers",
-    "off-shoulder velvet jumpsuit in deep plum",
-    "beaded tulle overlay dress in blush pink",
-    "black lace bodysuit under a high-waisted satin pencil skirt",
+  casual_luxe: [
+    "cashmere V-neck sweater in oatmeal over silk slip skirt in champagne",
+    "white T-shirt in premium cotton tucked into high-waisted cream trousers, gold jewelry",
+    "oversized camel coat worn over simple black dress, street-style editorial",
+    "leather jacket in butter-soft tan over white midi dress, modern cool",
+    "denim shirt in dark indigo, sleeves rolled, with tailored white trousers",
   ],
 };
 
@@ -98,16 +98,18 @@ HAIR — EXACT COPY (already defined above, reinforcing):
 - The hair in the output MUST match the reference photo length exactly.
 - Natural shine and movement. No synthetic or plastic look.
 
-ENERGY & LIFE — THE PHOTO MUST BREATHE:
-- The person must look ALIVE — not a mannequin, not a wax figure.
-- Natural micro-expressions: slight smile tension, eye sparkle, genuine warmth.
-- Skin must show LIFE: visible pores, natural flush, blood flow undertone, warmth in cheeks and nose tip.
-- Eyes must have SOUL: multiple catch lights, iris depth, moisture layer, real gaze with intention.
-- Skin has VOLUME: subsurface warmth, translucency at thin areas (ears, nostrils, between fingers).
-- Natural body tension and weight distribution — a real person in a real moment.
-- The photo should feel like a CAPTURED MOMENT by a photographer, not a rendered image.
-- Emotional authenticity: confidence, calm power, inner beauty radiating outward.
-- Imperfections are WELCOME: a stray hair, slight asymmetry, natural skin texture — these prove it's REAL.
+ENERGY & MAGNETISM — THIS IS EVERYTHING:
+The photo must make people STOP scrolling. The viewer must feel the person's PRESENCE through the screen.
+- Eyes that GLOW: sparkling, alive, wet with light, full of intention and confidence. Like the person has a secret.
+- Skin that RADIATES: luminous from within, dewy, sun-kissed warmth. You can almost feel the warmth.
+- Natural GLOW on cheekbones, nose bridge, collarbone — skin catches light like silk.
+- Micro-expressions that SPEAK: the hint of a smile, a knowing look, quiet confidence.
+- The person's ENERGY must be palpable — charisma, magnetism, inner fire.
+- Hair that MOVES: natural wind-swept strands, light playing through individual hairs.
+- Body language of POWER: relaxed but commanding, effortless confidence, high-status presence.
+- This is NOT a posed portrait. This is a MOMENT CAPTURED — mid-thought, mid-laugh, mid-life.
+- The image must trigger an emotional response in the viewer. INTIMATE and REAL.
+- Natural imperfections are ESSENTIAL: a stray hair, skin texture, slight asymmetry — this makes it ALIVE.
 
 ████████████████████████████████████████
 ██  STYLE & MOOD                      ██
@@ -115,14 +117,16 @@ ENERGY & LIFE — THE PHOTO MUST BREATHE:
 ${styleKeywords}
 
 ████████████████████████████████████████
-██  WARDROBE                          ██
+██  WARDROBE — 2026 LUXURY            ██
 ████████████████████████████████████████
 Outfit: ${garment}
-- Visible fabric texture: weave, fiber direction, surface grain.
-- Realistic weight and drape: gravity-accurate folds, compression wrinkles.
-- Premium materials: cashmere, silk, fine wool, satin, supple leather.
-- Clothing must look WORN by this person naturally, not digitally pasted.
-- Color must harmonize with the style direction.
+- MODERN 2026 fashion ONLY. Clean lines, minimal details, luxurious simplicity.
+- NO old-fashioned elements: no pussy bows, no ruffles, no heavy embroidery, no beading, no lace collars, no high-neck blouses with bows.
+- NO dated aesthetics: no heavy knits, no frumpy silhouettes, no 1990s catalog looks.
+- Think: The Row, Bottega Veneta, Loro Piana, Celine, Max Mara — quiet luxury, modern power.
+- Fabric must look TOUCHABLE: visible texture, weight, quality.
+- Colors: neutrals, earth tones, muted jewel tones. No neon, no busy prints.
+- Clothing must look naturally WORN, not digitally pasted.
 
 ████████████████████████████████████████
 ██  ENVIRONMENT                       ██
