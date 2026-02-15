@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
         const { data: user, error: selectErr } = await supabaseAdmin
           .from('user_credits')
           .update({ 
-            remaining_credits: supabaseAdmin.rpc ? undefined : 0, // Placeholder
+            remaining_credits: 0, // Will be overridden by atomic update below
             updated_at: new Date().toISOString()
           })
           .eq('user_id', authenticatedUserId)
