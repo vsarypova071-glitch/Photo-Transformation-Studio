@@ -6,23 +6,57 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GARMENT_VARIATIONS = [
-  "impeccably tailored double-breasted blazer in rich Italian wool with horn buttons and peak lapels",
-  "flowing haute couture silk blouse with delicate draping and mother-of-pearl closures",
-  "architectural structured dress with geometric seaming in heavy matte crepe",
-  "monochrome luxury power suit with subtle pinstripe in super 180s wool",
-  "cashmere-blend turtleneck ensemble layered with a camel hair overcoat",
-  "avant-garde asymmetrical draped gown in duchesse satin with sculptural shoulder",
-  "bespoke linen suit with hand-stitched details and natural shell buttons",
-  "layered couture outfit: fine knit under a tailored vest with silk scarf accent",
-  "velvet evening blazer with satin shawl collar paired with silk camisole",
-  "structured leather trench coat with belt in supple Nappa leather",
-  "hand-embroidered organza blouse with high collar and French cuffs",
-  "minimalist column dress in Japanese crepe with invisible seaming",
-];
+// 30+ unique outfits grouped by category for maximum variety
+const GARMENT_CATEGORIES = {
+  blazers: [
+    "double-breasted navy blazer in Italian wool with gold buttons",
+    "oversized camel blazer in cashmere-wool blend with patch pockets",
+    "fitted black tuxedo jacket with satin peak lapels",
+    "chalk-stripe charcoal blazer with notch lapels in English wool",
+    "cream linen blazer with tortoiseshell buttons, slightly relaxed fit",
+  ],
+  dresses: [
+    "midi wrap dress in emerald silk charmeuse with subtle draping",
+    "minimalist black sheath dress with architectural neckline in matte crepe",
+    "burgundy A-line dress in heavy duchess satin with hidden pockets",
+    "ivory column dress in Japanese crepe with invisible seaming",
+    "navy blue cocktail dress with asymmetric hemline in stretch wool",
+  ],
+  suits: [
+    "charcoal pinstripe suit in super 180s wool with slim-cut trousers",
+    "all-white linen suit with relaxed blazer and wide-leg trousers",
+    "forest green velvet suit with shawl collar for evening",
+    "powder blue Italian suit with mother-of-pearl buttons",
+    "black three-piece suit in mohair blend with satin-back waistcoat",
+  ],
+  tops: [
+    "cream silk pussy-bow blouse with French cuffs",
+    "black cashmere turtleneck, fitted, with visible knit texture",
+    "white crisp cotton shirt with spread collar, slightly open",
+    "dusty rose draped chiffon blouse with delicate pintucks",
+    "striped Breton top in fine-gauge merino, navy and white",
+  ],
+  outerwear: [
+    "camel cashmere overcoat, knee-length, with belt",
+    "black leather biker jacket in supple lambskin with silver hardware",
+    "dove grey wool cape with oversized collar",
+    "olive green trench coat in water-resistant gabardine",
+    "faux-fur coat in champagne tone, cropped to waist",
+  ],
+  evening: [
+    "floor-length gown in midnight blue silk with plunging back",
+    "sequined cocktail top in gold paired with black cigarette trousers",
+    "off-shoulder velvet jumpsuit in deep plum",
+    "beaded tulle overlay dress in blush pink",
+    "black lace bodysuit under a high-waisted satin pencil skirt",
+  ],
+};
 
 function getRandomGarment() {
-  return GARMENT_VARIATIONS[Math.floor(Math.random() * GARMENT_VARIATIONS.length)];
+  const categories = Object.keys(GARMENT_CATEGORIES) as (keyof typeof GARMENT_CATEGORIES)[];
+  const cat = categories[Math.floor(Math.random() * categories.length)];
+  const items = GARMENT_CATEGORIES[cat];
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 function buildPrompt(styleKeywords: string, isPremium: boolean) {
@@ -32,36 +66,36 @@ function buildPrompt(styleKeywords: string, isPremium: boolean) {
 TASK: Edit this photo to create a luxury fashion portrait. You are EDITING the uploaded photo — NOT creating a new person.
 
 ████████████████████████████████████████
-██  RULE #1: THIS IS THE SAME PERSON  ██
+██  ABSOLUTE RULE: COPY THE PERSON    ██
 ████████████████████████████████████████
 
-You are RETOUCHING and RESTYLING the person in the uploaded photo.
-Think of it as: this exact person walked into a luxury photo studio, got dressed in high fashion, and was photographed by a top professional.
+STUDY the uploaded reference photo carefully. Every detail of the person's appearance must be COPIED EXACTLY.
 
-FACE CLONING — NON-NEGOTIABLE:
-- The face in the output IS the face from the input photo. Not similar. Not inspired by. IDENTICAL.
-- Clone EXACT bone structure: skull shape, jaw angle, chin prominence, cheekbone position.
-- Clone EXACT nose: bridge width, tip shape, nostril flare, length, angle from every view.
-- Clone EXACT eyes: shape, size, spacing, lid crease depth, inner/outer corner angles.
-- Clone EXACT eye COLOR and iris pattern — do not change even slightly.
-- Clone EXACT eyebrows: arch, thickness, spacing, hair growth direction.
-- Clone EXACT lips: cupid's bow shape, upper/lower lip ratio, width, natural color.
-- Clone EXACT skin: tone, undertone, texture, pores, any moles, freckles, beauty marks.
-- Clone EXACT face PROPORTIONS: forehead-to-chin ratio, mid-face width, face shape (round/oval/square).
-- Clone EXACT age appearance — not one year younger or older.
-- The face must pass facial recognition software as the SAME person.
+FACE — PIXEL-PERFECT CLONE:
+- The output face IS the input face. Not similar. IDENTICAL.
+- Clone EXACT bone structure, jaw, chin, cheekbones.
+- Clone EXACT nose shape, bridge, tip, nostrils.
+- Clone EXACT eyes: shape, size, spacing, color, iris pattern.
+- Clone EXACT eyebrows, lips, skin tone, texture, all marks/moles/freckles.
+- Clone EXACT age — not one year younger or older. If the person looks 25, output looks 25. If 45, output looks 45.
+- The face must pass facial recognition as the SAME person.
 
-BODY — DO NOT CHANGE:
-- Keep EXACT body proportions, weight, and build from the reference photo.
-- Do NOT make the person thinner, heavier, taller, or shorter.
-- Do NOT add muscle mass or change body shape in any way.
-- The body silhouette must match the original person exactly.
+BODY — ZERO CHANGES:
+- COPY the person's EXACT body type, weight, proportions from the reference.
+- Do NOT add fullness, curves, or volume to the body.
+- Do NOT make slimmer OR heavier. EXACT same silhouette.
+- Do NOT change height, shoulder width, or any physical dimension.
+- The body in the output must be INDISTINGUISHABLE from the reference photo body.
 
-HAIR — SAME BUT GROOMED:
-- Keep EXACT hair color, texture (straight/wavy/curly), density, length, parting.
-- Do NOT make hair longer or shorter than in the reference photo.
-- Do NOT add volume or thickness that isn't in the original.
-- Style it beautifully within the existing length — as if groomed for this photoshoot.
+HAIR — EXACT COPY:
+- COPY the EXACT hair length from the reference photo. If it's short, keep it short. If long, keep it long.
+- COPY exact color, texture (straight/wavy/curly), density, parting.
+- Do NOT shorten OR lengthen the hair by even 1 centimeter.
+- Do NOT add volume, thickness, or change the hairstyle.
+- Only subtle grooming — as if the person's own hair was styled by a professional for 5 minutes, nothing more.
+
+HAIR — EXACT COPY (already defined above, reinforcing):
+- The hair in the output MUST match the reference photo length exactly.
 - Natural shine and movement. No synthetic or plastic look.
 
 ENERGY & LIFE — THE PHOTO MUST BREATHE:
@@ -144,7 +178,7 @@ ${isPremium ? `
 ████████████████████████████████████████
 ██  NEVER DO THIS                     ██
 ████████████████████████████████████████
-different person, changed face shape, altered bone structure, different nose, different eyes, beautified features, slimmed face, smoothed skin, changed eye color, changed age, made older, made younger, added weight, made heavier, made thinner, changed body proportions, longer hair, shorter hair, added hair volume, cartoon, CGI, 3D render, anime, illustration, painting, watermark, text, logo, magazine layout, plastic skin, wax figure, lifeless eyes, dead expression, mannequin pose, multiple people, distorted limbs.
+different person, changed face shape, altered bone structure, different nose, different eyes, beautified features, slimmed face, smoothed skin, changed eye color, changed age, made older, made younger, added weight, made heavier, made fuller, added curves, added fullness to body, made thinner, changed body proportions, longer hair, shorter hair, added hair volume, changed hair length, cartoon, CGI, 3D render, anime, illustration, painting, watermark, text, logo, magazine layout, plastic skin, wax figure, lifeless eyes, dead expression, mannequin pose, multiple people, distorted limbs, same outfit repeated.
 `.trim();
 }
 
