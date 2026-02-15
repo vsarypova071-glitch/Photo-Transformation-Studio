@@ -19,7 +19,10 @@ interface TariffScreenProps {
   onBack: () => void;
 }
 
-export default function TariffScreen({ onSelectTariff, onBack }: TariffScreenProps) {
+export default function TariffScreen({
+  onSelectTariff,
+  onBack,
+}: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const privacyUrl =
@@ -32,10 +35,7 @@ export default function TariffScreen({ onSelectTariff, onBack }: TariffScreenPro
         onClick={onBack}
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Назад
+        ← Назад
       </button>
 
       {/* Заголовок */}
@@ -81,8 +81,16 @@ export default function TariffScreen({ onSelectTariff, onBack }: TariffScreenPro
               onClick={() => onSelectTariff(tariff)}
               disabled={disabled}
               className={`w-full p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden
-                ${tariff.popular ? "border-primary bg-primary/5 shadow-lg shadow-primary/20" : "border-border bg-card"}
-                ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"}
+                ${
+                  tariff.popular
+                    ? "border-primary bg-primary/5 shadow-lg shadow-primary/20"
+                    : "border-border bg-card"
+                }
+                ${
+                  disabled
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:border-primary/50"
+                }
               `}
             >
               {tariff.popular && (
@@ -93,7 +101,9 @@ export default function TariffScreen({ onSelectTariff, onBack }: TariffScreenPro
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-lg mb-1">{tariff.name}</h3>
+                  <h3 className="font-bold text-lg mb-1">
+                    {tariff.name}
+                  </h3>
                   <p className="text-muted-foreground text-sm">
                     {tariff.photos} фото
                   </p>
@@ -128,4 +138,5 @@ export default function TariffScreen({ onSelectTariff, onBack }: TariffScreenPro
     </section>
   );
 }
+
 
