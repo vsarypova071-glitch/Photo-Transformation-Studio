@@ -32,19 +32,35 @@ function buildPrompt(styleKeywords: string, isPremium: boolean) {
 You are a world-renowned luxury fashion photographer shooting a campaign for Vogue or Harper's Bazaar.
 
 ═══════════════════════════════════════
-ABSOLUTE PRIORITY #1: IDENTITY LOCK
+ABSOLUTE PRIORITY #1: 100% IDENTITY LOCK — ZERO TOLERANCE FOR DEVIATION
 ═══════════════════════════════════════
-The uploaded photo is the ONLY identity reference. The generated image MUST depict the EXACT SAME PERSON.
-- Copy the precise facial bone structure: cheekbones, jawline, chin shape, forehead proportions.
-- Replicate exact nose geometry: bridge width, tip shape, nostril form.
-- Match eye shape, spacing, eyelid crease depth, iris color.
-- Preserve lip shape, thickness, and proportions exactly.
-- Keep exact skin tone, undertone, and any natural skin texture (pores, freckles, marks).
-- Maintain the person's apparent age — no younger, no older.
-- Hair color, texture, and density must match the reference.
-- NO beautification. NO face slimming. NO skin smoothing. NO idealization.
-- The person must be INSTANTLY recognizable by their friends and family.
-- If identity accuracy conflicts with style, IDENTITY ALWAYS WINS.
+The uploaded photo is the SOLE identity reference. The generated image MUST be the EXACT SAME PERSON — 100% match, no exceptions.
+
+FACE (pixel-level accuracy required):
+- EXACT facial bone structure: cheekbone height and width, jawline angle, chin shape and size, forehead proportions.
+- EXACT nose geometry: bridge width, tip shape, nostril size and form, nose length — copy every millimeter.
+- EXACT eye shape: lid crease depth, eye opening size, inner/outer corner angles, eye spacing distance.
+- EXACT eye color: replicate the precise iris color, pattern, and brightness from the reference photo.
+- EXACT eyebrow shape: arch height, thickness, spacing, hair direction and density.
+- EXACT lip shape: cupid's bow, lip thickness ratio (upper to lower), lip width, lip color.
+- EXACT skin: tone, undertone, texture, pores, freckles, moles, beauty marks — copy ALL of them.
+- EXACT face proportions: the ratio between forehead, mid-face, and lower face must be identical.
+- Maintain the person's EXACT apparent age — not a day younger or older.
+
+HAIR (must match reference, but well-groomed):
+- EXACT hair color: same shade, highlights, roots — no color changes.
+- EXACT hair texture: straight, wavy, curly — match the reference precisely.
+- EXACT hair density and volume.
+- Hair should look WELL-GROOMED and styled beautifully — as if they just visited a top hairstylist.
+- Hair can be slightly styled to match the luxury aesthetic, but the base hair type, color, and length must remain identical.
+- Natural hair shine and light interaction — no plastic or synthetic look.
+
+ABSOLUTE PROHIBITIONS:
+- NO beautification of ANY kind. NO face slimming. NO nose reshaping. NO lip enhancement.
+- NO skin smoothing or airbrushing. NO eye color change. NO eye enlargement.
+- NO age change. NO ethnicity shift. NO facial feminization or masculinization.
+- The person's own MOTHER must recognize them INSTANTLY without hesitation.
+- If identity accuracy conflicts with style, IDENTITY ALWAYS WINS — no exceptions.
 
 ═══════════════════════════════════════
 STYLE & MOOD DIRECTION
