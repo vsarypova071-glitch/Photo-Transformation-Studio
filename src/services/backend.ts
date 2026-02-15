@@ -236,14 +236,31 @@ class BackendService {
       
       const stylePrompt = selectedStylePrompts || 'Luxury fashion portrait photography';
 
-      const { data, error } = await supabase.functions.invoke('generate-photo', {
-        body: {
-          imageBase64: job.originalImage,
-          stylePrompt,
-          isPremium: false,
-          customPrompt: job.customPrompt || '',
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 300 sec
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-photo`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            imageBase64: job.originalImage,
+            stylePrompt,
+            isPremium: false,
+            customPrompt: job.customPrompt || '',
+          }),
+          signal: controller.signal,
         }
-      });
+      );
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+      const error = !response.ok ? data?.error : null;
 
       const finalJobs = this.getJobs();
       const finalIndex = finalJobs.findIndex(j => j.id === jobId);

@@ -3,7 +3,7 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory } from './types';
 import { createLogger } from './utils/logger';
-import { supabase } from '@/integrations/supabase/client';
+
 import WelcomeScreen from './components/screens/WelcomeScreen';
 import UploadScreen from './components/screens/UploadScreen';
 import StylesScreen from './components/screens/StylesScreen';
@@ -162,23 +162,38 @@ function App() {
               }
               navigateTo('processing');
               try {
-                // Прямой вызов edge function без авторизации и кредитов
+                // Прямой вызов edge function с увеличенным таймаутом (300 сек)
                 const stylePrompts = selectedStyles
                   .map(id => STYLES.find(s => s.id === id)?.prompt)
                   .filter(Boolean)
                   .join('\n');
 
-                const { data, error } = await supabase.functions.invoke('generate-photo', {
-                  body: {
-                    imageBase64: uploadedImage,
-                    stylePrompt: stylePrompts || 'Luxury fashion portrait photography',
-                    isPremium: false,
-                    customPrompt: '',
-                  }
-                });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000);
 
-                if (error || !data?.imageUrl) {
-                  throw new Error(data?.error || error?.message || 'Ошибка генерации');
+                const response = await fetch(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-photo`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                    },
+                    body: JSON.stringify({
+                      imageBase64: uploadedImage,
+                      stylePrompt: stylePrompts || 'Luxury fashion portrait photography',
+                      isPremium: false,
+                      customPrompt: '',
+                    }),
+                    signal: controller.signal,
+                  }
+                );
+                clearTimeout(timeoutId);
+
+                const data = await response.json();
+                if (!response.ok || !data?.imageUrl) {
+                  throw new Error(data?.error || 'Ошибка генерации');
                 }
 
                 // Сохраняем результат как фейковый job
