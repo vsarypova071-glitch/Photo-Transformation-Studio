@@ -96,9 +96,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error("GOOGLE_AI_API_KEY is not configured");
     }
 
     const finalPrompt = buildPrompt(stylePrompt, isPremium || false);
@@ -106,36 +106,44 @@ serve(async (req) => {
       ? `${finalPrompt}\n\nAdditional user instructions: ${customPrompt}`
       : finalPrompt;
 
-    console.log("Calling AI gateway for image generation...");
+    console.log("Calling Google Gemini API directly...");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: fullPrompt,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageBase64,
+    // Extract base64 data from data URL if needed
+    let imageData = imageBase64;
+    let mimeType = "image/jpeg";
+    if (imageBase64.startsWith("data:")) {
+      const match = imageBase64.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        mimeType = match[1];
+        imageData = match[2];
+      }
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_AI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: fullPrompt },
+                {
+                  inlineData: {
+                    mimeType,
+                    data: imageData,
+                  },
                 },
-              },
-            ],
+              ],
+            },
+          ],
+          generationConfig: {
+            responseModalities: ["IMAGE", "TEXT"],
           },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errText = await response.text();
@@ -161,7 +169,19 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    // Google Gemini direct API response format
+    const parts = data.candidates?.[0]?.content?.parts;
+    let generatedImageUrl: string | undefined;
+    
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData) {
+          generatedImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          break;
+        }
+      }
+    }
 
     if (!generatedImageUrl) {
       console.error("No image in AI response:", JSON.stringify(data).slice(0, 500));
