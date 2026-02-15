@@ -7,14 +7,18 @@ const corsHeaders = {
 };
 
 const GARMENT_VARIATIONS = [
-  "structured tailored blazer",
-  "flowing silk couture blouse",
-  "architectural high-fashion dress",
-  "luxury monochrome power suit",
-  "minimalist cashmere ensemble",
-  "avant-garde asymmetrical outfit",
-  "fine linen Italian tailoring",
-  "layered couture styling",
+  "impeccably tailored double-breasted blazer in rich Italian wool with horn buttons and peak lapels",
+  "flowing haute couture silk blouse with delicate draping and mother-of-pearl closures",
+  "architectural structured dress with geometric seaming in heavy matte crepe",
+  "monochrome luxury power suit with subtle pinstripe in super 180s wool",
+  "cashmere-blend turtleneck ensemble layered with a camel hair overcoat",
+  "avant-garde asymmetrical draped gown in duchesse satin with sculptural shoulder",
+  "bespoke linen suit with hand-stitched details and natural shell buttons",
+  "layered couture outfit: fine knit under a tailored vest with silk scarf accent",
+  "velvet evening blazer with satin shawl collar paired with silk camisole",
+  "structured leather trench coat with belt in supple Nappa leather",
+  "hand-embroidered organza blouse with high collar and French cuffs",
+  "minimalist column dress in Japanese crepe with invisible seaming",
 ];
 
 function getRandomGarment() {
@@ -24,60 +28,101 @@ function getRandomGarment() {
 function buildPrompt(styleKeywords: string, isPremium: boolean) {
   const garment = getRandomGarment();
 
-  const identityLock = `
-IDENTITY PRESERVATION RULES:
-- The uploaded image is the identity reference.
-- Maintain the exact facial structure.
-- Do not modify nose geometry.
-- Do not alter cheekbone structure.
-- Keep original jawline shape.
-- Preserve eye spacing and eyelid form.
-- No beautification. No face reshaping.
-- Natural skin texture only.
-`;
-
-  const cleanRules = `
-STRICT OUTPUT RULES:
-- No text, letters, typography, logos, branding.
-- No magazine layouts, headlines, graphic overlays, watermarks.
-- Clean professional photograph only.
-`;
-
-  const premiumEnhancement = isPremium
-    ? `
-PREMIUM PRODUCTION QUALITY:
-- Cinematic lighting with depth.
-- Professional high-fashion posing.
-- Micro-detail couture fabric textures.
-- Luxury depth of field.
-- Ultra realistic skin rendering.
-- Advanced shadow modeling.
-`
-    : "";
-
   return `
-You are a world-class luxury fashion photographer.
+You are a world-renowned luxury fashion photographer shooting a campaign for Vogue or Harper's Bazaar.
 
-Create a hyper-realistic high-end fashion portrait.
+═══════════════════════════════════════
+ABSOLUTE PRIORITY #1: IDENTITY LOCK
+═══════════════════════════════════════
+The uploaded photo is the ONLY identity reference. The generated image MUST depict the EXACT SAME PERSON.
+- Copy the precise facial bone structure: cheekbones, jawline, chin shape, forehead proportions.
+- Replicate exact nose geometry: bridge width, tip shape, nostril form.
+- Match eye shape, spacing, eyelid crease depth, iris color.
+- Preserve lip shape, thickness, and proportions exactly.
+- Keep exact skin tone, undertone, and any natural skin texture (pores, freckles, marks).
+- Maintain the person's apparent age — no younger, no older.
+- Hair color, texture, and density must match the reference.
+- NO beautification. NO face slimming. NO skin smoothing. NO idealization.
+- The person must be INSTANTLY recognizable by their friends and family.
+- If identity accuracy conflicts with style, IDENTITY ALWAYS WINS.
 
-STYLE:
+═══════════════════════════════════════
+STYLE & MOOD DIRECTION
+═══════════════════════════════════════
 ${styleKeywords}
 
-GARMENT CONSTRUCTION:
-${garment}
+═══════════════════════════════════════
+WARDROBE (must look like real physical clothing)
+═══════════════════════════════════════
+Outfit: ${garment}
+- Every garment must have visible FABRIC TEXTURE: weave pattern, fiber direction, surface grain.
+- Show realistic fabric WEIGHT: heavy fabrics drape differently than light ones.
+- Natural fold physics: gravity-accurate creasing, compression wrinkles at joints, tension lines.
+- Visible construction details: real buttonholes, stitching lines, lapel roll, collar stand.
+- Materials must read as PREMIUM: cashmere, silk, fine wool, structured satin, supple leather, organza.
+- Color palette of clothing must harmonize with the style direction above.
+- NO synthetic sheen. NO plastic-looking fabric. NO costume-quality garments.
+- Clothing must look like it was ACTUALLY WORN by this person, not digitally pasted on.
 
-${identityLock}
+═══════════════════════════════════════
+ENVIRONMENT & BACKGROUND (must match the style)
+═══════════════════════════════════════
+- Background must be a REAL physical environment that matches the style direction.
+- Architectural elements with depth: real walls, columns, windows, furniture, natural scenery.
+- Light in the environment must interact naturally with surfaces (reflections, ambient occlusion, color bounce).
+- Background should have subtle depth of field — sharp on subject, gently soft behind.
+- Environment color palette must COMPLEMENT the outfit and style mood.
+- Examples of matching environments: marble hotel lobby for Business Elite, Parisian café terrace for Parisian Chic, minimalist Scandinavian interior for Scandinavian Minimal, lush garden for Resort style.
+- NO flat studio void. NO obviously AI-generated impossible architecture. NO floating elements.
 
-${cleanRules}
+═══════════════════════════════════════
+LIGHTING (cinematic editorial quality)
+═══════════════════════════════════════
+- Primary directional key light creating dimensional facial modeling.
+- Controlled shadow falloff across cheekbones and jawline for sculpted look.
+- Soft rim/hair light separating subject from background.
+- Natural skin luminosity — light penetrating skin surface slightly (subsurface scattering).
+- Catch lights in eyes must be present and natural.
+- Balanced highlight roll-off — no blown whites, no crushed blacks.
+- Light must match the environment (warm for interiors, cool for outdoor shade, golden for sunset).
+- NO flat on-camera flash. NO uniform shadowless lighting. NO HDR overprocessing.
 
-${premiumEnhancement}
+═══════════════════════════════════════
+COMPOSITION & POSE
+═══════════════════════════════════════
+- Magazine-cover-worthy composition with intentional framing.
+- Confident, high-status body language — natural but powerful.
+- Pose must feel organic, not stiff or stock-photo-like.
+- Framing: portrait or 3/4 body, subject as clear focal point.
+- Rule of thirds or centered symmetrical composition.
+- The image must work as an Instagram post AND as a profile picture crop.
 
-Camera:
-- 85mm or 135mm portrait lens
-- RAW photography style
-- Professional studio lighting
-- High resolution detail
-- Strictly photorealistic
+═══════════════════════════════════════
+TECHNICAL CAMERA SETTINGS
+═══════════════════════════════════════
+- Shot on 85mm f/1.4 or 135mm f/2 portrait lens.
+- Shallow depth of field with creamy bokeh.
+- RAW photography look with rich dynamic range.
+- Professional color grading matching the style mood.
+- Resolution and detail level of a Phase One medium format camera.
+- Strictly photorealistic — must be indistinguishable from a real photograph.
+
+${isPremium ? `
+═══════════════════════════════════════
+PREMIUM ENHANCEMENTS
+═══════════════════════════════════════
+- Micro-detail skin rendering: individual pores, fine facial hair visible.
+- Advanced fabric micro-texture: thread-level detail on close inspection.
+- Cinematic color grading with tonal separation in shadows.
+- Atmospheric depth: subtle haze or light particles in background.
+- Hair strand-level detail with natural light interaction.
+- Jewelry or accessories with realistic metallic reflections.
+` : ""}
+
+═══════════════════════════════════════
+ABSOLUTE NEGATIVE LIST (never include)
+═══════════════════════════════════════
+different person, altered face, beautified proportions, smoothed skin, cartoon, CGI, 3D render, anime, illustration, painting, watercolor, sketch, low resolution, blurry, noisy, watermark, text, typography, logo, magazine layout, graphic overlay, border, frame, collage, split image, multiple people, hands with wrong finger count, distorted limbs, uncanny valley, plastic doll skin, oversaturated colors, HDR artifacts.
 `.trim();
 }
 
