@@ -67,11 +67,13 @@ HAIR — SAME BUT GROOMED:
 ENERGY & LIFE — THE PHOTO MUST BREATHE:
 - The person must look ALIVE — not a mannequin, not a wax figure.
 - Natural micro-expressions: slight smile tension, eye sparkle, genuine warmth.
-- Skin must show LIFE: natural flush, blood flow undertone, slight warmth in cheeks.
-- Eyes must have SOUL: catch lights, depth, moisture, real gaze direction.
-- Natural body tension and weight distribution — a real person standing, not a posed doll.
-- The photo should feel like a CAPTURED MOMENT, not a rendered image.
+- Skin must show LIFE: visible pores, natural flush, blood flow undertone, warmth in cheeks and nose tip.
+- Eyes must have SOUL: multiple catch lights, iris depth, moisture layer, real gaze with intention.
+- Skin has VOLUME: subsurface warmth, translucency at thin areas (ears, nostrils, between fingers).
+- Natural body tension and weight distribution — a real person in a real moment.
+- The photo should feel like a CAPTURED MOMENT by a photographer, not a rendered image.
 - Emotional authenticity: confidence, calm power, inner beauty radiating outward.
+- Imperfections are WELCOME: a stray hair, slight asymmetry, natural skin texture — these prove it's REAL.
 
 ████████████████████████████████████████
 ██  STYLE & MOOD                      ██
@@ -98,22 +100,35 @@ Outfit: ${garment}
 - NO flat void. NO impossible AI architecture.
 
 ████████████████████████████████████████
-██  LIGHTING                          ██
+██  LIGHTING — PARAMOUNT PRIORITY     ██
 ████████████████████████████████████████
-- Directional key light sculpting facial planes.
-- Soft shadow falloff on cheekbones and jawline.
-- Rim light separating subject from background.
-- Subsurface scattering on skin — light penetrating slightly for natural glow.
-- Catch lights in eyes. Balanced highlights, no blown whites.
-- Light matching environment (warm interiors, cool shade, golden hour).
+THIS IS THE MOST IMPORTANT SECTION. The lighting makes the photo REAL or FAKE.
+- GOLDEN HOUR warmth: warm directional sunlight creating natural volume on the face.
+- Strong 3D VOLUME through light and shadow: deep sculpted shadows under cheekbones, jawline, nose bridge.
+- Key light at 30-45 degrees creating dramatic yet natural fall-off across facial planes.
+- VISIBLE light source interaction: warm glow on skin facing light, cool shadow on opposite side.
+- Subsurface scattering on ears, nose tip, and fingers — light passing THROUGH skin showing blood warmth.
+- Rich catch lights in BOTH eyes — irregular, natural reflections (windows, sky), NOT perfect circles.
+- Rim/hair light creating luminous edge separation from background — backlit glow effect.
+- Ambient bounce light filling shadows softly — NOT black crushed shadows.
+- Color temperature variation: warm highlights, slightly cooler shadows — just like real photography.
+- NO flat even lighting. NO shadowless faces. NO artificial studio feel.
+- Light must WRAP around the face showing its three-dimensional form.
+- Environmental light interaction: reflections on surfaces, light pools, dappled patterns.
 
 ████████████████████████████████████████
-██  CAMERA                            ██
+██  CAMERA & REALISM                  ██
 ████████████████████████████████████████
-- 85mm f/1.4 portrait lens. Shallow DOF, creamy bokeh.
-- RAW photography look. Rich dynamic range.
-- Phase One medium format quality.
-- Strictly photorealistic — indistinguishable from real photograph.
+- 85mm f/1.4 portrait lens. Shallow DOF with creamy natural bokeh.
+- RAW unprocessed look — rich dynamic range, NO Instagram filters, NO color grading presets.
+- Phase One IQ4 150MP medium format sensor quality.
+- REAL PHOTOGRAPH — the viewer must believe a photographer took this on location.
+- Visible lens characteristics: natural vignette, subtle chromatic aberration at edges.
+- Film-like grain at ISO 400-800 — adds organic texture, prevents AI smoothness.
+- THREE-DIMENSIONAL DEPTH: foreground elements slightly soft, subject tack sharp, background with beautiful bokeh circles.
+- Color science like Fujifilm or Kodak Portra — rich but natural, warm skin tones.
+- NO digital perfection. NO AI smoothness. NO uncanny valley.
+- The image must look like it was CAPTURED, not GENERATED.
 
 ${isPremium ? `
 ████████████████████████████████████████
