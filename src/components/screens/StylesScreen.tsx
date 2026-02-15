@@ -4,11 +4,9 @@ interface StylesScreenProps {
   styles: Style[];
   selectedStyles: string[];
   activeCategory: StyleCategory;
-  intensity: number;
   isFullBody: boolean;
   onSelectStyle: (id: string) => void;
   onCategoryChange: (cat: StyleCategory) => void;
-  onIntensityChange: (val: number) => void;
   onFullBodyToggle: () => void;
   onBack: () => void;
   onGenerate: () => void;
@@ -28,11 +26,9 @@ export default function StylesScreen({
   styles,
   selectedStyles,
   activeCategory,
-  intensity,
   isFullBody,
   onSelectStyle,
   onCategoryChange,
-  onIntensityChange,
   onFullBodyToggle,
   onBack,
   onGenerate,
@@ -84,16 +80,7 @@ export default function StylesScreen({
          </div>
        </div>
  
-       {/* Intensity */}
-       <div className="glass p-6 rounded-[2.5rem] border-border mb-8">
-         <div className="flex justify-between items-center mb-6">
-           <p className="text-[10px] font-black text-primary uppercase tracking-widest">ИНТЕНСИВНОСТЬ</p>
-           <span className="text-[10px] font-mono text-primary-foreground bg-primary px-2 py-1 rounded-md">{intensity}%</span>
-         </div>
-         <input type="range" min="10" max="100" value={intensity} onChange={e => onIntensityChange(Number(e.target.value))} className="w-full accent-primary" />
-       </div>
- 
-       {/* Custom Prompt */}
+        {/* Custom Prompt */}
        <div className="glass p-6 rounded-[2rem] border-border mb-10">
          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">ПОЖЕЛАНИЯ</p>
          <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)} placeholder="Например: добавьте очки, поменяйте фон..." className="w-full bg-background/50 border border-border rounded-2xl p-4 text-xs h-28 outline-none focus:border-primary text-foreground resize-none" />

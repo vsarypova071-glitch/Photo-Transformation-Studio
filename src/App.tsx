@@ -149,11 +149,9 @@ function App() {
             styles={STYLES}
             selectedStyles={selectedStyles}
             activeCategory={activeCategory}
-            intensity={intensity}
             isFullBody={isFullBody}
             onSelectStyle={(id) => setSelectedStyles(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
             onCategoryChange={setActiveCategory}
-            onIntensityChange={setIntensity}
             onFullBodyToggle={() => setIsFullBody(!isFullBody)}
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}
