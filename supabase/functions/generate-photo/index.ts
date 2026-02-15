@@ -29,116 +29,99 @@ function buildPrompt(styleKeywords: string, isPremium: boolean) {
   const garment = getRandomGarment();
 
   return `
-You are a world-renowned luxury fashion photographer shooting a campaign for Vogue or Harper's Bazaar.
+TASK: Edit this photo to create a luxury fashion portrait. You are EDITING the uploaded photo — NOT creating a new person.
 
-═══════════════════════════════════════
-ABSOLUTE PRIORITY #1: 100% IDENTITY LOCK — ZERO TOLERANCE FOR DEVIATION
-═══════════════════════════════════════
-The uploaded photo is the SOLE identity reference. The generated image MUST be the EXACT SAME PERSON — 100% match, no exceptions.
+████████████████████████████████████████
+██  RULE #1: THIS IS THE SAME PERSON  ██
+████████████████████████████████████████
 
-FACE (pixel-level accuracy required):
-- EXACT facial bone structure: cheekbone height and width, jawline angle, chin shape and size, forehead proportions.
-- EXACT nose geometry: bridge width, tip shape, nostril size and form, nose length — copy every millimeter.
-- EXACT eye shape: lid crease depth, eye opening size, inner/outer corner angles, eye spacing distance.
-- EXACT eye color: replicate the precise iris color, pattern, and brightness from the reference photo.
-- EXACT eyebrow shape: arch height, thickness, spacing, hair direction and density.
-- EXACT lip shape: cupid's bow, lip thickness ratio (upper to lower), lip width, lip color.
-- EXACT skin: tone, undertone, texture, pores, freckles, moles, beauty marks — copy ALL of them.
-- EXACT face proportions: the ratio between forehead, mid-face, and lower face must be identical.
-- Maintain the person's EXACT apparent age — not a day younger or older.
+You are RETOUCHING and RESTYLING the person in the uploaded photo.
+Think of it as: this exact person walked into a luxury photo studio, got dressed in high fashion, and was photographed by a top professional.
 
-HAIR (must match reference, but well-groomed):
-- EXACT hair color: same shade, highlights, roots — no color changes.
-- EXACT hair texture: straight, wavy, curly — match the reference precisely.
-- EXACT hair density and volume.
-- Hair should look WELL-GROOMED and styled beautifully — as if they just visited a top hairstylist.
-- Hair can be slightly styled to match the luxury aesthetic, but the base hair type, color, and length must remain identical.
-- Natural hair shine and light interaction — no plastic or synthetic look.
+FACE CLONING — NON-NEGOTIABLE:
+- The face in the output IS the face from the input photo. Not similar. Not inspired by. IDENTICAL.
+- Clone EXACT bone structure: skull shape, jaw angle, chin prominence, cheekbone position.
+- Clone EXACT nose: bridge width, tip shape, nostril flare, length, angle from every view.
+- Clone EXACT eyes: shape, size, spacing, lid crease depth, inner/outer corner angles.
+- Clone EXACT eye COLOR and iris pattern — do not change even slightly.
+- Clone EXACT eyebrows: arch, thickness, spacing, hair growth direction.
+- Clone EXACT lips: cupid's bow shape, upper/lower lip ratio, width, natural color.
+- Clone EXACT skin: tone, undertone, texture, pores, any moles, freckles, beauty marks.
+- Clone EXACT face PROPORTIONS: forehead-to-chin ratio, mid-face width, face shape (round/oval/square).
+- Clone EXACT age appearance — not one year younger or older.
+- The face must pass facial recognition software as the SAME person.
 
-ABSOLUTE PROHIBITIONS:
-- NO beautification of ANY kind. NO face slimming. NO nose reshaping. NO lip enhancement.
-- NO skin smoothing or airbrushing. NO eye color change. NO eye enlargement.
-- NO age change. NO ethnicity shift. NO facial feminization or masculinization.
-- The person's own MOTHER must recognize them INSTANTLY without hesitation.
-- If identity accuracy conflicts with style, IDENTITY ALWAYS WINS — no exceptions.
+HAIR — SAME BUT GROOMED:
+- Keep EXACT hair color, texture (straight/wavy/curly), density, length, parting.
+- Style it beautifully — as if a luxury salon groomed it for this exact photoshoot.
+- Natural shine and movement. No synthetic or plastic look.
 
-═══════════════════════════════════════
-STYLE & MOOD DIRECTION
-═══════════════════════════════════════
+ENERGY & LIFE — THE PHOTO MUST BREATHE:
+- The person must look ALIVE — not a mannequin, not a wax figure.
+- Natural micro-expressions: slight smile tension, eye sparkle, genuine warmth.
+- Skin must show LIFE: natural flush, blood flow undertone, slight warmth in cheeks.
+- Eyes must have SOUL: catch lights, depth, moisture, real gaze direction.
+- Natural body tension and weight distribution — a real person standing, not a posed doll.
+- The photo should feel like a CAPTURED MOMENT, not a rendered image.
+- Emotional authenticity: confidence, calm power, inner beauty radiating outward.
+
+████████████████████████████████████████
+██  STYLE & MOOD                      ██
+████████████████████████████████████████
 ${styleKeywords}
 
-═══════════════════════════════════════
-WARDROBE (must look like real physical clothing)
-═══════════════════════════════════════
+████████████████████████████████████████
+██  WARDROBE                          ██
+████████████████████████████████████████
 Outfit: ${garment}
-- Every garment must have visible FABRIC TEXTURE: weave pattern, fiber direction, surface grain.
-- Show realistic fabric WEIGHT: heavy fabrics drape differently than light ones.
-- Natural fold physics: gravity-accurate creasing, compression wrinkles at joints, tension lines.
-- Visible construction details: real buttonholes, stitching lines, lapel roll, collar stand.
-- Materials must read as PREMIUM: cashmere, silk, fine wool, structured satin, supple leather, organza.
-- Color palette of clothing must harmonize with the style direction above.
-- NO synthetic sheen. NO plastic-looking fabric. NO costume-quality garments.
-- Clothing must look like it was ACTUALLY WORN by this person, not digitally pasted on.
+- Visible fabric texture: weave, fiber direction, surface grain.
+- Realistic weight and drape: gravity-accurate folds, compression wrinkles.
+- Premium materials: cashmere, silk, fine wool, satin, supple leather.
+- Clothing must look WORN by this person naturally, not digitally pasted.
+- Color must harmonize with the style direction.
 
-═══════════════════════════════════════
-ENVIRONMENT & BACKGROUND (must match the style)
-═══════════════════════════════════════
-- Background must be a REAL physical environment that matches the style direction.
-- Architectural elements with depth: real walls, columns, windows, furniture, natural scenery.
-- Light in the environment must interact naturally with surfaces (reflections, ambient occlusion, color bounce).
-- Background should have subtle depth of field — sharp on subject, gently soft behind.
-- Environment color palette must COMPLEMENT the outfit and style mood.
-- Examples of matching environments: marble hotel lobby for Business Elite, Parisian café terrace for Parisian Chic, minimalist Scandinavian interior for Scandinavian Minimal, lush garden for Resort style.
-- NO flat studio void. NO obviously AI-generated impossible architecture. NO floating elements.
+████████████████████████████████████████
+██  ENVIRONMENT                       ██
+████████████████████████████████████████
+- Real physical location matching the style mood.
+- Architectural depth with natural light interaction.
+- Subtle depth of field — sharp on subject, soft background.
+- Environment colors complement the outfit.
+- NO flat void. NO impossible AI architecture.
 
-═══════════════════════════════════════
-LIGHTING (cinematic editorial quality)
-═══════════════════════════════════════
-- Primary directional key light creating dimensional facial modeling.
-- Controlled shadow falloff across cheekbones and jawline for sculpted look.
-- Soft rim/hair light separating subject from background.
-- Natural skin luminosity — light penetrating skin surface slightly (subsurface scattering).
-- Catch lights in eyes must be present and natural.
-- Balanced highlight roll-off — no blown whites, no crushed blacks.
-- Light must match the environment (warm for interiors, cool for outdoor shade, golden for sunset).
-- NO flat on-camera flash. NO uniform shadowless lighting. NO HDR overprocessing.
+████████████████████████████████████████
+██  LIGHTING                          ██
+████████████████████████████████████████
+- Directional key light sculpting facial planes.
+- Soft shadow falloff on cheekbones and jawline.
+- Rim light separating subject from background.
+- Subsurface scattering on skin — light penetrating slightly for natural glow.
+- Catch lights in eyes. Balanced highlights, no blown whites.
+- Light matching environment (warm interiors, cool shade, golden hour).
 
-═══════════════════════════════════════
-COMPOSITION & POSE
-═══════════════════════════════════════
-- Magazine-cover-worthy composition with intentional framing.
-- Confident, high-status body language — natural but powerful.
-- Pose must feel organic, not stiff or stock-photo-like.
-- Framing: portrait or 3/4 body, subject as clear focal point.
-- Rule of thirds or centered symmetrical composition.
-- The image must work as an Instagram post AND as a profile picture crop.
-
-═══════════════════════════════════════
-TECHNICAL CAMERA SETTINGS
-═══════════════════════════════════════
-- Shot on 85mm f/1.4 or 135mm f/2 portrait lens.
-- Shallow depth of field with creamy bokeh.
-- RAW photography look with rich dynamic range.
-- Professional color grading matching the style mood.
-- Resolution and detail level of a Phase One medium format camera.
-- Strictly photorealistic — must be indistinguishable from a real photograph.
+████████████████████████████████████████
+██  CAMERA                            ██
+████████████████████████████████████████
+- 85mm f/1.4 portrait lens. Shallow DOF, creamy bokeh.
+- RAW photography look. Rich dynamic range.
+- Phase One medium format quality.
+- Strictly photorealistic — indistinguishable from real photograph.
 
 ${isPremium ? `
-═══════════════════════════════════════
-PREMIUM ENHANCEMENTS
-═══════════════════════════════════════
-- Micro-detail skin rendering: individual pores, fine facial hair visible.
-- Advanced fabric micro-texture: thread-level detail on close inspection.
-- Cinematic color grading with tonal separation in shadows.
-- Atmospheric depth: subtle haze or light particles in background.
-- Hair strand-level detail with natural light interaction.
-- Jewelry or accessories with realistic metallic reflections.
+████████████████████████████████████████
+██  PREMIUM ENHANCEMENTS              ██
+████████████████████████████████████████
+- Individual pore-level skin detail.
+- Thread-level fabric texture.
+- Cinematic tonal separation in shadows.
+- Atmospheric depth particles.
+- Hair strand-level rendering.
 ` : ""}
 
-═══════════════════════════════════════
-ABSOLUTE NEGATIVE LIST (never include)
-═══════════════════════════════════════
-different person, altered face, beautified proportions, smoothed skin, cartoon, CGI, 3D render, anime, illustration, painting, watercolor, sketch, low resolution, blurry, noisy, watermark, text, typography, logo, magazine layout, graphic overlay, border, frame, collage, split image, multiple people, hands with wrong finger count, distorted limbs, uncanny valley, plastic doll skin, oversaturated colors, HDR artifacts.
+████████████████████████████████████████
+██  NEVER DO THIS                     ██
+████████████████████████████████████████
+different person, changed face shape, altered bone structure, different nose, different eyes, beautified features, slimmed face, smoothed skin, changed eye color, changed age, cartoon, CGI, 3D render, anime, illustration, painting, watermark, text, logo, magazine layout, plastic skin, wax figure, lifeless eyes, dead expression, mannequin pose, multiple people, distorted limbs.
 `.trim();
 }
 
@@ -176,7 +159,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model: "google/gemini-3-pro-image-preview",
         messages: [
           {
             role: "user",
