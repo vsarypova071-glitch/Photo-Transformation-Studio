@@ -96,9 +96,9 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_AI_API_KEY = Deno.env.get("GOOGLE_AI_API_KEY");
-    if (!GOOGLE_AI_API_KEY) {
-      throw new Error("GOOGLE_AI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const finalPrompt = buildPrompt(stylePrompt, isPremium || false);
@@ -106,84 +106,62 @@ serve(async (req) => {
       ? `${finalPrompt}\n\nAdditional user instructions: ${customPrompt}`
       : finalPrompt;
 
-    console.log("Calling Google Gemini API directly...");
+    console.log("Calling AI gateway for image generation...");
 
-    // Extract base64 data from data URL if needed
-    let imageData = imageBase64;
-    let mimeType = "image/jpeg";
-    if (imageBase64.startsWith("data:")) {
-      const match = imageBase64.match(/^data:([^;]+);base64,(.+)$/);
-      if (match) {
-        mimeType = match[1];
-        imageData = match[2];
-      }
-    }
-
-    const modelName = "gemini-2.5-flash-image";
-    console.log("Using model:", modelName);
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_AI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: fullPrompt },
-                {
-                  inlineData: {
-                    mimeType,
-                    data: imageData,
-                  },
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-pro-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: fullPrompt,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageBase64,
                 },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
+              },
+            ],
           },
-        }),
-      }
-    );
+        ],
+        modalities: ["image", "text"],
+      }),
+    });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Google API error:", response.status, errText);
+      console.error("AI gateway error:", response.status, errText);
 
-      // Forward specific error details to client
-      let errorMessage = "Ошибка AI-сервиса";
-      try {
-        const errData = JSON.parse(errText);
-        const apiMsg = errData?.error?.message || "";
-        if (response.status === 429) errorMessage = "Слишком много запросов. Попробуйте позже.";
-        else if (response.status === 403) errorMessage = "API-ключ не имеет доступа к этой модели. Проверьте настройки в Google AI Studio.";
-        else if (response.status === 400 && apiMsg.includes("API key")) errorMessage = "Неверный API-ключ.";
-        else if (response.status === 400) errorMessage = `Ошибка запроса: ${apiMsg.slice(0, 150)}`;
-        else if (response.status === 404) errorMessage = "Модель не найдена. Обратитесь в поддержку.";
-      } catch { /* use default */ }
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Слишком много запросов. Попробуйте позже." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Недостаточно средств на AI-сервисе." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       return new Response(
-        JSON.stringify({ error: errorMessage }),
-        { status: response.status >= 400 ? response.status : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Ошибка AI-сервиса" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
-    
-    // Google Gemini direct API response format
-    const parts = data.candidates?.[0]?.content?.parts;
-    let generatedImageUrl: string | undefined;
-    
-    if (parts) {
-      for (const part of parts) {
-        if (part.inlineData) {
-          generatedImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          break;
-        }
-      }
-    }
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!generatedImageUrl) {
       console.error("No image in AI response:", JSON.stringify(data).slice(0, 500));
