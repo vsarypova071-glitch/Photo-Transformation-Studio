@@ -220,20 +220,20 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
+        model: "google/gemini-2.5-flash-image",
         messages: [
           {
             role: "user",
             content: [
               {
-                type: "text",
-                text: fullPrompt,
-              },
-              {
                 type: "image_url",
                 image_url: {
                   url: imageBase64,
                 },
+              },
+              {
+                type: "text",
+                text: fullPrompt,
               },
             ],
           },
@@ -252,6 +252,7 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "Недостаточно средств на AI-сервисе." }),
@@ -266,7 +267,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const generatedImageUrl =
+      data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!generatedImageUrl) {
       console.error("No image in AI response:", JSON.stringify(data).slice(0, 500));
@@ -290,3 +292,4 @@ serve(async (req) => {
     );
   }
 });
+
