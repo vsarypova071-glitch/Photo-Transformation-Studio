@@ -8,97 +8,120 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const WARDROBE_2026: Record<string, string[]> = {
-  power_chic: [
-    "oversized structured blazer in oatmeal cashmere",
-    "cropped black leather blazer with tailored trousers",
-    "double-breasted sand linen suit",
-    "ivory oversized coat with wide pants",
-  ],
-  modern_elegant: [
-    "champagne satin slip dress",
-    "one-shoulder black crepe midi dress",
-    "dove grey silk column dress",
-    "navy halter-neck gown",
-  ],
-  luxe_casual: [
-    "cashmere hoodie with tailored joggers",
-    "white linen shirt with cream trousers",
-    "silk bomber jacket with chinos",
-  ],
-};
+const WARDROBE: string[] = [
+  "minimal tailored beige suit",
+  "luxury cream cashmere coat",
+  "modern silk blouse with high-waist trousers",
+  "structured wool blazer with clean lines",
+];
 
 function getRandomGarment(): string {
-  const categories = Object.keys(WARDROBE_2026);
-  const cat = categories[Math.floor(Math.random() * categories.length)];
-  const items = WARDROBE_2026[cat];
-  return items[Math.floor(Math.random() * items.length)];
+  return WARDROBE[Math.floor(Math.random() * WARDROBE.length)];
 }
 
 function buildPrompt(stylePrompt: string, customPrompt: string): string {
   const garment = getRandomGarment();
 
-  return `You are performing a STRICT IMAGE EDIT.
+  return `You are performing a HIGH-END IMAGE EDIT.
 
 ━━━━━━━━━━━━━━━━━━━━
-IDENTITY PRIORITY LEVEL: 100
-STYLE PRIORITY LEVEL: 30
-If conflict occurs — ALWAYS prioritize identity.
+IDENTITY IS ABSOLUTE PRIORITY
 ━━━━━━━━━━━━━━━━━━━━
 
-ABSOLUTE RULE:
-The generated person MUST be the exact same person as in the reference image.
+The uploaded image is the BASE LAYER.
+Modify clothing and environment ONLY.
+Do NOT regenerate the face.
 
-FACE — EXACT COPY:
-• Preserve exact skull structure, jawline, chin length.
-• Preserve exact eye spacing, eyelid shape, iris color.
-• Preserve exact eyebrow thickness and arch.
-• Preserve exact nose bridge, nostrils, tip shape.
-• Preserve exact lip shape and proportions.
-• Preserve natural skin texture and tone.
+FACE — STRICT PRESERVATION:
+
+• Preserve exact skull structure.
+• Preserve exact jawline and chin length.
+• Preserve exact eye spacing and eyelid shape.
+• Preserve exact eyebrow shape and thickness.
+• Preserve exact nose bridge and nostrils.
+• Preserve exact lip proportions.
+• Preserve natural asymmetry.
+• Preserve real skin texture (no smoothing).
 • Same age. Same ethnicity.
 • ZERO beautification.
 • ZERO reshaping.
+• ZERO symmetry correction.
 
 CRITICAL:
-Do NOT reinterpret lighting on the face.
-Preserve original facial shadows.
-Do NOT smooth skin.
+Do NOT reinterpret facial lighting.
 Do NOT modify bone structure.
+Do NOT alter expression geometry.
 
-HAIR — STRICT COPY:
+━━━━━━━━━━━━━━━━━━━━
+HAIR — EXACT COPY
+━━━━━━━━━━━━━━━━━━━━
+
 • Same length.
 • Same hairline.
 • Same texture.
-• No added volume.
-• No lengthening.
+• No volume increase.
+• No style change.
 
-BODY:
-• Same proportions.
-• No slimming.
-• No reshaping.
+━━━━━━━━━━━━━━━━━━━━
+BODY — ABSOLUTE PRESERVATION
+━━━━━━━━━━━━━━━━━━━━
+
+• Preserve exact chest size.
+• Preserve exact body proportions.
+• Do NOT enhance bust.
+• Do NOT exaggerate curves.
+• Do NOT slim waist.
+• Do NOT reshape hips.
+• Garment must adapt to body — body must NOT adapt to garment.
+• Avoid body enhancement through lighting or shadow shaping.
+• Do NOT emphasize chest area.
 
 ━━━━━━━━━━━━━━━━━━━━
 STYLE
 ━━━━━━━━━━━━━━━━━━━━
-${stylePrompt || "Luxury portrait"}
 
-WARDROBE:
+Luxury editorial photography.
+Premium tailoring.
+Modern minimal elegance.
+Natural cinematic depth of field.
+Professional optical lens realism.
+High detail fabric texture.
+
+Eyes must look alive and sharp.
+Skin must look real — not plastic.
+Photo must feel like high-end magazine editorial.
+
+Wardrobe:
 ${garment}
 
-Garment must fit real body proportions.
-
-${customPrompt ? `ADDITIONAL DIRECTION:\n${customPrompt}` : ""}
+${stylePrompt ? `Additional style direction: ${stylePrompt}` : ""}
+${customPrompt ? `Additional custom direction: ${customPrompt}` : ""}
 
 ━━━━━━━━━━━━━━━━━━━━
-NEGATIVE
+NEGATIVE CONSTRAINTS
 ━━━━━━━━━━━━━━━━━━━━
-different person, face change, age change, hair length change,
-body reshaping, beautification, AI smoothing,
-plastic skin, symmetry correction, glam filter,
-cartoon, CGI, illustration, blurry.
 
-OUTPUT: One ultra realistic photograph. Preserve identity above everything.`;
+different person,
+face regeneration,
+facial reconstruction,
+beautification,
+AI smoothing,
+plastic skin,
+symmetry correction,
+age change,
+hair length change,
+weight change,
+body reshaping,
+bust enlargement,
+waist slimming,
+cartoon,
+CGI,
+illustration,
+low quality.
+
+OUTPUT:
+One ultra realistic luxury fashion photograph.
+Identity preservation above everything.`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -190,4 +213,5 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
 
