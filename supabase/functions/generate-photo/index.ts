@@ -9,11 +9,11 @@ const corsHeaders = {
 };
 
 const WARDROBE: string[] = [
-  "custom tailored minimalist wool suit",
+  "custom tailored minimalist wool suit, perfect proportions",
   "bespoke structured blazer in premium cashmere",
   "individually tailored silk blouse with high-waist trousers",
-  "architectural clean-line couture coat",
-  "luxury monochrome power suit",
+  "architectural couture coat with clean geometry",
+  "luxury monochrome power suit, precision tailoring",
 ];
 
 function getRandomGarment(): string {
@@ -24,36 +24,63 @@ function buildPrompt(stylePrompt: string, customPrompt: string): string {
   const garment = getRandomGarment();
 
   return `
-You are performing a PROFESSIONAL HIGH-END IMAGE EDIT.
-This is NOT regeneration. Keep the same person.
+PROFESSIONAL LUXURY EDITORIAL PHOTO EDIT
 
-FACE:
-Keep exact skull, jawline, nose, eyes, lips, asymmetry.
-No beautification.
-No reshaping.
-No smoothing.
-No symmetry correction.
+CORE RULE: IDENTITY LOCK
+
+This is an EDIT of the uploaded image.
+DO NOT regenerate the person.
+Preserve 100% facial structure.
+
+FACE LOCK:
+- Exact skull shape
+- Exact jawline
+- Exact cheekbones
+- Exact nose
+- Exact eye spacing
+- Exact lips
+- Preserve skin texture
+- Preserve real age
+- ZERO beautification
+- ZERO reshaping
+- ZERO smoothing
 
 HAIR:
-Same length, density, texture, hairline.
-No volume increase.
+- Exact length
+- Exact texture
+- No volume increase
+- No restyling
 
 BODY:
-Preserve exact chest size.
-No bust enlargement.
-No waist slimming.
-Clothing adapts to body.
+- Preserve chest size
+- Preserve waist
+- Preserve proportions
+- Clothing adapts to body
+
+EYES:
+- Natural catchlights
+- Sharp but realistic
 
 WARDROBE:
 ${garment}
+Luxury tailoring.
+Premium fabrics.
+Individually fitted.
 
-${stylePrompt || ""}
-${customPrompt || ""}
+${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
+${customPrompt ? `Extra direction: ${customPrompt}` : ""}
 
-Luxury editorial quality.
-Natural lighting.
-85mm lens realism.
-Ultra photorealistic.
+CAMERA:
+85mm lens
+Natural depth of field
+Soft cinematic lighting
+Film realism
+No HDR
+No plastic skin
+
+OUTPUT:
+One ultra realistic luxury editorial photograph.
+Identity above everything.
 `;
 }
 
@@ -66,7 +93,7 @@ Deno.serve(async (req: Request) => {
     if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -75,65 +102,73 @@ Deno.serve(async (req: Request) => {
     if (!imageBase64) {
       return new Response(
         JSON.stringify({ error: "Image not provided" }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "");
 
-    const cleanedBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-vision-latest:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           contents: [
             {
               parts: [
                 { text: fullPrompt },
                 {
-                  inlineData: {
-                    mimeType: "image/jpeg",
-                    data: cleanedBase64,
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: imageBase64.replace(/^data:image\/\w+;base64,/, ""),
                   },
                 },
               ],
             },
           ],
           generationConfig: {
-            temperature: 0.15,
-            topP: 0.7,
+            temperature: 0.2,
+            topP: 0.8,
+            maxOutputTokens: 2048,
           },
         }),
       }
     );
 
-    const data = await response.json();
-
-    const imagePart = data?.candidates?.[0]?.content?.parts?.find(
-      (p: any) => p.inlineData
-    );
-
-    if (!imagePart?.inlineData?.data) {
+    if (!response.ok) {
+      const error = await response.text();
       return new Response(
-        JSON.stringify({ error: "No image returned from Gemini" }),
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({ error }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const imageUrl = `data:image/png;base64,${imagePart.inlineData.data}`;
+    const data = await response.json();
+
+    const generated =
+      data?.candidates?.[0]?.content?.parts?.find((p: any) => p.inline_data)?.inline_data?.data;
+
+    if (!generated) {
+      return new Response(
+        JSON.stringify({ error: "No image returned from Gemini" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({
+        imageBase64: `data:image/png;base64,${generated}`,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error: any) {
+  } catch (err: any) {
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: corsHeaders }
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
