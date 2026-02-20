@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// deno-lint-ignore-file
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
