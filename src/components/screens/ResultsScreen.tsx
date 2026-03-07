@@ -136,6 +136,17 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
   return (
     <>
+      {/* Bonus Toast */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${showBonusToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="flex items-center gap-3 bg-primary text-primary-foreground px-6 py-4 rounded-2xl shadow-2xl font-black text-sm whitespace-nowrap">
+          <span className="text-xl">🎁</span>
+          <div>
+            <p className="text-xs opacity-80 uppercase tracking-widest leading-none mb-0.5">Бонус получен!</p>
+            <p>+1 бесплатная генерация</p>
+          </div>
+        </div>
+      </div>
+
       {/* Share Popup */}
       {showSharePopup && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-10 px-6">
