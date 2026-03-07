@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Job } from '../../types';
 
+const BONUS_KEY = 'ai_studio_share_bonus';
+
 interface ResultsScreenProps {
   job: Job;
   onRefine: (prompt: string) => void;
@@ -50,6 +52,11 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
   const [refinePrompt, setRefinePrompt] = useState('');
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [sharingPlatform, setSharingPlatform] = useState<string | null>(null);
+  const [showBonusToast, setShowBonusToast] = useState(false);
+  const [bonusCredits, setBonusCredits] = useState(() => {
+    const saved = sessionStorage.getItem(BONUS_KEY);
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const popupShownRef = useRef(false);
   const resultImage = job.results[0];
 
@@ -73,6 +80,14 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     document.body.removeChild(link);
   };
 
+  const grantShareBonus = () => {
+    const newBonus = bonusCredits + 1;
+    setBonusCredits(newBonus);
+    sessionStorage.setItem(BONUS_KEY, String(newBonus));
+    setShowBonusToast(true);
+    setTimeout(() => setShowBonusToast(false), 3500);
+  };
+
   const handleShare = async (platform: 'instagram' | 'telegram' | 'twitter') => {
     if (!resultImage) return;
     setSharingPlatform(platform);
@@ -80,36 +95,39 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
     try {
       const watermarked = await addWatermark(resultImage);
+      let shared = false;
 
       // Web Share API (mobile-native)
       if (navigator.share) {
         const file = await dataUrlToFile(watermarked, `ai-photo-studio-${Date.now()}.png`);
         const shareData: ShareData = { files: [file], text: SHARE_TEXT };
 
-        // Twitter/X doesn't support file share via Web Share — use text only
         if (platform === 'twitter') {
           const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tweetUrl, '_blank');
+          shared = true;
         } else {
           await navigator.share(shareData);
+          shared = true;
         }
       } else {
-        // Fallback: open platform URL or download
         if (platform === 'twitter') {
           const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tweetUrl, '_blank');
+          shared = true;
         } else if (platform === 'telegram') {
           const tgUrl = `https://t.me/share/url?url=${encodeURIComponent('https://photo-transformation-studio.lovable.app')}&text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tgUrl, '_blank');
-          // Also trigger download so user has the image
           await handleDownload(true);
+          shared = true;
         } else {
-          // Instagram — no web API, just download
           await handleDownload(true);
+          shared = true;
         }
       }
+
+      if (shared) grantShareBonus();
     } catch (err) {
-      // User cancelled or error — silent
       console.log('Share cancelled or failed', err);
     } finally {
       setSharingPlatform(null);
@@ -118,6 +136,17 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
   return (
     <>
+      {/* Bonus Toast */}
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${showBonusToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="flex items-center gap-3 bg-primary text-primary-foreground px-6 py-4 rounded-2xl shadow-2xl font-black text-sm whitespace-nowrap">
+          <span className="text-xl">🎁</span>
+          <div>
+            <p className="text-xs opacity-80 uppercase tracking-widest leading-none mb-0.5">Бонус получен!</p>
+            <p>+1 бесплатная генерация</p>
+          </div>
+        </div>
+      </div>
+
       {/* Share Popup */}
       {showSharePopup && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-10 px-6">
@@ -169,7 +198,18 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
         {/* Share Block */}
         <div className="glass rounded-[2rem] p-6 border border-white/5 mb-6">
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-5">Поделиться результатом</p>
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Поделиться результатом</p>
+            {bonusCredits > 0 && (
+              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-full px-3 py-1">
+                <span className="text-xs">🎁</span>
+                <span className="text-[10px] font-black text-primary">+{bonusCredits} бонус</span>
+              </div>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground mb-4 leading-relaxed">
+            Поделитесь результатом — получите <span className="text-primary font-black">+1 бесплатную генерацию</span>
+          </p>
           <div className="flex items-center justify-around">
             {/* Instagram */}
             <button
