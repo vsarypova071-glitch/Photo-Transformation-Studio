@@ -80,6 +80,14 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     document.body.removeChild(link);
   };
 
+  const grantShareBonus = () => {
+    const newBonus = bonusCredits + 1;
+    setBonusCredits(newBonus);
+    sessionStorage.setItem(BONUS_KEY, String(newBonus));
+    setShowBonusToast(true);
+    setTimeout(() => setShowBonusToast(false), 3500);
+  };
+
   const handleShare = async (platform: 'instagram' | 'telegram' | 'twitter') => {
     if (!resultImage) return;
     setSharingPlatform(platform);
@@ -87,36 +95,39 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
     try {
       const watermarked = await addWatermark(resultImage);
+      let shared = false;
 
       // Web Share API (mobile-native)
       if (navigator.share) {
         const file = await dataUrlToFile(watermarked, `ai-photo-studio-${Date.now()}.png`);
         const shareData: ShareData = { files: [file], text: SHARE_TEXT };
 
-        // Twitter/X doesn't support file share via Web Share — use text only
         if (platform === 'twitter') {
           const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tweetUrl, '_blank');
+          shared = true;
         } else {
           await navigator.share(shareData);
+          shared = true;
         }
       } else {
-        // Fallback: open platform URL or download
         if (platform === 'twitter') {
           const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tweetUrl, '_blank');
+          shared = true;
         } else if (platform === 'telegram') {
           const tgUrl = `https://t.me/share/url?url=${encodeURIComponent('https://photo-transformation-studio.lovable.app')}&text=${encodeURIComponent(SHARE_TEXT)}`;
           window.open(tgUrl, '_blank');
-          // Also trigger download so user has the image
           await handleDownload(true);
+          shared = true;
         } else {
-          // Instagram — no web API, just download
           await handleDownload(true);
+          shared = true;
         }
       }
+
+      if (shared) grantShareBonus();
     } catch (err) {
-      // User cancelled or error — silent
       console.log('Share cancelled or failed', err);
     } finally {
       setSharingPlatform(null);
