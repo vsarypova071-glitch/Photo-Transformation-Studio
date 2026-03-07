@@ -80,23 +80,27 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
 
       {/* How it works */}
       <div className="w-full max-w-sm mt-9 mb-2">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 text-center mb-5">Как это работает</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 text-center mb-6">Как это работает</p>
         <div className="flex items-start justify-between gap-2">
           {[
-            { num: '1', label: 'Загрузите\nселфи', icon: '🤳' },
-            { num: '2', label: 'Выберите\nстиль', icon: '🎨' },
-            { num: '3', label: 'Получите\n15 фото', icon: '✨' },
+            { num: '1', label: 'Загрузите селфи', sub: 'Одно фото достаточно', icon: '📸' },
+            { num: '2', label: 'Выберите стиль', sub: '12 премиальных стилей', icon: '🎭' },
+            { num: '3', label: 'Получите 15 фото', sub: 'Как после фотосессии', icon: '🖼' },
           ].map((step, i) => (
             <React.Fragment key={step.num}>
-              <div className="flex flex-col items-center flex-1 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-xl mb-2.5">
+              <div
+                className="flex flex-col items-center flex-1 text-center"
+                style={{ animation: `fade-in 0.5s ease-out ${i * 150}ms both` }}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-3xl mb-3 shadow-[0_4px_20px_rgba(255,255,255,0.05)]">
                   {step.icon}
                 </div>
-                <span className="text-[9px] font-semibold text-white/40 uppercase tracking-widest block mb-1">Шаг {step.num}</span>
-                <span className="text-[11px] text-white/80 leading-tight whitespace-pre-line font-medium">{step.label}</span>
+                <span className="text-[9px] font-semibold text-primary/70 uppercase tracking-widest block mb-1">Шаг {step.num}</span>
+                <span className="text-[11px] text-white/90 leading-tight font-semibold mb-1">{step.label}</span>
+                <span className="text-[9px] text-white/40 leading-tight">{step.sub}</span>
               </div>
               {i < 2 && (
-                <div className="flex-shrink-0 mt-5 text-white/20 text-sm">›</div>
+                <div className="flex-shrink-0 mt-6 text-white/20 text-base">›</div>
               )}
             </React.Fragment>
           ))}
