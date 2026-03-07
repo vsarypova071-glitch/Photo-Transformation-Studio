@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Job } from '../../types';
 
+const BONUS_KEY = 'ai_studio_share_bonus';
+
 interface ResultsScreenProps {
   job: Job;
   onRefine: (prompt: string) => void;
