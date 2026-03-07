@@ -198,7 +198,18 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
         {/* Share Block */}
         <div className="glass rounded-[2rem] p-6 border border-white/5 mb-6">
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-5">Поделиться результатом</p>
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Поделиться результатом</p>
+            {bonusCredits > 0 && (
+              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-full px-3 py-1">
+                <span className="text-xs">🎁</span>
+                <span className="text-[10px] font-black text-primary">+{bonusCredits} бонус</span>
+              </div>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground mb-4 leading-relaxed">
+            Поделитесь результатом — получите <span className="text-primary font-black">+1 бесплатную генерацию</span>
+          </p>
           <div className="flex items-center justify-around">
             {/* Instagram */}
             <button
