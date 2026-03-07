@@ -25,7 +25,7 @@ function getRandomGarment(): string {
   return WARDROBE[Math.floor(Math.random() * WARDROBE.length)];
 }
 
-function buildPrompt(stylePrompt: string, customPrompt: string): string {
+function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string): string {
   const garment = getRandomGarment();
 
   return `PROFESSIONAL LUXURY EDITORIAL PHOTO EDIT
@@ -48,6 +48,11 @@ HAIR: Keep exact length, texture, color. No restyling.
 
 BODY: Preserve exact proportions, weight, build. Clothing adapts to the real body.
 
+${aspectRatio ? `ASPECT RATIO & FRAMING (MANDATORY):
+- Output image MUST have the SAME aspect ratio as the input: ${aspectRatio}
+- Do NOT crop, do NOT add letterboxing, do NOT change composition ratio
+- The final image dimensions must match the original proportions EXACTLY` : ""}
+
 WARDROBE:
 ${garment}
 Luxury tailoring. Premium fabrics. Individually fitted.
@@ -61,7 +66,7 @@ Soft cinematic lighting with gentle shadows
 Film-like grain ISO 400-800
 RAW realism — no HDR, no plastic skin
 
-OUTPUT: One ultra-realistic luxury editorial photograph. Identity preservation is NON-NEGOTIABLE.`;
+OUTPUT: One ultra-realistic luxury editorial photograph matching EXACTLY the same aspect ratio as the input photo. Identity preservation is NON-NEGOTIABLE.`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -78,7 +83,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { imageBase64, stylePrompt, customPrompt } = await req.json();
+    const { imageBase64, stylePrompt, customPrompt, originalDimensions } = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -87,7 +92,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "");
+    // Calculate aspect ratio string from original dimensions
+    let aspectRatio: string | undefined;
+    if (originalDimensions?.width && originalDimensions?.height) {
+      const w = originalDimensions.width;
+      const h = originalDimensions.height;
+      const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+      const divisor = gcd(w, h);
+      aspectRatio = `${w / divisor}:${h / divisor} (${w}x${h} pixels)`;
+      console.log(`Original aspect ratio: ${aspectRatio}`);
+    }
+
+    const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "", aspectRatio);
 
     console.log("Calling Lovable AI Gateway with model google/gemini-3-pro-image-preview");
 
