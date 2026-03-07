@@ -57,19 +57,22 @@ export default function StylesScreen({
  
        {/* Style Grid */}
        <div className="grid grid-cols-2 gap-4 mb-10">
-         {filteredStyles.map(style => <div key={style.id} onClick={() => onSelectStyle(style.id)} className={`relative rounded-[2rem] overflow-hidden cursor-pointer border-4 transition-all active:scale-95 group ${selectedStyles.includes(style.id) ? 'border-primary scale-[1.02]' : 'border-transparent'}`}>
-             <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover" loading="lazy" alt={style.name} />
-             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute bottom-3 left-4 right-4">
-                <p className="text-[10px] font-black text-foreground uppercase leading-tight">{style.name}</p>
-                {style.description && <p className="text-[8px] font-medium text-slate-300/80 mt-0.5 leading-tight line-clamp-1">{style.description}</p>}
-              </div>
-             {selectedStyles.includes(style.id) && <div className="absolute top-4 right-4 w-7 h-7 bg-primary rounded-full flex items-center justify-center border-2 border-white">
-                 <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                 </svg>
-               </div>}
-           </div>)}
+         {filteredStyles.map(style => {
+           const isSelected = selectedStyles.includes(style.id);
+           return <div key={style.id} onClick={() => onSelectStyle(style.id)} className={`relative rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-300 active:scale-95 group ${isSelected ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_20px_hsl(var(--primary)/0.5)]' : 'ring-4 ring-transparent hover:ring-primary/30 hover:scale-[1.01]'}`}>
+               <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" alt={style.name} />
+               <div className={`absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent transition-opacity duration-300 ${isSelected ? 'opacity-90' : 'opacity-75 group-hover:opacity-85'}`} />
+               <div className="absolute bottom-0 left-0 right-0 p-3">
+                 <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
+                 {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
+               </div>
+               {isSelected && <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                   <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                     <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                   </svg>
+                 </div>}
+             </div>;
+         })}
        </div>
  
        {/* Full Body Toggle */}
