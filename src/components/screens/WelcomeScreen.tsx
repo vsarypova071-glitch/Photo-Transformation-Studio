@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ReviewsSection from '../ReviewsSection';
 import heroCover from '@/assets/hero-cover.png';
 
@@ -7,7 +7,6 @@ interface WelcomeScreenProps {
 }
 
 export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
-  const [beforeAfterPos, setBeforeAfterPos] = useState(50);
 
   return (
     <section className="min-h-screen flex flex-col items-center px-5 py-10 rounded-2xl">
