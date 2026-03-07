@@ -263,6 +263,7 @@ class BackendService {
             stylePrompt,
             isPremium: false,
             customPrompt: job.customPrompt || '',
+            originalDimensions: job.originalDimensions,
           }),
           signal: controller.signal,
         }
