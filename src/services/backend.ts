@@ -175,6 +175,7 @@ class BackendService {
       isFullBody,
       customPrompt,
       originalImage: optimizedImage,
+      originalDimensions: imageDimensions.width > 0 ? imageDimensions : undefined,
       results: [],
       createdAt: Date.now()
     };
