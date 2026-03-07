@@ -38,10 +38,10 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
             onClick={handleDownload}
             className="absolute bottom-8 right-8 bg-primary text-primary-foreground p-5 rounded-full shadow-2xl active:scale-90 transition-all hover:scale-110"
           >
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-             <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round"/>
-           </svg>
-         </a>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
        </div>
  
        {!showMagick && (
