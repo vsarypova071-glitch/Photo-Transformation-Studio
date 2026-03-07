@@ -25,87 +25,43 @@ function getRandomGarment(): string {
   return WARDROBE[Math.floor(Math.random() * WARDROBE.length)];
 }
 
-function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string): string {
+function buildPrompt(stylePrompt: string, customPrompt: string): string {
   const garment = getRandomGarment();
 
-  return `ULTRA-REALISTIC LUXURY EDITORIAL PORTRAIT — IDENTITY + MAGNETISM
+  return `PROFESSIONAL LUXURY EDITORIAL PHOTO EDIT
 
-═══════════════════════════════
-STEP 1 — DEEP FACE SCAN (DO THIS FIRST)
-═══════════════════════════════
-Before generating, carefully analyze and memorize EVERY facial parameter:
-- Exact skull shape, forehead width and height
-- Precise jawline contour and chin shape
-- Exact cheekbone position and prominence
-- Nose: bridge width, tip shape, nostril size and flare
-- Eyes: exact shape (almond/round/hooded), size, spacing between eyes, inner and outer corner angles, iris color and pattern, eyebrow arch and thickness
-- Lips: exact Cupid's bow, lower lip fullness, mouth width, lip corners position
-- Skin: exact tone, texture, pores, any moles, freckles, marks — reproduce them ALL
-- Real age — NO de-aging, NO smoothing, NO airbrushing
-- The person must be 100% RECOGNIZABLE — same person, zero doubt
+CORE RULE: IDENTITY LOCK — THIS IS THE MOST IMPORTANT RULE.
 
-═══════════════════════════════
-STEP 2 — PRESERVE BODY & HAIR
-═══════════════════════════════
-- Hair: exact length, color, texture, parting. Zero restyling.
-- Body: exact proportions, weight, build, shoulder width. Clothing fits the real body.
+This is an EDIT of the uploaded image. You MUST preserve the person's identity perfectly.
 
-${aspectRatio ? `═══════════════════════════════
-STEP 3 — ASPECT RATIO (MANDATORY)
-═══════════════════════════════
-- Output MUST match input aspect ratio EXACTLY: ${aspectRatio}
-- No cropping, no letterboxing, no composition ratio changes` : ""}
+FACE CLONE (MANDATORY):
+- Keep EXACT skull shape, jawline, cheekbones
+- Keep EXACT nose shape and size
+- Keep EXACT eye shape, spacing, color
+- Keep EXACT lip shape and size
+- Keep EXACT skin texture, marks, freckles
+- Keep EXACT real age — NO de-aging
+- ZERO beautification, ZERO reshaping, ZERO smoothing
+- The face must be RECOGNIZABLE as the same person
 
-═══════════════════════════════
-STEP 4 — WARDROBE
-═══════════════════════════════
+HAIR: Keep exact length, texture, color. No restyling.
+
+BODY: Preserve exact proportions, weight, build. Clothing adapts to the real body.
+
+WARDROBE:
 ${garment}
-Precision-tailored, premium fabrics, fitted to this exact body.
+Luxury tailoring. Premium fabrics. Individually fitted.
 
 ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
 ${customPrompt ? `Extra direction: ${customPrompt}` : ""}
 
-═══════════════════════════════
-STEP 5 — LIVING ENERGY & MAGNETISM (CRITICAL)
-═══════════════════════════════
-This is NOT a static portrait. This is a LIVING, BREATHING moment captured.
+CAMERA & LIGHTING:
+85mm f/1.4 lens, natural depth of field
+Soft cinematic lighting with gentle shadows
+Film-like grain ISO 400-800
+RAW realism — no HDR, no plastic skin
 
-EYES — THE SOUL:
-- Eyes must radiate INTELLIGENCE, DEPTH, POWER
-- Catch-lights: one strong specular highlight + soft secondary reflection in each iris
-- Iris rendered with full micro-detail: texture, limbal ring, depth
-- Slight natural moisture on the waterline — eyes look ALIVE, not flat
-- Gaze: confident, magnetic, slightly knowing — like she holds a secret
-
-SKIN — ALIVE NOT PLASTIC:
-- Natural luminosity: skin glows from within, not from post-processing
-- Subtle flush of warmth at cheekbones and temples
-- Fine texture visible under light — real pores, real skin
-- No smoothing, no blur, no AI skin — RAW, real, radiant
-
-EXPRESSION — MAGNETIC PRESENCE:
-- Lips slightly parted or softly pressed — natural tension
-- Micro-expression: a hint of a smile that never fully arrives — mysterious
-- Jaw relaxed, neck elongated — effortless authority
-- The whole face communicates: "I know exactly who I am"
-
-ENERGY — SENSUAL & POWERFUL:
-- Posture: shoulders slightly back, chest open — confident ownership of space
-- The image should make the viewer feel a physical pull toward the subject
-- Charisma is visible — not performative, but intrinsic
-
-═══════════════════════════════
-CAMERA & LIGHT
-═══════════════════════════════
-- 85mm f/1.2 lens — razor-sharp on eyes, silky bokeh everywhere else
-- Split Rembrandt lighting: one key light from 45° above creating triangle shadow under eye
-- Warm golden fill light from opposite side — 3:1 ratio
-- Hair light from behind — separates subject from background, creates halo
-- Film: Kodak Portra 800 aesthetic — warm shadows, creamy highlights, fine grain
-- Color grade: rich shadows, glowing skin tones, desaturated background
-- Depth of field: eyes in perfect focus, background 40% blur
-
-OUTPUT: One ultra-realistic luxury editorial photograph. The face must be the same person. The energy must be magnetic, alive, sensual, powerful. Aspect ratio: identical to input.`;
+OUTPUT: One ultra-realistic luxury editorial photograph. Identity preservation is NON-NEGOTIABLE.`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -122,7 +78,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { imageBase64, stylePrompt, customPrompt, originalDimensions } = await req.json();
+    const { imageBase64, stylePrompt, customPrompt } = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -131,18 +87,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Calculate aspect ratio string from original dimensions
-    let aspectRatio: string | undefined;
-    if (originalDimensions?.width && originalDimensions?.height) {
-      const w = originalDimensions.width;
-      const h = originalDimensions.height;
-      const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
-      const divisor = gcd(w, h);
-      aspectRatio = `${w / divisor}:${h / divisor} (${w}x${h} pixels)`;
-      console.log(`Original aspect ratio: ${aspectRatio}`);
-    }
-
-    const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "", aspectRatio);
+    const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "");
 
     console.log("Calling Lovable AI Gateway with model google/gemini-3-pro-image-preview");
 

@@ -156,15 +156,6 @@ class BackendService {
 
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await compressImage(image, 0.95);
-
-    // Measure original image dimensions to preserve aspect ratio
-    const imageDimensions = await new Promise<{ width: number; height: number }>((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      img.onerror = () => resolve({ width: 0, height: 0 });
-      img.src = image;
-    });
-
     const jobId = Math.random().toString(36).substring(7);
     
     const newJob: Job = {
@@ -175,7 +166,6 @@ class BackendService {
       isFullBody,
       customPrompt,
       originalImage: optimizedImage,
-      originalDimensions: imageDimensions.width > 0 ? imageDimensions : undefined,
       results: [],
       createdAt: Date.now()
     };
@@ -263,7 +253,6 @@ class BackendService {
             stylePrompt,
             isPremium: false,
             customPrompt: job.customPrompt || '',
-            originalDimensions: job.originalDimensions,
           }),
           signal: controller.signal,
         }

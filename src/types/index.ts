@@ -35,7 +35,7 @@
    features: string[];
  }
  
-export interface Job {
+ export interface Job {
    id: string;
    userId: string;
    status: 'queued' | 'running' | 'done' | 'error';
@@ -43,7 +43,6 @@ export interface Job {
    isFullBody?: boolean;
    customPrompt?: string;
    originalImage: string;
-   originalDimensions?: { width: number; height: number };
    results: string[];
    createdAt: number;
  }
