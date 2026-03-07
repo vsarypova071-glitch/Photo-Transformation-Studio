@@ -52,6 +52,11 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
   const [refinePrompt, setRefinePrompt] = useState('');
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [sharingPlatform, setSharingPlatform] = useState<string | null>(null);
+  const [showBonusToast, setShowBonusToast] = useState(false);
+  const [bonusCredits, setBonusCredits] = useState(() => {
+    const saved = sessionStorage.getItem(BONUS_KEY);
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const popupShownRef = useRef(false);
   const resultImage = job.results[0];
 
