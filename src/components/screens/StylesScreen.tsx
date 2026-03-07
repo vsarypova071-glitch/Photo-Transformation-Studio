@@ -60,7 +60,10 @@ export default function StylesScreen({
          {filteredStyles.map(style => <div key={style.id} onClick={() => onSelectStyle(style.id)} className={`relative rounded-[2rem] overflow-hidden cursor-pointer border-4 transition-all active:scale-95 group ${selectedStyles.includes(style.id) ? 'border-primary scale-[1.02]' : 'border-transparent'}`}>
              <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover" loading="lazy" alt={style.name} />
              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
-             <p className="absolute bottom-4 left-4 text-[10px] font-black text-foreground uppercase">{style.name}</p>
+              <div className="absolute bottom-3 left-4 right-4">
+                <p className="text-[10px] font-black text-foreground uppercase leading-tight">{style.name}</p>
+                {style.description && <p className="text-[8px] font-medium text-slate-300/80 mt-0.5 leading-tight line-clamp-1">{style.description}</p>}
+              </div>
              {selectedStyles.includes(style.id) && <div className="absolute top-4 right-4 w-7 h-7 bg-primary rounded-full flex items-center justify-center border-2 border-white">
                  <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
