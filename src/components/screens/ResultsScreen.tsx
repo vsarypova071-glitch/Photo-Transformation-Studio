@@ -1,18 +1,32 @@
- import { useState } from 'react';
- import { Job } from '../../types';
- 
- interface ResultsScreenProps {
-   job: Job;
-   onRefine: (prompt: string) => void;
-   onFullBody: () => void;
-   onNewPhoto: () => void;
-   onBackToStyles: () => void;
- }
- 
- export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, onBackToStyles }: ResultsScreenProps) {
-   const [showMagick, setShowMagick] = useState(false);
-   const [refinePrompt, setRefinePrompt] = useState('');
-   const resultImage = job.results[0];
+import { useState } from 'react';
+import { Job } from '../../types';
+
+interface ResultsScreenProps {
+  job: Job;
+  onRefine: (prompt: string) => void;
+  onFullBody: () => void;
+  onNewPhoto: () => void;
+  onBackToStyles: () => void;
+}
+
+export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, onBackToStyles }: ResultsScreenProps) {
+  const [showMagick, setShowMagick] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState('');
+  const resultImage = job.results[0];
+
+  const handleDownload = () => {
+    if (!resultImage) return;
+    const link = document.createElement('a');
+    if (resultImage.startsWith('data:')) {
+      link.href = resultImage;
+    } else {
+      link.href = resultImage;
+    }
+    link.download = `portrait_${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
  
    return (
      <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
