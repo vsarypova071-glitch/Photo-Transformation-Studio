@@ -144,17 +144,25 @@ Look at your result and compare with the source photo:
 • Same eye color? Same eye spacing? → If NO — fix it
 • Same nose shape? → If NO — fix it
 • Same cheek structure (hollow stays hollow, full stays full)? → If NO — fix it
-• ⚠️ JAW WIDTH — is the lower face width IDENTICAL to source? NOT slimmer? NOT V-shaped? → If NO — REBUILD the lower face
-• ⚠️ CHIN — same shape (rounded/square/etc.) as source? NOT sharper or more pointed? → If NO — fix it
+• ⚠️ JAW WIDTH RATIO — measure jaw/IPD in result vs source. IDENTICAL? → If NARROWER — REJECT and REBUILD lower face
+• ⚠️ LOWER THIRD WIDTH — compare horizontal width at jawline. NOT reduced? NOT V-shaped? → If narrower — REBUILD
+• ⚠️ CHIN SHAPE — same shape (rounded/square/soft-square) as source? NOT sharper, NOT more pointed? → If NO — fix it
+• ⚠️ CHIN WIDTH — same width as source? NOT narrowed? → If NO — fix it
+• ⚠️ CHEEK VOLUME — same as source? NOT deflated if source was full? NOT filled if source was hollow? → If NO — fix it
 • Same hair cut and color? → If NO — fix it
 • Same age? → If NO — fix it
 • No heavy fake lashes if source was natural? → If NO — fix it
 • Outfit and background are clearly different colors? → If NO — fix it
-• Does each eye have a visible catchlight (specular highlight)? → If NO — the lighting is wrong, fix it
+• Does each eye have a visible catchlight (specular highlight)? → If NO — fix it
 • Is the gaze soft, magnetic and slightly dreamy — NOT hard stare, NOT dead eyes? → If NO — fix it
 • Do the eyes look ALIVE with moisture and inner light? → If NO — fix it
+• Camera angle: eye-level only? NO low-angle that sharpens the chin? → If NO — fix it
 
-ANTI-SLIM TEST: Place a ruler at the widest point of the jaw in source vs result. Equal width? → If NARROWER — this is a generation failure. Rebuild.
+ANTI-SLIM TEST (mandatory):
+1. Measure jaw width at source photo jawline level.
+2. Measure jaw width at same level in result.
+3. Are they equal? → PASS. Is result NARROWER? → FAIL. Rebuild lower face.
+GENERATION IS REJECTED if lower face is even slightly narrower than the source.
 
 Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
 
