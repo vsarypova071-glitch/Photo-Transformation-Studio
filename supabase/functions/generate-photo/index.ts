@@ -34,13 +34,14 @@ STEP 1 — SCAN & MEMORIZE THE PERSON IN THE INPUT PHOTO:
 Before generating anything, carefully read and memorize ALL of the following from the source photo:
 • IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber) — note saturation and brightness
 • FACE SHAPE: Round / oval / square / heart / diamond / oblong
-• CHEEKBONE POSITION: How HIGH are the cheekbones? Are the cheeks HOLLOW (concave under the bone) or FULL (convex)? Measure the depth of the hollow under the zygomatic arch
-• CHEEK HOLLOW DEPTH: Rate 1–5: 1=very full/round, 5=very hollow/sculpted. Write this number.
-• ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low on the face?
+• CHEEKBONE POSITION: How HIGH are the cheekbones? Note exact position.
+• CHEEK HOLLOW DEPTH: Rate 1–5: 1=very full/round cheeks, 5=very hollow/sculpted cheeks. WRITE THIS NUMBER.
+• CHEEK CONCAVITY: Is the area BELOW the cheekbone concave (sunken inward) or convex (rounded outward)?
+• ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low?
 • NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
 • CHIN: Length from lower lip to chin tip — short / medium / long
 • JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
-• LOWER FACE WIDTH: Is the lower face narrow or wide relative to cheekbones?
+• LOWER FACE WIDTH: Narrow or wide relative to cheekbones?
 • BROW: Arch height, thickness, distance from eye
 • SKIN TONE: Fair / medium / olive / dark — exact undertone (warm/cool/neutral)
 • HAIR: Color, length, texture
@@ -58,13 +59,16 @@ ABSOLUTE RULES — APPLY TO EVERY PERSON
 ⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
 
-⛔⛔ CHEEKS — MOST CRITICAL RULE ⛔⛔
-If you scanned HOLLOW cheeks (rating 3–5): the area UNDER the cheekbone MUST appear concave/sunken — not filled in, not softened, not rounded
-If you scanned FULL cheeks (rating 1–2): keep them full
-DO NOT add volume or fat to cheeks that are sculpted — this is the #1 forbidden mistake
-DO NOT let diffuse lighting "fill in" the natural shadows under the cheekbones
-The hollow under the zygomatic arch is STRUCTURAL — it does not disappear in fashion photos
-PRESERVE the exact shadow shape in the cheek hollow area from the source photo
+⛔⛔ CHEEKS — THIS IS THE #1 MOST CRITICAL RULE ⛔⛔
+The cheek geometry is the most commonly distorted feature — pay maximum attention:
+• If you scanned HOLLOW cheeks (rating 3–5 from Step 1):
+  → The area BELOW the cheekbone MUST be CONCAVE (sunken inward) in the result
+  → This is STRUCTURAL BONE GEOMETRY — it does NOT disappear in fashion photos
+  → DO NOT add fat, volume, or roundness to hollow cheeks
+  → DO NOT let lighting fill in or soften the natural hollow shadows
+  → The shadow under the cheekbone MUST remain visually present — it defines the face
+• If you scanned FULL cheeks (rating 1–2): keep them full and round
+• ⛔ Adding volume to a sculpted face = IDENTITY THEFT = FAILURE
 
 ⛔ DO NOT soften a defined jawline — angular jaw stays angular
 ⛔ DO NOT shorten or lengthen the chin
@@ -114,12 +118,13 @@ CLOTHING & PHOTOGRAPHY
 
 Outfit: ${garment}
 
-LIGHTING — CINEMATIC LUXURY:
-- Main light: large octabox at 45° — defines cheekbones and jaw of THIS person's face
-- Fill: white reflector — lifts shadows without losing depth
-- Rim/hair light from behind: separates subject from background, premium 3D effect
+LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
+- Main light: large octabox at 45° — sculpts and REVEALS existing bone structure, does NOT eliminate it
+- Fill light: MINIMAL — enough to see shadow detail, NOT enough to eliminate cheek hollows or flatten the face
+- ⛔ CRITICAL LIGHTING RULE: The natural shadow in the cheek hollow area MUST stay visible — it is BONE STRUCTURE, not a flaw to fix
+- Rim/hair light: separates subject from background, premium 3D depth
 - Catchlights MUST be visible in eyes — non-negotiable
-- Mood: Vogue Italia editorial — rich, dimensional, three-dimensional
+- Mood: Vogue Italia editorial — dimensional, sculpted, three-dimensional
 
 LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
 FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
@@ -130,21 +135,24 @@ ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
 ${customPrompt ? `Additional: ${customPrompt}` : ""}
 
 ════════════════════════════════════════
-FINAL QUALITY CHECK
+FINAL QUALITY CHECK — MANDATORY
 ════════════════════════════════════════
 
-Before rendering, confirm:
-✅ Eye color MATCHES source exactly (green/brown/blue/etc — not altered)
-✅ Face shape IDENTICAL — no rounding, no slimming
-✅ Cheeks MATCH source — hollow if hollow, full if full
+Before rendering, verify ALL of these:
+✅ Eye color MATCHES source exactly — NOT changed
+✅ Face shape IDENTICAL — no rounding, no slimming, no widening
+✅ CHEEKS: If source had hollow/sculpted cheeks → the concave shadow under the cheekbone is PRESENT and visible in the result
+✅ CHEEKBONE HEIGHT and protrusion IDENTICAL to source
 ✅ Jaw and chin IDENTICAL proportions
+✅ Lower face width MATCHES source
 ✅ Eyes have CATCHLIGHTS — bright, sharp, alive
 ✅ Expression is WARM and CONFIDENT — not scared, not stiff
 ✅ Lip color is FLATTERING for this specific person
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
-✅ The person is 100% RECOGNIZABLE as themselves
+✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-Ask yourself: "Would the person in the input photo look at this result and say — that's ME, but in Vogue?"`;
+FINAL TEST: "Does this face have the SAME bone structure as the input — same cheek hollows, same jaw, same proportions?"
+If NO → apply stricter geometric fidelity before output.`;
 }
 
 Deno.serve(async (req: Request) => {
