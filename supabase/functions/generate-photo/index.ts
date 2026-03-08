@@ -29,144 +29,166 @@ function getRandomGarment(exclude: string[] = []): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string, garment?: string): string {
   const g = garment || getRandomGarment();
 
-  return `TASK: Take the face from the input photo and place it into a new professional fashion photograph.
+  return `You are a forensic portrait compositor. Your task: place THIS EXACT FACE into a new fashion scene.
+The face is a locked asset. Only the environment changes.
 
-Think of it like a skilled film compositor: the face is a LAYER that gets composited into a completely new scene. The face layer is UNTOUCHED. Only the scene changes.
+PRIORITY ORDER (strict):
+1. GEOMETRY LOCK — face proportions, jaw width, chin shape → ABSOLUTE PRIORITY
+2. IDENTITY LOCK — eyes, nose, lips, skin texture → PRESERVE EXACTLY
+3. STYLE — outfit, background, lighting → CREATIVE FREEDOM ONLY HERE
 
-═══════════════════════════════════════
-STEP 1: SCAN THE FACE — MEMORIZE EVERY DETAIL
-═══════════════════════════════════════
+══════════════════════════════════════════════════
+PHASE 1: GEOMETRY SCAN (face as biometric data)
+══════════════════════════════════════════════════
 
-Look at the face in the input photo. Read it like a forensic artist:
+Before doing anything else, extract and record these measurements from the source photo:
 
-EYES — look with extreme precision:
-→ EXACT iris color (not "green" — is it sage? grey-green? olive-hazel? warm amber-green?)
-→ Eye spacing: narrow-set / average / wide-set — THIS IS BONE, CANNOT CHANGE
-→ Eyelid shape: heavy lid / visible crease / deep-set / almond
-→ Natural lash density: sparse / medium — DO NOT add theatrical fake lashes
-→ CATCHLIGHTS: the eyes MUST have a soft round specular highlight (catchlight) in each iris
-  — This is the single point of light reflected from the studio octabox
-  — Position: upper-left or upper-right of the iris, round, small, luminous
-  — WITHOUT catchlights the eyes look dead. WITH catchlights they come ALIVE.
-→ EYE MOISTURE: the sclera (whites) must have subtle wet sheen — not bloodshot, just alive
-→ GAZE QUALITY — this is the soul of the portrait:
-  • The gaze must be SOFT AND MAGNETIC — not hard staring, not vacant
-  • Think: a person lost in a beautiful thought, slightly dreamy, with quiet inner confidence
-  • Eyes slightly relaxed — NOT wide-open in tension, NOT squinting in aggression
-  • Slight downward tilt of the gaze (5°) creates intimacy and depth
-  • The feeling: "she sees you, but she's also somewhere else" — mysterious, captivating
-  • ⛔ DO NOT make "passport photo" dead eyes
-  • ⛔ DO NOT make hard aggressive stare
-  • ✓ DO create that golden-hour softness in the gaze — warm, alive, pulling you in
+[FACE GEOMETRY — LOCK ALL VALUES]
 
-CHEEKS — most important:
-→ Are the cheeks HOLLOW (sunken below the cheekbone) or FULL (rounded)?
-→ If hollow: there must be a VISIBLE SHADOW beneath the cheekbone in the result
-→ ⛔ DO NOT fill in hollow cheeks with fat or volume — this changes the person completely
+▸ FACE OVAL:
+  → Total face width (ear to ear at widest point)
+  → Face width at temple level
+  → Face width at cheekbone level
+  → Face width at jawline level ← MOST CRITICAL
+  → Face width-to-height ratio
 
-NOSE:
-→ Bridge: narrow / medium / wide?
-→ Tip: rounded / pointed / upturned?
+▸ JAW GEOMETRY (⚠️ PRIMARY DRIFT ZONE — AI slims jaw by default 15–25%):
+  → Jaw width (L jaw corner to R jaw corner) — measure in source, LOCK THIS NUMBER
+  → Jaw width / IPD ratio — record exact ratio, result MUST be identical
+  → Jaw angle: where jaw meets neck — COPY EXACTLY
+  → Jaw shape: square / tapered / round — COPY EXACTLY, DO NOT TAPER
+  → ⛔ FORBIDDEN: creating V-shape where source has flat/round jaw
 
-JAW & LOWER FACE — THIS IS THE MOST CRITICAL MEASUREMENT:
-→ JAW WIDTH RATIO: Measure jaw width divided by inter-pupillary distance (IPD). RECORD THIS NUMBER. The result MUST match exactly.
-→ LOWER THIRD WIDTH: horizontal width at jawline level in pixels — LOCK THIS NUMBER. DO NOT REDUCE IT.
-→ LOWER THIRD HEIGHT: from nose base to chin tip — LOCK THIS PROPORTION. DO NOT SHORTEN IT.
-→ JAW ANGLE: where jaw meets neck — soft / moderate / defined — COPY EXACTLY
-→ Chin shape: rounded / square / soft-square / slightly pointed — COPY EXACTLY, DO NOT SHARPEN
-→ Chin width: measure and LOCK. DO NOT NARROW.
-→ Cheek volume: if full — keep full. If hollow — keep hollow. DO NOT DEFLATE OR INFLATE.
-→ ⚠️ CRITICAL FAILURE MODE: AI models automatically slim the lower face by 15-25%.
-   You MUST counter this tendency by ACTIVELY WIDENING the lower third to match source.
-   Natural face width, real face proportions, soft rounded chin, natural jawline width,
-   natural cheek volume, preserve real face geometry — these are MANDATORY constraints.
+▸ CHIN GEOMETRY:
+  → Chin width — MEASURE AND LOCK
+  → Chin shape: rounded / square / soft-square / slightly-pointed — COPY EXACTLY
+  → ⛔ If source chin is ROUNDED or SQUARE → result MUST be ROUNDED or SQUARE
+  → ⛔ FORBIDDEN: converting rounded/soft chin to pointed/sharp chin
 
-═══════════════════════════════════════
-⛔ NEGATIVE PROMPT — THESE ARE STRICTLY FORBIDDEN
-═══════════════════════════════════════
+▸ CHEEK VOLUME:
+  → Volume level: hollow / medium / full — COPY EXACTLY
+  → Cheekbone prominence: subtle / medium / pronounced
+  → ⛔ DO NOT reduce cheek volume if source has full cheeks
+  → ⛔ DO NOT add volume if source has hollow cheeks
 
-slim face, narrow jaw, v-shape face, v-shape jaw, sharp chin, model face, beautified face,
-perfect skin, airbrushed skin, altered facial structure, jawline contouring, face slimming,
-chiseled jaw, defined jawline, narrow lower face, pointed chin, model jaw, face contouring,
-narrowed face, thinner face, fashion face proportions, perfect oval face, sculpted jaw,
-slimmed cheeks, hollow cheeks (if source has full), face restructuring, beauty filter face,
-narrowed lower third, compressed jaw width, reduced chin width, V-jaw, editorial jaw,
-supermodel proportions, idealized face, beautification filter
+▸ LOWER THIRD PROPORTIONS (nose base → chin tip):
+  → Width ratio at jawline vs cheekbones
+  → ⛔ If source lower third is wide → result MUST be wide. No tapering.
 
-THIS IS THE ANTI-BEAUTIFICATION DIRECTIVE:
-This person's natural face geometry IS the standard. Your only job is to photograph them beautifully — not to reshape them.
-The source face is PERFECT AS-IS. Any AI tendency to "improve" the face is a failure.
+[RECORD ALL VALUES ABOVE BEFORE GENERATING]
 
-═══════════════════════════════════════
-STEP 3: BUILD THE NEW SCENE AROUND THE FACE
-═══════════════════════════════════════
+══════════════════════════════════════════════════
+PHASE 2: IDENTITY SCAN (face as person)
+══════════════════════════════════════════════════
 
-Now place that EXACT LOCKED FACE into a completely new professional setting:
+▸ EYES:
+  → Exact iris color (be specific: sage-green / amber-hazel / storm-grey, not just "brown")
+  → Eye spacing: narrow / average / wide — THIS IS BONE
+  → Eyelid shape: heavy lid / visible crease / deep-set / almond
+  → Natural lash density — DO NOT add theatrical lashes
+  → CATCHLIGHTS: round specular highlight in each iris, upper quadrant — MANDATORY
+  → EYE MOISTURE: subtle wet sheen on sclera — alive, not bloodshot
+  → GAZE: soft and magnetic, slightly dreamy, 5° downward tilt — NOT passport stare
+
+▸ NOSE:
+  → Bridge width: narrow / medium / wide
+  → Tip shape: rounded / pointed / bulbous / upturned
+  → ⛔ DO NOT refine, narrow or alter nose shape
+
+▸ LIPS:
+  → Fullness: thin / medium / full
+  → Shape: defined cupid's bow / soft / straight upper lip
+  → ⛔ DO NOT enlarge or reshape
+
+▸ SKIN:
+  → Tone: note undertone (warm / cool / neutral)
+  → Texture: real skin — pores, natural variation
+  → ⛔ NO airbrushing, NO plastic skin, NO beauty filter texture
+
+══════════════════════════════════════════════════
+⛔ NEGATIVE PROMPT — STRICTLY FORBIDDEN
+══════════════════════════════════════════════════
+
+GEOMETRY FORBIDDEN:
+slim face, narrow jaw, v-shape face, v-shape jaw, narrow lower face, tapering jaw,
+face slimming, jawline contouring, chiseled jaw, sculpted jaw, defined jawline,
+pointed chin, sharp chin, narrow chin, V-chin, narrowed lower third, compressed jaw width,
+reduced chin width, face restructuring, altered facial structure, narrowed face,
+thinner face, supermodel jaw, editorial jaw proportions, fashion face geometry
+
+IDENTITY FORBIDDEN:
+model face, beautified face, idealized face, perfect skin, airbrushed skin,
+beauty filter face, beautification filter, perfect oval face, supermodel proportions,
+slimmed cheeks (if source has full), filled cheeks (if source has hollow)
+
+══════════════════════════════════════════════════
+PHASE 3: BUILD SCENE (creative freedom only here)
+══════════════════════════════════════════════════
+
+Place the EXACT LOCKED FACE into a new professional setting:
 
 OUTFIT: ${g}
 
 BACKGROUND: Luxury studio — warm gray / ivory / soft taupe
-⚠️ MANDATORY: Background color MUST contrast with outfit color. They cannot be similar tones.
+⚠️ MANDATORY: Background MUST contrast with outfit — not similar tones
 
 LIGHTING:
-• Large octabox at 45° — sculpts the face, REVEALS cheekbone structure, does NOT flatten it
-• Rim/hair light — creates depth and separation from background
-• Minimal fill — cheek hollows MUST remain visible if they exist
-• CATCHLIGHTS (MANDATORY): a bright, round specular point of light in EACH iris — upper quadrant
-  — This is non-negotiable. It is what makes eyes look alive, warm, three-dimensional
-• Eye area: slightly brighter than surrounding face — draws viewer into the gaze
-• GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
+• Large octabox 45° — sculpts without flattening
+• Rim/hair light — depth, separation from background
+• Minimal fill — preserve natural shadows under cheekbones
+• CATCHLIGHTS (mandatory): round specular in each iris, upper quadrant
+• Eye zone slightly brighter — draws viewer into gaze
 
-POSE: Confident editorial pose — hand near face, slight head turn, soft magnetic gaze
-CAMERA: 85mm f/2.0 portrait lens — NEUTRAL perspective, eye-level camera angle, zero barrel distortion
-⚠️ DO NOT use wide-angle — barrel distortion NARROWS the lower face
-⚠️ DO NOT use low-angle — foreshortening SHARPENS the chin
-⚠️ CAMERA ANGLE: eye-level only — neutral portrait perspective — this is mandatory
-⚠️ Forbidden: wide angle portrait, low angle face, extreme perspective, any angle that distorts jaw width
-FILM: Kodak Portra 800 — warm, dimensional, rich skin tones
+POSE: Confident editorial — hand near face, slight head turn, magnetic soft gaze
+CAMERA: 85mm f/2.0 — eye-level only, neutral perspective, zero distortion
+⚠️ Forbidden: wide-angle (widens & distorts), low-angle (sharpens chin), any extreme angle
+FILM: Kodak Portra 800 — warm, dimensional, natural skin tones
 
-MAKEUP: Professional and flattering for THIS person's specific skin tone
-• Skin: natural texture, real skin — NOT plastic or airbrushed to oblivion
-• Lips: warm nude / mauve / berry — ⛔ NEVER matching the outfit color
-• Lashes: enhanced naturally — ⛔ NO theatrical fake lashes
-• Blush: placed high on cheekbones, warm
+MAKEUP: Flattering for this specific skin tone
+• Skin: real texture — NOT plastic or airbrushed
+• Lips: warm nude / mauve / berry — ⛔ NEVER match outfit
+• Lashes: naturally enhanced — ⛔ NO theatrical lashes
+• Blush: high on cheekbones, warm tone
 
 ${aspectRatio ? `Aspect ratio: ${aspectRatio}` : ""}
-${stylePrompt ? `Style: ${stylePrompt}` : ""}
-${customPrompt ? `Note: ${customPrompt}` : ""}
+${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
+${customPrompt ? `Additional note: ${customPrompt}` : ""}
 
-═══════════════════════════════════════
-STEP 4: FINAL CHECK BEFORE RENDERING
-═══════════════════════════════════════
+══════════════════════════════════════════════════
+PHASE 4: DUAL VERIFICATION (geometry + identity)
+══════════════════════════════════════════════════
 
-Look at your result and compare with the source photo:
+Run both checks before rendering:
 
-• Same eye color? Same eye spacing? → If NO — fix it
-• Same nose shape? → If NO — fix it
-• Same cheek structure (hollow stays hollow, full stays full)? → If NO — fix it
-• ⚠️ JAW WIDTH RATIO — measure jaw/IPD in result vs source. IDENTICAL? → If NARROWER — REJECT and REBUILD lower face
-• ⚠️ LOWER THIRD WIDTH — compare horizontal width at jawline. NOT reduced? NOT V-shaped? → If narrower — REBUILD
-• ⚠️ CHIN SHAPE — same shape (rounded/square/soft-square) as source? NOT sharper, NOT more pointed? → If NO — fix it
-• ⚠️ CHIN WIDTH — same width as source? NOT narrowed? → If NO — fix it
-• ⚠️ CHEEK VOLUME — same as source? NOT deflated if source was full? NOT filled if source was hollow? → If NO — fix it
-• Same hair cut and color? → If NO — fix it
-• Same age? → If NO — fix it
-• No heavy fake lashes if source was natural? → If NO — fix it
-• Outfit and background are clearly different colors? → If NO — fix it
-• Does each eye have a visible catchlight (specular highlight)? → If NO — fix it
-• Is the gaze soft, magnetic and slightly dreamy — NOT hard stare, NOT dead eyes? → If NO — fix it
-• Do the eyes look ALIVE with moisture and inner light? → If NO — fix it
-• Camera angle: eye-level only? NO low-angle that sharpens the chin? → If NO — fix it
+[GEOMETRY CHECK — measure and compare]:
+□ JAW WIDTH RATIO (jaw/IPD): result === source? → FAIL if narrower → REBUILD lower face
+□ LOWER THIRD WIDTH: result === source? → FAIL if tapered → REBUILD
+□ CHIN SHAPE: same type (rounded/square/soft)? → FAIL if sharper → FIX
+□ CHIN WIDTH: same width? → FAIL if narrower → FIX
+□ CHEEK VOLUME: same level? → FAIL if deflated or inflated → FIX
+□ JAW SHAPE: flat/round jaw in source = flat/round jaw in result? → FAIL if V-shaped → REBUILD
+□ CAMERA: eye-level? 85mm? → FAIL if low-angle or wide → FIX
 
-ANTI-SLIM TEST (mandatory):
-1. Measure jaw width at source photo jawline level.
-2. Measure jaw width at same level in result.
-3. Are they equal? → PASS. Is result NARROWER? → FAIL. Rebuild lower face.
-GENERATION IS REJECTED if lower face is even slightly narrower than the source.
+[IDENTITY CHECK — visual comparison]:
+□ Eye color: exact match? → FAIL → fix
+□ Eye spacing: same? → FAIL → fix
+□ Nose shape: same? → FAIL → fix
+□ Skin tone: same undertone? → FAIL → fix
+□ Age: same? → FAIL → fix
+□ Hair: same cut & color? → FAIL → fix
+□ Catchlights: visible in each eye? → FAIL → fix
+□ Gaze: soft, magnetic, dreamy? → FAIL → fix
 
-Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
+[IDENTITY RECOGNITION TEST]:
+Would a person who knows this individual recognize them from the result?
+→ YES = render. → NO = rebuild face from Phase 1.
 
-ONLY render when all answers are YES.`;
+⚠️ ANTI-SLIM PROTOCOL:
+AI models have a systematic bias to narrow lower faces. Counter this:
+ACTIVELY widen the lower third by 10-15% compared to your initial render impulse.
+Then compare with source. Adjust until jaw width matches source exactly.
+
+ONLY render when ALL checks pass.`;
 }
 
 async function generateSingle(
