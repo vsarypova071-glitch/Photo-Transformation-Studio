@@ -29,30 +29,35 @@ function getRandomGarment(exclude: string[] = []): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string, garment?: string): string {
   const g = garment || getRandomGarment();
 
-  return `TASK: LUXURY FASHION PHOTOSHOOT — PHOTOREALISTIC IDENTITY TRANSFER
+  return `TASK: PROFESSIONAL LUXURY FASHION PHOTOSHOOT
 
-STEP 1 — SCAN & MEMORIZE THE PERSON IN THE INPUT PHOTO:
-Before generating anything, carefully read and memorize ALL of the following from the source photo:
-• IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber) — note saturation and brightness
+⚠️ CRITICAL CONCEPT: You are NOT editing or filtering the input photo.
+You are creating a COMPLETELY NEW, PROFESSIONALLY SHOT PHOTOGRAPH.
+The input photo is ONLY a biometric reference for the person's face.
+Everything else — background, lighting, outfit, setting, mood, camera angle — must be BRAND NEW and dramatically different from the input photo.
+Think: the person walked into a top fashion studio and had a professional shoot. That's what you are creating.
+
+STEP 1 — SCAN & MEMORIZE THE FACE BIOMETRICS ONLY:
+Extract and lock these values from the source photo — they are the ONLY thing carried over to the new photo:
+• IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber)
 • FACE SHAPE: Round / oval / square / heart / diamond / oblong
-• CHEEKBONE POSITION: How HIGH are the cheekbones? Note exact position.
-• CHEEK HOLLOW DEPTH: Rate 1–5: 1=very full/round cheeks, 5=very hollow/sculpted cheeks. WRITE THIS NUMBER.
-• CHEEK CONCAVITY: Is the area BELOW the cheekbone concave (sunken inward) or convex (rounded outward)?
-• ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low?
-• NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
-• INNER EYE CORNERS: Measure the exact horizontal distance from the LEFT inner eye corner to the nose bridge, and from the RIGHT inner eye corner to the nose bridge. Note if they are equal, or if one eye sits closer/farther.
-• INTER-PUPILLARY DISTANCE (IPD): Measure the distance between the centers of both pupils. Rate as narrow / average / wide relative to face width.
-• EYE-TO-NOSE BRIDGE GAP: How much space is there between each inner eye corner and the nose bridge center? This is a FIXED anatomical measurement — it DOES NOT CHANGE between photos.
-• CHIN: Length from lower lip to chin tip — short / medium / long
-• JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
-• LOWER FACE WIDTH: Narrow or wide relative to cheekbones?
-• BROW: Arch height, thickness, distance from eye
-• SKIN TONE: Fair / medium / olive / dark — exact undertone (warm/cool/neutral)
-• HAIR: Color, length, texture
-• AGE: Approximate range, do NOT de-age
-• ANY DISTINCTIVE FEATURES: moles, freckles, asymmetry, unique traits
+• CHEEKBONE POSITION & HEIGHT
+• CHEEK HOLLOW DEPTH: Rate 1–5 (1=full, 5=sculpted hollow)
+• CHEEK CONCAVITY: concave (hollow) or convex (round) below cheekbone
+• NOSE: bridge width, tip shape, nostril spread
+• INNER EYE CORNERS: distance from each inner corner to nose bridge — FIXED bone measurement
+• INTER-PUPILLARY DISTANCE (IPD): narrow / average / wide — DO NOT widen
+• CHIN: short / medium / long
+• JAW: soft & rounded OR defined & angular
+• LOWER FACE WIDTH relative to cheekbones
+• BROW: arch height, thickness
+• SKIN TONE: exact undertone (warm/cool/neutral)
+• HAIR: color, length, texture
+• AGE: approximate range
+• DISTINCTIVE FEATURES: moles, freckles, asymmetry
 
-STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
+STEP 2 — LOCK ALL FACE VALUES. BIOMETRIC BLUEPRINT SEALED.
+✅ ONLY THE FACE IS CARRIED OVER. EVERYTHING ELSE IS CREATED FRESH.
 
 ════════════════════════════════════════
 ABSOLUTE RULES — APPLY TO EVERY PERSON
