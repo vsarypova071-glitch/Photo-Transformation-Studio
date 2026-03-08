@@ -98,6 +98,10 @@ The face you just scanned is FINAL. It cannot be altered for ANY reason.
 
 ⛔ DO NOT de-age or make younger
 ⛔ DO NOT slim or reshape the face
+⛔ DO NOT narrow the lower face — this is the #1 AI failure mode
+⛔ DO NOT create V-shape jaw if source does not have one
+⛔ DO NOT sharpen or define the chin beyond what is in source
+⛔ DO NOT contour the jawline — jaw width must be IDENTICAL to source
 ⛔ DO NOT widen or narrow the eyes
 ⛔ DO NOT change eye color even by one shade
 ⛔ DO NOT add volume to hollow cheeks
@@ -105,6 +109,12 @@ The face you just scanned is FINAL. It cannot be altered for ANY reason.
 ⛔ DO NOT change the nose
 ⛔ DO NOT inject the lips — keep natural shape
 ⛔ DO NOT apply "beauty filter" — this is a real person, not an AI model
+⛔ DO NOT apply "model face" proportions — the source face IS the standard
+
+NEGATIVE SPACE (these are explicitly forbidden):
+slim face, narrow jaw, sharp chin, V-shape face, pointed chin, defined jawline,
+chiseled jaw, model jaw, face contouring, jawline contouring, slimmed face,
+thinner face, narrowed lower face, fashion proportions, perfect oval face
 
 This person is beautiful EXACTLY AS THEY ARE. Your job is NOT to improve them. Your job is to photograph them beautifully.
 
