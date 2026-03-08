@@ -81,14 +81,29 @@ Before doing anything else, extract and record these measurements from the sourc
 PHASE 2: IDENTITY SCAN (face as person)
 ══════════════════════════════════════════════════
 
-▸ EYES:
-  → Exact iris color (be specific: sage-green / amber-hazel / storm-grey, not just "brown")
-  → Eye spacing: narrow / average / wide — THIS IS BONE
-  → Eyelid shape: heavy lid / visible crease / deep-set / almond
-  → Natural lash density — DO NOT add theatrical lashes
-  → CATCHLIGHTS: round specular highlight in each iris, upper quadrant — MANDATORY
-  → EYE MOISTURE: subtle wet sheen on sclera — alive, not bloodshot
+▸ EYES (⚠️ CRITICAL DRIFT ZONE — AI alters eyes by default):
+  → Iris color: record EXACT HEX-like description (e.g. "warm amber-hazel with dark limbal ring",
+    "cool grey-green with brown flecks") — result MUST match this EXACTLY
+  → Eye spacing: measure inter-canthus distance / IPD ratio — LOCK THIS, it is bone structure
+  → Outer canthus angle: measure tilt in degrees (up / horizontal / slightly down) — LOCK EXACTLY
+    ⛔ FORBIDDEN: lifting outer corner, creating cat-eye or fox-eye tilt
+  → Eyelid crease: mono / single fold / double fold / hooded — COPY EXACTLY
+  → Eye shape type: almond / round / hooded / deep-set / prominent — COPY EXACTLY
+    ⛔ FORBIDDEN: converting round to almond, hooded to open, or any shape change
+  → Eye width (horizontal aperture): measure and lock
+  → Sclera tone: pure white / warm white / slightly veined — COPY, no whitening
+  → Natural lash density — DO NOT add theatrical lashes, DO NOT extend
+  → Brow shape: arch type, thickness, distance above eye — COPY EXACTLY
+  → CATCHLIGHTS: round specular highlight in each iris, upper quadrant — MANDATORY for life-like gaze
+  → EYE MOISTURE: subtle wet sheen on sclera — alive, NOT bloodshot, NOT dry
   → GAZE: soft and magnetic, slightly dreamy, 5° downward tilt — NOT passport stare
+  → ⛔ ABSOLUTE RULES FOR EYES:
+    - DO NOT change iris color under ANY lighting condition
+    - DO NOT lift or lower outer canthus angle
+    - DO NOT change inter-eye distance
+    - DO NOT add double fold if source is mono-lid
+    - DO NOT elongate or widen eye aperture
+    - DO NOT "beautify" eyes — preserve every asymmetry from source
 
 ▸ NOSE:
   → Bridge width: narrow / medium / wide
