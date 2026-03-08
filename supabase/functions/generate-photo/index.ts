@@ -40,6 +40,9 @@ Before generating anything, carefully read and memorize ALL of the following fro
 • CHEEK CONCAVITY: Is the area BELOW the cheekbone concave (sunken inward) or convex (rounded outward)?
 • ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low?
 • NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
+• INNER EYE CORNERS: Measure the exact horizontal distance from the LEFT inner eye corner to the nose bridge, and from the RIGHT inner eye corner to the nose bridge. Note if they are equal, or if one eye sits closer/farther.
+• INTER-PUPILLARY DISTANCE (IPD): Measure the distance between the centers of both pupils. Rate as narrow / average / wide relative to face width.
+• EYE-TO-NOSE BRIDGE GAP: How much space is there between each inner eye corner and the nose bridge center? This is a FIXED anatomical measurement — it DOES NOT CHANGE between photos.
 • CHIN: Length from lower lip to chin tip — short / medium / long
 • JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
 • LOWER FACE WIDTH: Narrow or wide relative to cheekbones?
