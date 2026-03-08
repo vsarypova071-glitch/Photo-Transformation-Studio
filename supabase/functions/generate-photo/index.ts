@@ -53,10 +53,21 @@ CLONE EXACTLY FROM SOURCE PHOTO:
 ✨ WOW FACTOR — WHAT MUST BE TRANSFORMED
 ════════════════════════════════════════
 
+EXPRESSION & POSE — MOST IMPORTANT FOR WOW RESULT:
+⛔ ABSOLUTELY FORBIDDEN: passport photo expression, scared look, stiff frozen face, tense jaw, wide frightened eyes
+✅ REQUIRED: natural, relaxed, CONFIDENT expression — the person looks like they OWN the room
+- Lips: soft, slightly parted OR a subtle natural closed smile — warm, approachable, NOT forced grin, NOT frozen neutral
+- Jaw: relaxed, not clenched — slight softness under the chin
+- Head: very slight tilt (~5°) or natural straight — NEVER rigid passport-photo straight
+- Shoulders: relaxed, dropped naturally — not stiff or raised
+- The overall feeling: "I am exactly where I want to be. I am confident and beautiful."
+- Think: Cate Blanchett on a magazine cover — effortless, present, magnetic
+- Think: the person just heard something slightly amusing and is about to smile
+
 EYES — ALIVE AND MAGNETIC (geometry unchanged, only light):
 - Add SHARP CATCHLIGHTS: 2 bright white reflections in each iris (one large ~2 o'clock, one small ~8 o'clock) — this is what separates a dead photo from a WOW photo
 - Iris must have depth and micro-texture — visible crystalline pattern
-- The gaze must feel PRESENT, CONFIDENT, DIRECT — not sad, not glazed
+- The gaze must feel PRESENT, WARM, ENGAGED — eyes have a subtle inner smile even if lips are neutral
 - Slight moisture on the lower lashline for natural luminosity
 - Lashes: defined, separated, naturally long — not cartoon — think high-fashion Vogue editorial
 - IMPORTANT: all of this is achieved through LIGHTING only, NOT by changing eye shape, size or inter-ocular distance
