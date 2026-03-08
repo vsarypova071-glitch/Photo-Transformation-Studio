@@ -118,7 +118,10 @@ LIGHTING:
 • Large octabox at 45° — sculpts the face, REVEALS cheekbone structure, does NOT flatten it
 • Rim/hair light — creates depth and separation from background
 • Minimal fill — cheek hollows MUST remain visible if they exist
-• Sharp catchlights in each eye
+• CATCHLIGHTS (MANDATORY): a bright, round specular point of light in EACH iris — upper quadrant
+  — This is non-negotiable. It is what makes eyes look alive, warm, three-dimensional
+• Eye area: slightly brighter than surrounding face — draws viewer into the gaze
+• GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
 
 POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
 CAMERA: 85mm f/2.0 — sharp face, creamy background bokeh
