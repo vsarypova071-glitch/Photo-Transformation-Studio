@@ -63,6 +63,15 @@ ABSOLUTE RULES — APPLY TO EVERY PERSON
 ⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
 
+⛔⛔ EYE SPACING & NOSE BRIDGE — CRITICAL GEOMETRIC RULE ⛔⛔
+The distance between the eyes and the nose bridge is a FIXED BONE MEASUREMENT:
+• The gap between each inner eye corner and the nose bridge MUST match the source exactly
+• ⛔ DO NOT push eyes wider apart — widened IPD = completely different person
+• ⛔ DO NOT move either eye away from the nose bridge
+• Each eye must sit at the SAME distance from the nose center as in the source photo
+• If the source shows eyes close to the nose bridge → result must show the same closeness
+• VERIFY: Draw a vertical line down the nose bridge — each eye must be equidistant from it, matching source proportions exactly
+
 ⛔⛔ CHEEKS — THIS IS THE #1 MOST CRITICAL RULE ⛔⛔
 The cheek geometry is the most commonly distorted feature — pay maximum attention:
 • If you scanned HOLLOW cheeks (rating 3–5 from Step 1):
