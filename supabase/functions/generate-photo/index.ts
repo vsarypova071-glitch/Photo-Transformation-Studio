@@ -42,11 +42,15 @@ BIOMETRIC LOCK — FACE GEOMETRY IS SACRED
 
 CLONE EXACTLY FROM SOURCE PHOTO:
 - Eye shape, width, inter-ocular distance, upper/lower lid shape, brow arch
+- EYE COLOR: measure the EXACT iris hue from source — if GREEN, render VIVID GREEN, not hazel, not gray, not brown — GREEN
 - Nose: bridge width, tip shape, nostril size, nose length
 - Chin: EXACT length from lower lip to chin tip — DO NOT shorten
 - Jawline angle, mandible width — IDENTICAL
 - Face height-to-width ratio — MEASURE AND LOCK
-- Forehead height, cheekbone position and prominence
+- Forehead height, cheekbone position and prominence — COPY EXACTLY
+- ⛔ DO NOT add volume to cheeks — if the face has hollow/sculpted cheeks, keep them hollow and sculpted
+- ⛔ DO NOT round the face — angular, defined cheekbones must stay angular and defined
+- Cheek hollows depth, zygomatic arch height — IDENTICAL to source
 - Skin tone, age markers, distinctive features (moles, asymmetry)
 
 ════════════════════════════════════════
