@@ -1,6 +1,5 @@
-import { PlanType, User, Job } from '../types';
+import { Job } from '../types';
 import { createLogger } from '../utils/logger';
-import { supabase } from '@/integrations/supabase/client';
 
 const log = createLogger('BackendService');
 
