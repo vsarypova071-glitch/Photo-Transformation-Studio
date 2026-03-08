@@ -131,6 +131,14 @@ pointed chin, sharp chin, narrow chin, V-chin, narrowed lower third, compressed 
 reduced chin width, face restructuring, altered facial structure, narrowed face,
 thinner face, supermodel jaw, editorial jaw proportions, fashion face geometry
 
+EYES FORBIDDEN (⚠️ highest priority):
+cat eyes, fox eyes, lifted eye corners, raised outer canthus, slanted eyes,
+anime eyes, stylized eyes, almond eyes (if source is round), wide eyes (if source is narrow),
+changed iris color, altered iris color, brightened eyes, whitened sclera,
+elongated eyes, enlarged eyes, beautified eyes, perfect eyes, symmetrical eyes (if source is asymmetric),
+double eyelid (if source is mono-lid), open eye surgery look, doe eyes, dramatic eyes,
+changed eye shape, modified eye geometry, altered eye spacing
+
 IDENTITY FORBIDDEN:
 model face, beautified face, idealized face, perfect skin, airbrushed skin,
 beauty filter face, beautification filter, perfect oval face, supermodel proportions,
