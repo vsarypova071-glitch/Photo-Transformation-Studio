@@ -57,8 +57,12 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     const saved = sessionStorage.getItem(BONUS_KEY);
     return saved ? parseInt(saved, 10) : 0;
   });
+  const [activeIndex, setActiveIndex] = useState(0);
   const popupShownRef = useRef(false);
-  const resultImage = job.results[0];
+
+  // All variants — job.results may have 1 or 3 images
+  const allResults = job.results.filter(Boolean);
+  const resultImage = allResults[activeIndex] || allResults[0];
 
   // Show share popup once after result is ready
   useEffect(() => {
@@ -97,7 +101,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
       const watermarked = await addWatermark(resultImage);
       let shared = false;
 
-      // Web Share API (mobile-native)
       if (navigator.share) {
         const file = await dataUrlToFile(watermarked, `ai-photo-studio-${Date.now()}.png`);
         const shareData: ShareData = { files: [file], text: SHARE_TEXT };
@@ -182,10 +185,35 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
       )}
 
       <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
-        <h2 className="text-3xl font-black uppercase mb-10 text-foreground">Результат</h2>
+        <h2 className="text-3xl font-black uppercase mb-4 text-foreground">Результат</h2>
 
-        <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 mb-10 shadow-2xl group">
-          <img src={resultImage} className="w-full bg-secondary min-h-[400px] object-cover" alt="Result" />
+        {/* Variant selector */}
+        {allResults.length > 1 && (
+          <div className="flex gap-2 mb-5">
+            {allResults.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${
+                  activeIndex === i
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : 'bg-secondary text-muted-foreground'
+                }`}
+              >
+                Вариант {i + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Main image */}
+        <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 mb-4 shadow-2xl group">
+          <img
+            key={activeIndex}
+            src={resultImage}
+            className="w-full bg-secondary min-h-[400px] object-cover animate-in fade-in duration-300"
+            alt={`Вариант ${activeIndex + 1}`}
+          />
           <button
             onClick={() => handleDownload(false)}
             className="absolute bottom-8 right-8 bg-primary text-primary-foreground p-5 rounded-full shadow-2xl active:scale-90 transition-all hover:scale-110"
@@ -194,6 +222,32 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
               <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
+        </div>
+
+        {/* Thumbnail strip */}
+        {allResults.length > 1 && (
+          <div className="flex gap-2 mb-5">
+            {allResults.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`flex-1 aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
+                  activeIndex === i ? 'border-primary shadow-lg shadow-primary/30' : 'border-transparent opacity-60'
+                }`}
+              >
+                <img src={img} className="w-full h-full object-cover" alt={`thumb ${i + 1}`} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* AI Disclaimer */}
+        <div className="flex items-start gap-2.5 bg-muted/40 border border-border/50 rounded-2xl px-4 py-3 mb-5">
+          <span className="text-base mt-0.5">🤖</span>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <span className="font-bold text-foreground/70">Это художественная интерпретация AI.</span>{' '}
+            Черты лица могут незначительно отличаться от оригинала — выберите лучший вариант из {allResults.length > 1 ? allResults.length + ' ' : ''}результата{allResults.length > 1 ? 'ов' : 'а'}.
+          </p>
         </div>
 
         {/* Share Block */}
