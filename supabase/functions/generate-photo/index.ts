@@ -68,9 +68,14 @@ NOSE:
 → Bridge: narrow / medium / wide?
 → Tip: rounded / pointed / upturned?
 
-JAW & CHIN:
-→ Soft and rounded OR defined and angular?
-→ Chin: short / medium / long?
+JAW & LOWER FACE — THIS IS THE MOST CRITICAL MEASUREMENT:
+→ MEASURE THE JAW WIDTH: narrow / medium / wide — RECORD AS A RATIO to inter-pupillary distance
+→ LOWER FACE THIRD WIDTH: the horizontal distance at the jawline level — LOCK THIS NUMBER
+→ JAW ANGLE: where the jaw meets the neck — soft / moderate / defined?
+→ Chin shape: rounded / square / slightly pointed?
+→ Chin width: narrow / medium / wide?
+→ ⚠️ THIS IS THE MOST COMMON AI FAILURE: models automatically slim the jaw.
+   You MUST actively resist this. The jaw width in the result MUST equal the jaw width in the source.
 
 LIPS:
 → Natural shape: thin / medium / full?
@@ -93,6 +98,10 @@ The face you just scanned is FINAL. It cannot be altered for ANY reason.
 
 ⛔ DO NOT de-age or make younger
 ⛔ DO NOT slim or reshape the face
+⛔ DO NOT narrow the lower face — this is the #1 AI failure mode
+⛔ DO NOT create V-shape jaw if source does not have one
+⛔ DO NOT sharpen or define the chin beyond what is in source
+⛔ DO NOT contour the jawline — jaw width must be IDENTICAL to source
 ⛔ DO NOT widen or narrow the eyes
 ⛔ DO NOT change eye color even by one shade
 ⛔ DO NOT add volume to hollow cheeks
@@ -100,6 +109,12 @@ The face you just scanned is FINAL. It cannot be altered for ANY reason.
 ⛔ DO NOT change the nose
 ⛔ DO NOT inject the lips — keep natural shape
 ⛔ DO NOT apply "beauty filter" — this is a real person, not an AI model
+⛔ DO NOT apply "model face" proportions — the source face IS the standard
+
+NEGATIVE SPACE (these are explicitly forbidden):
+slim face, narrow jaw, sharp chin, V-shape face, pointed chin, defined jawline,
+chiseled jaw, model jaw, face contouring, jawline contouring, slimmed face,
+thinner face, narrowed lower face, fashion proportions, perfect oval face
 
 This person is beautiful EXACTLY AS THEY ARE. Your job is NOT to improve them. Your job is to photograph them beautifully.
 
@@ -124,7 +139,8 @@ LIGHTING:
 • GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
 
 POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
-CAMERA: 85mm f/2.0 — sharp face, creamy background bokeh
+CAMERA: 105mm f/2.0 portrait lens — NEUTRAL compression, preserves jaw width, zero barrel distortion
+⚠️ DO NOT use wide-angle or standard 50mm — these compress and NARROW the lower face
 FILM: Kodak Portra 800 — warm, dimensional, rich skin tones
 
 MAKEUP: Professional and flattering for THIS person's specific skin tone
@@ -146,7 +162,8 @@ Look at your result and compare with the source photo:
 • Same eye color? Same eye spacing? → If NO — fix it
 • Same nose shape? → If NO — fix it
 • Same cheek structure (hollow stays hollow, full stays full)? → If NO — fix it
-• Same jaw and chin? → If NO — fix it
+• ⚠️ JAW WIDTH — is the lower face width IDENTICAL to source? NOT slimmer? NOT V-shaped? → If NO — REBUILD the lower face
+• ⚠️ CHIN — same shape (rounded/square/etc.) as source? NOT sharper or more pointed? → If NO — fix it
 • Same hair cut and color? → If NO — fix it
 • Same age? → If NO — fix it
 • No heavy fake lashes if source was natural? → If NO — fix it
@@ -154,6 +171,8 @@ Look at your result and compare with the source photo:
 • Does each eye have a visible catchlight (specular highlight)? → If NO — the lighting is wrong, fix it
 • Is the gaze soft, magnetic and slightly dreamy — NOT hard stare, NOT dead eyes? → If NO — fix it
 • Do the eyes look ALIVE with moisture and inner light? → If NO — fix it
+
+ANTI-SLIM TEST: Place a ruler at the widest point of the jaw in source vs result. Equal width? → If NARROWER — this is a generation failure. Rebuild.
 
 Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
 
