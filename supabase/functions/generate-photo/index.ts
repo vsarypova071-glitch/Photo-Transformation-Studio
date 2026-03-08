@@ -39,11 +39,25 @@ STEP 1: SCAN THE FACE — MEMORIZE EVERY DETAIL
 
 Look at the face in the input photo. Read it like a forensic artist:
 
-EYES — look carefully:
-→ What is the EXACT iris color? (not just "green" — is it sage? grey-green? olive-green? hazel-green?)
-→ How close together are the eyes? (narrow-set / average / wide-set) — THIS IS BONE, IT CANNOT CHANGE
-→ What is the eyelid shape? Heavy lid? Visible crease? Deep-set?
-→ How many lashes does this person NATURALLY have? Sparse? Medium? Do NOT add fake heavy lashes.
+EYES — look with extreme precision:
+→ EXACT iris color (not "green" — is it sage? grey-green? olive-hazel? warm amber-green?)
+→ Eye spacing: narrow-set / average / wide-set — THIS IS BONE, CANNOT CHANGE
+→ Eyelid shape: heavy lid / visible crease / deep-set / almond
+→ Natural lash density: sparse / medium — DO NOT add theatrical fake lashes
+→ CATCHLIGHTS: the eyes MUST have a soft round specular highlight (catchlight) in each iris
+  — This is the single point of light reflected from the studio octabox
+  — Position: upper-left or upper-right of the iris, round, small, luminous
+  — WITHOUT catchlights the eyes look dead. WITH catchlights they come ALIVE.
+→ EYE MOISTURE: the sclera (whites) must have subtle wet sheen — not bloodshot, just alive
+→ GAZE QUALITY — this is the soul of the portrait:
+  • The gaze must be SOFT AND MAGNETIC — not hard staring, not vacant
+  • Think: a person lost in a beautiful thought, slightly dreamy, with quiet inner confidence
+  • Eyes slightly relaxed — NOT wide-open in tension, NOT squinting in aggression
+  • Slight downward tilt of the gaze (5°) creates intimacy and depth
+  • The feeling: "she sees you, but she's also somewhere else" — mysterious, captivating
+  • ⛔ DO NOT make "passport photo" dead eyes
+  • ⛔ DO NOT make hard aggressive stare
+  • ✓ DO create that golden-hour softness in the gaze — warm, alive, pulling you in
 
 CHEEKS — most important:
 → Are the cheeks HOLLOW (sunken below the cheekbone) or FULL (rounded)?
@@ -104,7 +118,10 @@ LIGHTING:
 • Large octabox at 45° — sculpts the face, REVEALS cheekbone structure, does NOT flatten it
 • Rim/hair light — creates depth and separation from background
 • Minimal fill — cheek hollows MUST remain visible if they exist
-• Sharp catchlights in each eye
+• CATCHLIGHTS (MANDATORY): a bright, round specular point of light in EACH iris — upper quadrant
+  — This is non-negotiable. It is what makes eyes look alive, warm, three-dimensional
+• Eye area: slightly brighter than surrounding face — draws viewer into the gaze
+• GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
 
 POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
 CAMERA: 85mm f/2.0 — sharp face, creamy background bokeh
@@ -134,6 +151,9 @@ Look at your result and compare with the source photo:
 • Same age? → If NO — fix it
 • No heavy fake lashes if source was natural? → If NO — fix it
 • Outfit and background are clearly different colors? → If NO — fix it
+• Does each eye have a visible catchlight (specular highlight)? → If NO — the lighting is wrong, fix it
+• Is the gaze soft, magnetic and slightly dreamy — NOT hard stare, NOT dead eyes? → If NO — fix it
+• Do the eyes look ALIVE with moisture and inner light? → If NO — fix it
 
 Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
 
