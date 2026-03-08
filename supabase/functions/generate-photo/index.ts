@@ -32,17 +32,20 @@ function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: st
 
 STEP 1 — SCAN & MEMORIZE THE PERSON IN THE INPUT PHOTO:
 Before generating anything, carefully read and memorize ALL of the following from the source photo:
-• IRIS COLOR: What exact color are the eyes? (green / brown / blue / gray / hazel / amber) — note the exact hue and saturation
-• FACE SHAPE: Round / oval / square / heart / diamond / oblong — which is it?
-• CHEEK FULLNESS: Are cheeks full and round, OR sculpted and hollow? Note the depth of the cheekbone hollow
-• NOSE: Width of bridge, shape of tip (rounded / pointed / wide / narrow), nostril spread
-• CHIN: Length from lower lip to chin tip — short / medium / long?
-• JAW: Soft and rounded OR defined and angular?
+• IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber) — note saturation and brightness
+• FACE SHAPE: Round / oval / square / heart / diamond / oblong
+• CHEEKBONE POSITION: How HIGH are the cheekbones? Note exact position.
+• CHEEK HOLLOW DEPTH: Rate 1–5: 1=very full/round cheeks, 5=very hollow/sculpted cheeks. WRITE THIS NUMBER.
+• CHEEK CONCAVITY: Is the area BELOW the cheekbone concave (sunken inward) or convex (rounded outward)?
+• ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low?
+• NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
+• CHIN: Length from lower lip to chin tip — short / medium / long
+• JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
+• LOWER FACE WIDTH: Narrow or wide relative to cheekbones?
 • BROW: Arch height, thickness, distance from eye
 • SKIN TONE: Fair / medium / olive / dark — exact undertone (warm/cool/neutral)
-• HAIR: Color, length, texture — note exactly what you see
+• HAIR: Color, length, texture
 • AGE: Approximate range, do NOT de-age
-• BODY TYPE: Note build and proportions if visible
 • ANY DISTINCTIVE FEATURES: moles, freckles, asymmetry, unique traits
 
 STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
@@ -51,16 +54,28 @@ STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
 ABSOLUTE RULES — APPLY TO EVERY PERSON
 ════════════════════════════════════════
 
-⛔ DO NOT "IMPROVE" or "BEAUTIFY" — your job is IDENTITY TRANSFER, not idealization
-⛔ DO NOT change face shape — use the EXACT shape you scanned in Step 1
-⛔ DO NOT change eye color — if you scanned green, render green; brown stays brown; blue stays blue
+⛔ DO NOT "IMPROVE" or "BEAUTIFY" — IDENTITY TRANSFER only, not idealization
+⛔ DO NOT change face shape — exact shape from Step 1
+⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
-⛔ DO NOT add volume to cheeks if they are sculpted — hollow cheeks stay hollow
-⛔ DO NOT fill in or soften a defined jawline — angular stays angular
-⛔ DO NOT shorten or lengthen the chin — clone the exact length
+
+⛔⛔ CHEEKS — THIS IS THE #1 MOST CRITICAL RULE ⛔⛔
+The cheek geometry is the most commonly distorted feature — pay maximum attention:
+• If you scanned HOLLOW cheeks (rating 3–5 from Step 1):
+  → The area BELOW the cheekbone MUST be CONCAVE (sunken inward) in the result
+  → This is STRUCTURAL BONE GEOMETRY — it does NOT disappear in fashion photos
+  → DO NOT add fat, volume, or roundness to hollow cheeks
+  → DO NOT let lighting fill in or soften the natural hollow shadows
+  → The shadow under the cheekbone MUST remain visually present — it defines the face
+• If you scanned FULL cheeks (rating 1–2): keep them full and round
+• ⛔ Adding volume to a sculpted face = IDENTITY THEFT = FAILURE
+
+⛔ DO NOT soften a defined jawline — angular jaw stays angular
+⛔ DO NOT shorten or lengthen the chin
+⛔ DO NOT narrow or widen the lower face — clone the exact width ratio
 ⛔ DO NOT de-age, over-smooth skin, or remove distinctive features
 ⛔ DO NOT change hair length or texture
-⛔ DO NOT apply a "generic beautiful person" face — this specific person's face must be recognizable
+⛔ DO NOT apply a "generic beautiful person" face — this specific person MUST be recognizable
 
 ════════════════════════════════════════
 EXPRESSION & POSE — ESSENTIAL FOR WOW
@@ -103,12 +118,13 @@ CLOTHING & PHOTOGRAPHY
 
 Outfit: ${garment}
 
-LIGHTING — CINEMATIC LUXURY:
-- Main light: large octabox at 45° — defines cheekbones and jaw of THIS person's face
-- Fill: white reflector — lifts shadows without losing depth
-- Rim/hair light from behind: separates subject from background, premium 3D effect
+LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
+- Main light: large octabox at 45° — sculpts and REVEALS existing bone structure, does NOT eliminate it
+- Fill light: MINIMAL — enough to see shadow detail, NOT enough to eliminate cheek hollows or flatten the face
+- ⛔ CRITICAL LIGHTING RULE: The natural shadow in the cheek hollow area MUST stay visible — it is BONE STRUCTURE, not a flaw to fix
+- Rim/hair light: separates subject from background, premium 3D depth
 - Catchlights MUST be visible in eyes — non-negotiable
-- Mood: Vogue Italia editorial — rich, dimensional, three-dimensional
+- Mood: Vogue Italia editorial — dimensional, sculpted, three-dimensional
 
 LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
 FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
@@ -119,21 +135,24 @@ ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
 ${customPrompt ? `Additional: ${customPrompt}` : ""}
 
 ════════════════════════════════════════
-FINAL QUALITY CHECK
+FINAL QUALITY CHECK — MANDATORY
 ════════════════════════════════════════
 
-Before rendering, confirm:
-✅ Eye color MATCHES source exactly (green/brown/blue/etc — not altered)
-✅ Face shape IDENTICAL — no rounding, no slimming
-✅ Cheeks MATCH source — hollow if hollow, full if full
+Before rendering, verify ALL of these:
+✅ Eye color MATCHES source exactly — NOT changed
+✅ Face shape IDENTICAL — no rounding, no slimming, no widening
+✅ CHEEKS: If source had hollow/sculpted cheeks → the concave shadow under the cheekbone is PRESENT and visible in the result
+✅ CHEEKBONE HEIGHT and protrusion IDENTICAL to source
 ✅ Jaw and chin IDENTICAL proportions
+✅ Lower face width MATCHES source
 ✅ Eyes have CATCHLIGHTS — bright, sharp, alive
 ✅ Expression is WARM and CONFIDENT — not scared, not stiff
 ✅ Lip color is FLATTERING for this specific person
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
-✅ The person is 100% RECOGNIZABLE as themselves
+✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-Ask yourself: "Would the person in the input photo look at this result and say — that's ME, but in Vogue?"`;
+FINAL TEST: "Does this face have the SAME bone structure as the input — same cheek hollows, same jaw, same proportions?"
+If NO → apply stricter geometric fidelity before output.`;
 }
 
 Deno.serve(async (req: Request) => {
