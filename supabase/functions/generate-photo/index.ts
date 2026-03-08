@@ -187,13 +187,14 @@ Before rendering, verify ALL of these:
 ✅ Jaw and chin IDENTICAL proportions
 ✅ Lower face width MATCHES source
 ✅ Eyes have CATCHLIGHTS — bright, sharp, alive
-✅ Expression is WARM and CONFIDENT — not scared, not stiff
-✅ Lip color is FLATTERING for this specific person
+✅ EXPRESSION: Matches source photo mood — if source smiles → result smiles. NOT changed to serious/fierce.
+✅ MAKEUP: Level matches source — natural stays natural. NO bold red lips if source wore subtle makeup.
+✅ OUTFIT vs BACKGROUND: Clearly different colors — no monochromatic floating head effect.
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
 ✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-FINAL TEST: "Does this face have the SAME bone structure as the input — same eye spacing near nose bridge, same cheek hollows, same jaw, same proportions?"
-If NO → apply stricter geometric fidelity before output.`;
+FINAL TEST: "Does this face have the SAME bone structure, SAME expression warmth, and SAME makeup level as the input?"
+If NO → apply stricter fidelity before output.`;
 }
 
 async function generateSingle(
