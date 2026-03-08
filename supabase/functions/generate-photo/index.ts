@@ -68,9 +68,14 @@ NOSE:
 → Bridge: narrow / medium / wide?
 → Tip: rounded / pointed / upturned?
 
-JAW & CHIN:
-→ Soft and rounded OR defined and angular?
-→ Chin: short / medium / long?
+JAW & LOWER FACE — THIS IS THE MOST CRITICAL MEASUREMENT:
+→ MEASURE THE JAW WIDTH: narrow / medium / wide — RECORD AS A RATIO to inter-pupillary distance
+→ LOWER FACE THIRD WIDTH: the horizontal distance at the jawline level — LOCK THIS NUMBER
+→ JAW ANGLE: where the jaw meets the neck — soft / moderate / defined?
+→ Chin shape: rounded / square / slightly pointed?
+→ Chin width: narrow / medium / wide?
+→ ⚠️ THIS IS THE MOST COMMON AI FAILURE: models automatically slim the jaw.
+   You MUST actively resist this. The jaw width in the result MUST equal the jaw width in the source.
 
 LIPS:
 → Natural shape: thin / medium / full?
