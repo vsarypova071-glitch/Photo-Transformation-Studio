@@ -9,16 +9,16 @@ const corsHeaders = {
 };
 
 const WARDROBE: string[] = [
-  "custom tailored minimalist wool suit in deep navy, perfect proportions",
+  "custom tailored minimalist wool suit in deep navy",
   "bespoke structured blazer in forest green premium cashmere",
-  "individually tailored silk blouse in ivory with high-waist charcoal trousers",
-  "architectural couture coat in camel with clean geometry",
-  "luxury monochrome power suit in slate gray, precision tailoring",
+  "silk blouse in ivory with high-waist charcoal trousers",
+  "architectural couture coat in camel",
+  "luxury power suit in slate gray, precision tailoring",
   "oversized cashmere coat in off-white, The Row aesthetic",
-  "structured leather blazer in cognac brown, Bottega Veneta-style",
-  "silk midi dress with architectural draping in deep burgundy",
-  "tailored wide-leg trousers in charcoal with ivory cashmere turtleneck",
-  "modern power blazer dress in midnight blue, sharp structured shoulders",
+  "structured leather blazer in cognac brown",
+  "silk midi dress in deep burgundy with architectural draping",
+  "wide-leg trousers in charcoal with ivory cashmere turtleneck",
+  "blazer dress in midnight blue, sharp structured shoulders",
 ];
 
 function getRandomGarment(exclude: string[] = []): string {
@@ -29,124 +29,115 @@ function getRandomGarment(exclude: string[] = []): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string, garment?: string): string {
   const g = garment || getRandomGarment();
 
-  return `YOU ARE A WORLD-CLASS PORTRAIT PHOTOGRAPHER AND RETOUCHER.
-YOUR SINGLE MOST IMPORTANT JOB: The person in the output MUST be 100% recognizable as the EXACT SAME PERSON from the input photo. If someone who knows this person in real life cannot immediately recognize them — you have FAILED.
+  return `TASK: Take the face from the input photo and place it into a new professional fashion photograph.
 
-══════════════════════════════════════════════════════
-PHASE 1 — FORENSIC FACE ANALYSIS (read the source photo like a passport officer)
-══════════════════════════════════════════════════════
+Think of it like a skilled film compositor: the face is a LAYER that gets composited into a completely new scene. The face layer is UNTOUCHED. Only the scene changes.
 
-Examine the input photo and record the EXACT measurements internally:
+═══════════════════════════════════════
+STEP 1: SCAN THE FACE — MEMORIZE EVERY DETAIL
+═══════════════════════════════════════
 
-EYES:
-• Iris color: precise hue (e.g. "sage green with brown limbal ring", NOT just "green")
-• Eye shape: almond / round / hooded / deep-set / wide-set / close-set
-• Inter-pupillary distance (IPD): narrow / average / wide — this is BONE STRUCTURE, cannot change
-• Distance from each inner eye corner to nose bridge — EXACT, FIXED
-• Natural lash density: sparse / medium / full (DO NOT add heavy theatrical lashes)
+Look at the face in the input photo. Read it like a forensic artist:
+
+EYES — look carefully:
+→ What is the EXACT iris color? (not just "green" — is it sage? grey-green? olive-green? hazel-green?)
+→ How close together are the eyes? (narrow-set / average / wide-set) — THIS IS BONE, IT CANNOT CHANGE
+→ What is the eyelid shape? Heavy lid? Visible crease? Deep-set?
+→ How many lashes does this person NATURALLY have? Sparse? Medium? Do NOT add fake heavy lashes.
+
+CHEEKS — most important:
+→ Are the cheeks HOLLOW (sunken below the cheekbone) or FULL (rounded)?
+→ If hollow: there must be a VISIBLE SHADOW beneath the cheekbone in the result
+→ ⛔ DO NOT fill in hollow cheeks with fat or volume — this changes the person completely
 
 NOSE:
-• Bridge width: narrow / medium / wide
-• Tip shape: pointed / rounded / bulbous / upturned
-• Nostril spread: narrow / medium / wide
+→ Bridge: narrow / medium / wide?
+→ Tip: rounded / pointed / upturned?
 
-FACE STRUCTURE:
-• Face shape: oval / round / square / heart / diamond / oblong
-• Cheekbone prominence: flat / medium / high
-• Cheek fullness BELOW cheekbone: concave/hollow (3–5) OR convex/full (1–2)
-• Jaw: soft & rounded OR defined & angular
-• Chin: short / medium / long, pointed / square / rounded
-
-SKIN & AGE:
-• Skin tone: exact undertone (warm ivory / cool beige / neutral / olive / etc.)
-• Approximate age: reproduce EXACTLY — do NOT de-age, do NOT add years
-• Distinctive marks: moles, freckles, asymmetry — ALL must be reproduced
+JAW & CHIN:
+→ Soft and rounded OR defined and angular?
+→ Chin: short / medium / long?
 
 LIPS:
-• Natural lip shape: thin / medium / full; bow shape; natural pigment color
-• DO NOT change lip shape or add volume
+→ Natural shape: thin / medium / full?
+→ Natural lip color (warm rose / berry / nude)?
+
+SKIN:
+→ Exact skin tone undertone
+→ Age — do NOT change it
+→ Any moles, freckles, asymmetries — reproduce ALL of them
 
 HAIR:
-• Exact color and exact cut/texture — DO NOT change hairstyle whatsoever
+→ Exact color (platinum / ash blonde / brunette / etc.)
+→ Exact cut — DO NOT change the hairstyle
 
-══════════════════════════════════════════════════════
-PHASE 2 — ABSOLUTE BIOMETRIC LOCK — THESE CANNOT CHANGE
-══════════════════════════════════════════════════════
+═══════════════════════════════════════
+STEP 2: LOCK THE FACE — IT CANNOT BE MODIFIED
+═══════════════════════════════════════
 
-⛔ Eye color — not one shade different
-⛔ Eye spacing (IPD) — bone structure, cannot be widened or narrowed
-⛔ Nose shape — bridge, tip, nostrils exactly as scanned
-⛔ Face shape — no slimming, no widening, no restructuring
-⛔ Cheek volume — hollow cheeks STAY hollow; full cheeks STAY full
-⛔ Jaw definition — do NOT soften a sharp jaw, do NOT sharpen a soft jaw
-⛔ Chin proportions — height and shape identical
-⛔ Lip shape — natural shape preserved, NO filler effect
-⛔ Age — same age as in source photo
-⛔ Hair — same cut, color, texture
-⛔ Skin tone — same undertone
-⛔ Distinctive marks — moles/freckles reproduced
+The face you just scanned is FINAL. It cannot be altered for ANY reason.
 
-⛔ DO NOT "beautify" this person — they are beautiful AS THEY ARE
-⛔ DO NOT apply a generic "beautiful model" face — this is a SPECIFIC REAL HUMAN BEING
-⛔ DO NOT add heavy false lashes if source shows natural lashes
-⛔ DO NOT smooth skin into plastic perfection — keep natural texture and pores
+⛔ DO NOT de-age or make younger
+⛔ DO NOT slim or reshape the face
+⛔ DO NOT widen or narrow the eyes
+⛔ DO NOT change eye color even by one shade
+⛔ DO NOT add volume to hollow cheeks
+⛔ DO NOT add fake heavy lashes — only enhance what is naturally there
+⛔ DO NOT change the nose
+⛔ DO NOT inject the lips — keep natural shape
+⛔ DO NOT apply "beauty filter" — this is a real person, not an AI model
 
-══════════════════════════════════════════════════════
-PHASE 3 — CREATE A NEW PROFESSIONAL PHOTOSHOOT
-══════════════════════════════════════════════════════
+This person is beautiful EXACTLY AS THEY ARE. Your job is NOT to improve them. Your job is to photograph them beautifully.
 
-The input is just a selfie. You are creating a BRAND NEW photograph as if taken in a top fashion studio.
-The face (biometrics from Phase 1) is the ONLY connection to the source. Everything else is completely new:
+═══════════════════════════════════════
+STEP 3: BUILD THE NEW SCENE AROUND THE FACE
+═══════════════════════════════════════
 
-✅ NEW PROFESSIONAL SETTING: luxury studio editorial environment — completely different from the input
-✅ NEW LIGHTING: 85mm f/1.4, large octabox at 45° with rim light — cinematic, dimensional, sculpted
-✅ NEW POSE: confident editorial pose — hand position, body angle, head tilt all fresh
-✅ NEW BACKGROUND: luxury neutral — warm gray / ivory / slate / champagne — NEVER matching the outfit
-✅ EXPRESSION: determined, composed, magnetic — the most powerful version of this specific person
+Now place that EXACT LOCKED FACE into a completely new professional setting:
 
 OUTFIT: ${g}
 
-⛔ CRITICAL COLOR RULE: Outfit and background MUST be completely different colors
-   → Dark outfit → light neutral background
-   → Warm-toned outfit → cool/neutral background  
-   → ⛔ NEVER: same color family for outfit AND background
+BACKGROUND: Luxury studio — warm gray / ivory / soft taupe
+⚠️ MANDATORY: Background color MUST contrast with outfit color. They cannot be similar tones.
 
-MAKEUP — ELEVATED BUT NATURAL:
-• Foundation: skin looks like REAL SKIN — natural texture, healthy glow, NOT plastic
-• Lips: most flattering shade for THIS person's skin tone — warm nude / rose / mauve / berry
-  → ⛔ DO NOT match lip color to outfit color
-  → ⛔ DO NOT add bright red lipstick unless it clearly suits this specific skin tone
-• Lashes: enhance what exists — defined and separated, NOT theatrical or fake-looking
-• Overall: as if a professional makeup artist prepared them for Vogue — not a beauty pageant
+LIGHTING:
+• Large octabox at 45° — sculpts the face, REVEALS cheekbone structure, does NOT flatten it
+• Rim/hair light — creates depth and separation from background
+• Minimal fill — cheek hollows MUST remain visible if they exist
+• Sharp catchlights in each eye
 
-LENS & FILM:
-• 85mm portrait lens at f/2.0 — subject tack sharp, background creamy bokeh
-• Kodak Portra 800 film aesthetic — warm, rich, dimensional
-• Catchlights: 2 sharp white reflections in each iris — eyes alive and present
+POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
+CAMERA: 85mm f/2.0 — sharp face, creamy background bokeh
+FILM: Kodak Portra 800 — warm, dimensional, rich skin tones
 
-${aspectRatio ? `Aspect ratio: MATCH INPUT — ${aspectRatio}` : ""}
-${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
-${customPrompt ? `Additional: ${customPrompt}` : ""}
+MAKEUP: Professional and flattering for THIS person's specific skin tone
+• Skin: natural texture, real skin — NOT plastic or airbrushed to oblivion
+• Lips: warm nude / mauve / berry — ⛔ NEVER matching the outfit color
+• Lashes: enhanced naturally — ⛔ NO theatrical fake lashes
+• Blush: placed high on cheekbones, warm
 
-══════════════════════════════════════════════════════
-PHASE 4 — IDENTITY VERIFICATION (mandatory before rendering)
-══════════════════════════════════════════════════════
+${aspectRatio ? `Aspect ratio: ${aspectRatio}` : ""}
+${stylePrompt ? `Style: ${stylePrompt}` : ""}
+${customPrompt ? `Note: ${customPrompt}` : ""}
 
-Answer each question. If ANY answer is NO — rebuild that element before rendering:
+═══════════════════════════════════════
+STEP 4: FINAL CHECK BEFORE RENDERING
+═══════════════════════════════════════
 
-1. Would this person's close friend IMMEDIATELY recognize them in this image? → MUST BE YES
-2. Are the eyes the EXACT same color and spacing as in the source? → MUST BE YES
-3. Is the nose the EXACT same shape — bridge width, tip, nostrils? → MUST BE YES
-4. Is the face shape IDENTICAL — same cheekbones, jaw, chin? → MUST BE YES
-5. Is the age IDENTICAL — not younger, not older? → MUST BE YES
-6. Are hollow cheeks still hollow? Are full cheeks still full? → MUST BE YES
-7. Is the hair the exact same cut and color? → MUST BE YES
-8. Does the outfit color CONTRAST clearly with the background? → MUST BE YES
-9. Does this look like a PROFESSIONAL FASHION MAGAZINE PHOTO (not a filtered selfie)? → MUST BE YES
-10. Is this a SPECIFIC REAL PERSON — not a generic AI-generated model face? → MUST BE YES
+Look at your result and compare with the source photo:
 
-All 10 = YES → render.
-Any = NO → fix and rebuild before rendering.`;
+• Same eye color? Same eye spacing? → If NO — fix it
+• Same nose shape? → If NO — fix it
+• Same cheek structure (hollow stays hollow, full stays full)? → If NO — fix it
+• Same jaw and chin? → If NO — fix it
+• Same hair cut and color? → If NO — fix it
+• Same age? → If NO — fix it
+• No heavy fake lashes if source was natural? → If NO — fix it
+• Outfit and background are clearly different colors? → If NO — fix it
+
+Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
+
+ONLY render when all answers are YES.`;
 }
 
 async function generateSingle(
@@ -204,7 +195,7 @@ Deno.serve(async (req: Request) => {
   try {
     if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "AI service not configured. Set LOVABLE_API_KEY in secrets." }),
+        JSON.stringify({ error: "AI service not configured." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -218,7 +209,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Calculate aspect ratio
     let aspectRatio: string | undefined;
     if (originalDimensions?.width && originalDimensions?.height) {
       const w = originalDimensions.width;
@@ -230,7 +220,6 @@ Deno.serve(async (req: Request) => {
 
     const numVariants = Math.min(Math.max(1, count), 3);
 
-    // Pick different garments for variety
     const garments: string[] = [];
     for (let i = 0; i < numVariants; i++) {
       garments.push(getRandomGarment(garments));
@@ -238,7 +227,6 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Generating ${numVariants} variants in parallel...`);
 
-    // Generate all variants in parallel
     const promises = garments.map(g =>
       generateSingle(imageBase64, stylePrompt || "", customPrompt || "", aspectRatio, g)
     );
@@ -256,10 +244,7 @@ Deno.serve(async (req: Request) => {
     console.log(`Generated ${imageUrls.length}/${numVariants} variants successfully`);
 
     return new Response(
-      JSON.stringify({
-        imageUrl: imageUrls[0],   // backward compat
-        imageUrls,                // all variants
-      }),
+      JSON.stringify({ imageUrl: imageUrls[0], imageUrls }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
