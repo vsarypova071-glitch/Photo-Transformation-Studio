@@ -57,9 +57,27 @@ SKULL GEOMETRY (DO NOT ALTER):
 - DO NOT apply "beauty standard" proportions — use ONLY the real proportions from the photo
 - DO NOT apply artistic/painterly facial geometry even if style is painterly
 
-FEATURE DETAIL (CLONE ALL):
+FEATURE DETAIL — EXTREME PRECISION (CLONE ALL):
+
+🔴 EYES — HIGHEST PRIORITY:
+- Inter-ocular distance (gap between eyes): measure in px, clone EXACTLY — DO NOT bring eyes closer together
+- Eye width (inner corner to outer corner): clone EXACTLY — DO NOT make eyes smaller or rounder
+- Eye shape: almond/hooded/wide-set — identify and LOCK
+- Outer corner angle: upward/neutral/downward tilt — clone EXACTLY
+- Iris color: exact hue (green/hazel/blue/brown) — do NOT shift the color
+- Upper eyelid: fold visibility, heaviness — CLONE
+- Distance from eye to eyebrow: EXACT — do NOT raise or lower brows
+⛔ FORBIDDEN: do NOT normalize eye spacing, do NOT make eyes more "symmetrical" than source
+
+🔴 CHIN & JAW — HIGHEST PRIORITY:
+- Chin LENGTH (from lower lip to chin tip): measure in px — CLONE EXACTLY
+- Chin SHAPE: pointed/square/rounded — identify and LOCK, do NOT round a pointed chin
+- Chin PROJECTION: how far it protrudes forward — clone the exact angle
+- Jawline: angle from ear to chin — CLONE. If soft: keep soft. If defined: keep defined.
+- Mandible width at the widest point — CLONE EXACTLY
+⛔ FORBIDDEN: do NOT shorten the chin, do NOT soften a defined jaw, do NOT add or remove chin projection
+
 - Nose: bridge width, tip shape, nostril size and flare — IDENTICAL
-- Eyes: exact shape, size, spacing, inner/outer corner angles, iris color — IDENTICAL
 - Eyebrows: exact arch, thickness, length, color — IDENTICAL
 - Lips: Cupid's bow, lower lip fullness, mouth width — IDENTICAL
 - Skin: exact tone, texture, pores, moles, freckles — IDENTICAL
