@@ -69,54 +69,33 @@ NOSE:
 → Tip: rounded / pointed / upturned?
 
 JAW & LOWER FACE — THIS IS THE MOST CRITICAL MEASUREMENT:
-→ MEASURE THE JAW WIDTH: narrow / medium / wide — RECORD AS A RATIO to inter-pupillary distance
-→ LOWER FACE THIRD WIDTH: the horizontal distance at the jawline level — LOCK THIS NUMBER
-→ JAW ANGLE: where the jaw meets the neck — soft / moderate / defined?
-→ Chin shape: rounded / square / slightly pointed?
-→ Chin width: narrow / medium / wide?
-→ ⚠️ THIS IS THE MOST COMMON AI FAILURE: models automatically slim the jaw.
-   You MUST actively resist this. The jaw width in the result MUST equal the jaw width in the source.
-
-LIPS:
-→ Natural shape: thin / medium / full?
-→ Natural lip color (warm rose / berry / nude)?
-
-SKIN:
-→ Exact skin tone undertone
-→ Age — do NOT change it
-→ Any moles, freckles, asymmetries — reproduce ALL of them
-
-HAIR:
-→ Exact color (platinum / ash blonde / brunette / etc.)
-→ Exact cut — DO NOT change the hairstyle
+→ JAW WIDTH RATIO: Measure jaw width divided by inter-pupillary distance (IPD). RECORD THIS NUMBER. The result MUST match exactly.
+→ LOWER THIRD WIDTH: horizontal width at jawline level in pixels — LOCK THIS NUMBER. DO NOT REDUCE IT.
+→ LOWER THIRD HEIGHT: from nose base to chin tip — LOCK THIS PROPORTION. DO NOT SHORTEN IT.
+→ JAW ANGLE: where jaw meets neck — soft / moderate / defined — COPY EXACTLY
+→ Chin shape: rounded / square / soft-square / slightly pointed — COPY EXACTLY, DO NOT SHARPEN
+→ Chin width: measure and LOCK. DO NOT NARROW.
+→ Cheek volume: if full — keep full. If hollow — keep hollow. DO NOT DEFLATE OR INFLATE.
+→ ⚠️ CRITICAL FAILURE MODE: AI models automatically slim the lower face by 15-25%.
+   You MUST counter this tendency by ACTIVELY WIDENING the lower third to match source.
+   Natural face width, real face proportions, soft rounded chin, natural jawline width,
+   natural cheek volume, preserve real face geometry — these are MANDATORY constraints.
 
 ═══════════════════════════════════════
-STEP 2: LOCK THE FACE — IT CANNOT BE MODIFIED
+⛔ NEGATIVE PROMPT — THESE ARE STRICTLY FORBIDDEN
 ═══════════════════════════════════════
 
-The face you just scanned is FINAL. It cannot be altered for ANY reason.
+slim face, narrow jaw, v-shape face, v-shape jaw, sharp chin, model face, beautified face,
+perfect skin, airbrushed skin, altered facial structure, jawline contouring, face slimming,
+chiseled jaw, defined jawline, narrow lower face, pointed chin, model jaw, face contouring,
+narrowed face, thinner face, fashion face proportions, perfect oval face, sculpted jaw,
+slimmed cheeks, hollow cheeks (if source has full), face restructuring, beauty filter face,
+narrowed lower third, compressed jaw width, reduced chin width, V-jaw, editorial jaw,
+supermodel proportions, idealized face, beautification filter
 
-⛔ DO NOT de-age or make younger
-⛔ DO NOT slim or reshape the face
-⛔ DO NOT narrow the lower face — this is the #1 AI failure mode
-⛔ DO NOT create V-shape jaw if source does not have one
-⛔ DO NOT sharpen or define the chin beyond what is in source
-⛔ DO NOT contour the jawline — jaw width must be IDENTICAL to source
-⛔ DO NOT widen or narrow the eyes
-⛔ DO NOT change eye color even by one shade
-⛔ DO NOT add volume to hollow cheeks
-⛔ DO NOT add fake heavy lashes — only enhance what is naturally there
-⛔ DO NOT change the nose
-⛔ DO NOT inject the lips — keep natural shape
-⛔ DO NOT apply "beauty filter" — this is a real person, not an AI model
-⛔ DO NOT apply "model face" proportions — the source face IS the standard
-
-NEGATIVE SPACE (these are explicitly forbidden):
-slim face, narrow jaw, sharp chin, V-shape face, pointed chin, defined jawline,
-chiseled jaw, model jaw, face contouring, jawline contouring, slimmed face,
-thinner face, narrowed lower face, fashion proportions, perfect oval face
-
-This person is beautiful EXACTLY AS THEY ARE. Your job is NOT to improve them. Your job is to photograph them beautifully.
+THIS IS THE ANTI-BEAUTIFICATION DIRECTIVE:
+This person's natural face geometry IS the standard. Your only job is to photograph them beautifully — not to reshape them.
+The source face is PERFECT AS-IS. Any AI tendency to "improve" the face is a failure.
 
 ═══════════════════════════════════════
 STEP 3: BUILD THE NEW SCENE AROUND THE FACE
