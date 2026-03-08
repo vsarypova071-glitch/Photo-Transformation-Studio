@@ -139,7 +139,8 @@ LIGHTING:
 • GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
 
 POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
-CAMERA: 85mm f/2.0 — sharp face, creamy background bokeh
+CAMERA: 105mm f/2.0 portrait lens — NEUTRAL compression, preserves jaw width, zero barrel distortion
+⚠️ DO NOT use wide-angle or standard 50mm — these compress and NARROW the lower face
 FILM: Kodak Portra 800 — warm, dimensional, rich skin tones
 
 MAKEUP: Professional and flattering for THIS person's specific skin tone
