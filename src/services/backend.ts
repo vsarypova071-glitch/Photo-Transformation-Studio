@@ -156,7 +156,7 @@ class BackendService {
             isPremium: false,
             customPrompt: job.customPrompt || '',
             originalDimensions: job.originalDimensions,
-            count: isRefinement ? 1 : 3,
+            count: 1,
           }),
           signal: controller.signal,
         }
