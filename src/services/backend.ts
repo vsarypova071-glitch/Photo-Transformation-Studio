@@ -91,16 +91,7 @@ class BackendService {
   async refineJob(baseImage: string, editPrompt: string): Promise<Job> {
     log.info('Creating refine job');
     
-    const userId = await this.getAuthUserId();
-    if (!userId) {
-      throw new Error('NOT_AUTHENTICATED');
-    }
-    
-    // Validate credits server-side
-    const creditUsed = await this.useCredit();
-    if (!creditUsed) {
-      throw new Error('INSUFFICIENT_CREDITS');
-    }
+    const userId = this.getAnonymousUserId();
 
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await compressImage(baseImage, 0.95);
