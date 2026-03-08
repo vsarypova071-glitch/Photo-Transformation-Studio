@@ -117,9 +117,12 @@ LIGHTING:
 • Eye area: slightly brighter than surrounding face — draws viewer into the gaze
 • GAZE DIRECTION: looking slightly UP and to the side (not dead-center) — creates mystery
 
-POSE: Confident editorial pose — hand near face, slight head turn, strong gaze
-CAMERA: 105mm f/2.0 portrait lens — NEUTRAL compression, preserves jaw width, zero barrel distortion
-⚠️ DO NOT use wide-angle or standard 50mm — these compress and NARROW the lower face
+POSE: Confident editorial pose — hand near face, slight head turn, soft magnetic gaze
+CAMERA: 85mm f/2.0 portrait lens — NEUTRAL perspective, eye-level camera angle, zero barrel distortion
+⚠️ DO NOT use wide-angle — barrel distortion NARROWS the lower face
+⚠️ DO NOT use low-angle — foreshortening SHARPENS the chin
+⚠️ CAMERA ANGLE: eye-level only — neutral portrait perspective — this is mandatory
+⚠️ Forbidden: wide angle portrait, low angle face, extreme perspective, any angle that distorts jaw width
 FILM: Kodak Portra 800 — warm, dimensional, rich skin tones
 
 MAKEUP: Professional and flattering for THIS person's specific skin tone
