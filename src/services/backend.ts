@@ -43,121 +43,23 @@ async function compressImage(base64Str: string, quality = 0.9): Promise<string> 
 }
 
 class BackendService {
-  private async getAuthUserId(): Promise<string | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user?.id ?? null;
-  }
-
-  async getUser(): Promise<User> {
-    const userId = await this.getAuthUserId();
-    
-    if (!userId) {
-      log.warn('No authenticated user');
-      throw new Error('NOT_AUTHENTICATED');
+  private getAnonymousUserId(): string {
+    let id = sessionStorage.getItem('anon_user_id');
+    if (!id) {
+      id = 'anon_' + Math.random().toString(36).substring(2);
+      sessionStorage.setItem('anon_user_id', id);
     }
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'get_user' }
-      });
-      
-      if (error) {
-        log.error('Error fetching user from server', { error });
-        throw error;
-      }
-      
-      if (data?.success && data?.user) {
-        const serverUser = data.user;
-        const user: User = {
-          id: serverUser.user_id,
-          plan: serverUser.plan as PlanType,
-          remainingCredits: serverUser.remaining_credits,
-          allowedStylesCount: serverUser.allowed_styles_count,
-          history: []
-        };
-        log.debug('User loaded from server', { plan: user.plan, credits: user.remainingCredits });
-        return user;
-      }
-      
-      throw new Error('Failed to get user data');
-    } catch (error) {
-      log.error('Failed to fetch user', { error });
-      throw error;
-    }
-  }
-
-  async activateCode(code: string): Promise<{ success: boolean; message: string }> {
-    const userId = await this.getAuthUserId();
-    
-    if (!userId) {
-      return { success: false, message: 'Требуется авторизация' };
-    }
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'activate_code', code }
-      });
-      
-      if (error) {
-        log.error('Error activating code', { error });
-        return { success: false, message: 'Ошибка сервера' };
-      }
-      
-      log.info('Code activation result', { success: data?.success });
-      return {
-        success: data?.success || false,
-        message: data?.message || 'Неизвестная ошибка'
-      };
-    } catch (error) {
-      log.error('Failed to activate code', { error });
-      return { success: false, message: 'Ошибка соединения' };
-    }
-  }
-
-  private async useCredit(): Promise<boolean> {
-    const userId = await this.getAuthUserId();
-    
-    if (!userId) {
-      log.error('No authenticated user for credit use');
-      return false;
-    }
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-code', {
-        body: { action: 'use_credit' }
-      });
-      
-      if (error) {
-        log.error('Error using credit', { error });
-        return false;
-      }
-      
-      return data?.success || false;
-    } catch (error) {
-      log.error('Failed to use credit', { error });
-      return false;
-    }
+    return id;
   }
 
   async createJob(image: string, styleIds: string[], customPrompt?: string, intensity = 70, isFullBody = false): Promise<Job> {
     log.info('Creating job', { styleIds, intensity, isFullBody });
     
-    const userId = await this.getAuthUserId();
-    if (!userId) {
-      throw new Error('NOT_AUTHENTICATED');
-    }
-    
-    // Validate credits server-side
-    const creditUsed = await this.useCredit();
-    if (!creditUsed) {
-      log.error('Insufficient credits');
-      throw new Error('INSUFFICIENT_CREDITS');
-    }
+    const userId = this.getAnonymousUserId();
 
     localStorage.removeItem(STORAGE_KEYS.JOBS);
     const optimizedImage = await compressImage(image, 0.95);
 
-    // Measure original image dimensions to preserve aspect ratio
     const imageDimensions = await new Promise<{ width: number; height: number }>((resolve) => {
       const img = new Image();
       img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
