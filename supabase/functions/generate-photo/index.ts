@@ -32,17 +32,19 @@ function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: st
 
 STEP 1 — SCAN & MEMORIZE THE PERSON IN THE INPUT PHOTO:
 Before generating anything, carefully read and memorize ALL of the following from the source photo:
-• IRIS COLOR: What exact color are the eyes? (green / brown / blue / gray / hazel / amber) — note the exact hue and saturation
-• FACE SHAPE: Round / oval / square / heart / diamond / oblong — which is it?
-• CHEEK FULLNESS: Are cheeks full and round, OR sculpted and hollow? Note the depth of the cheekbone hollow
-• NOSE: Width of bridge, shape of tip (rounded / pointed / wide / narrow), nostril spread
-• CHIN: Length from lower lip to chin tip — short / medium / long?
-• JAW: Soft and rounded OR defined and angular?
+• IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber) — note saturation and brightness
+• FACE SHAPE: Round / oval / square / heart / diamond / oblong
+• CHEEKBONE POSITION: How HIGH are the cheekbones? Are the cheeks HOLLOW (concave under the bone) or FULL (convex)? Measure the depth of the hollow under the zygomatic arch
+• CHEEK HOLLOW DEPTH: Rate 1–5: 1=very full/round, 5=very hollow/sculpted. Write this number.
+• ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low on the face?
+• NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
+• CHIN: Length from lower lip to chin tip — short / medium / long
+• JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
+• LOWER FACE WIDTH: Is the lower face narrow or wide relative to cheekbones?
 • BROW: Arch height, thickness, distance from eye
 • SKIN TONE: Fair / medium / olive / dark — exact undertone (warm/cool/neutral)
-• HAIR: Color, length, texture — note exactly what you see
+• HAIR: Color, length, texture
 • AGE: Approximate range, do NOT de-age
-• BODY TYPE: Note build and proportions if visible
 • ANY DISTINCTIVE FEATURES: moles, freckles, asymmetry, unique traits
 
 STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
@@ -51,16 +53,25 @@ STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
 ABSOLUTE RULES — APPLY TO EVERY PERSON
 ════════════════════════════════════════
 
-⛔ DO NOT "IMPROVE" or "BEAUTIFY" — your job is IDENTITY TRANSFER, not idealization
-⛔ DO NOT change face shape — use the EXACT shape you scanned in Step 1
-⛔ DO NOT change eye color — if you scanned green, render green; brown stays brown; blue stays blue
+⛔ DO NOT "IMPROVE" or "BEAUTIFY" — IDENTITY TRANSFER only, not idealization
+⛔ DO NOT change face shape — exact shape from Step 1
+⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
-⛔ DO NOT add volume to cheeks if they are sculpted — hollow cheeks stay hollow
-⛔ DO NOT fill in or soften a defined jawline — angular stays angular
-⛔ DO NOT shorten or lengthen the chin — clone the exact length
+
+⛔⛔ CHEEKS — MOST CRITICAL RULE ⛔⛔
+If you scanned HOLLOW cheeks (rating 3–5): the area UNDER the cheekbone MUST appear concave/sunken — not filled in, not softened, not rounded
+If you scanned FULL cheeks (rating 1–2): keep them full
+DO NOT add volume or fat to cheeks that are sculpted — this is the #1 forbidden mistake
+DO NOT let diffuse lighting "fill in" the natural shadows under the cheekbones
+The hollow under the zygomatic arch is STRUCTURAL — it does not disappear in fashion photos
+PRESERVE the exact shadow shape in the cheek hollow area from the source photo
+
+⛔ DO NOT soften a defined jawline — angular jaw stays angular
+⛔ DO NOT shorten or lengthen the chin
+⛔ DO NOT narrow or widen the lower face — clone the exact width ratio
 ⛔ DO NOT de-age, over-smooth skin, or remove distinctive features
 ⛔ DO NOT change hair length or texture
-⛔ DO NOT apply a "generic beautiful person" face — this specific person's face must be recognizable
+⛔ DO NOT apply a "generic beautiful person" face — this specific person MUST be recognizable
 
 ════════════════════════════════════════
 EXPRESSION & POSE — ESSENTIAL FOR WOW
