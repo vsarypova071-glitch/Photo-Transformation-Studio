@@ -9,16 +9,16 @@ const corsHeaders = {
 };
 
 const WARDROBE: string[] = [
-  "custom tailored minimalist wool suit, perfect proportions",
-  "bespoke structured blazer in premium cashmere",
-  "individually tailored silk blouse with high-waist trousers",
-  "architectural couture coat with clean geometry",
-  "luxury monochrome power suit, precision tailoring",
-  "oversized cashmere coat in camel, The Row aesthetic",
-  "structured Bottega Veneta-style leather blazer",
-  "silk midi dress with architectural draping",
-  "tailored wide-leg trousers with cashmere turtleneck",
-  "modern power blazer dress, sharp shoulders",
+  "custom tailored minimalist wool suit in deep navy, perfect proportions",
+  "bespoke structured blazer in forest green premium cashmere",
+  "individually tailored silk blouse in ivory with high-waist charcoal trousers",
+  "architectural couture coat in camel with clean geometry",
+  "luxury monochrome power suit in slate gray, precision tailoring",
+  "oversized cashmere coat in off-white, The Row aesthetic",
+  "structured leather blazer in cognac brown, Bottega Veneta-style",
+  "silk midi dress with architectural draping in deep burgundy",
+  "tailored wide-leg trousers in charcoal with ivory cashmere turtleneck",
+  "modern power blazer dress in midnight blue, sharp structured shoulders",
 ];
 
 function getRandomGarment(exclude: string[] = []): string {
@@ -29,150 +29,124 @@ function getRandomGarment(exclude: string[] = []): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string, garment?: string): string {
   const g = garment || getRandomGarment();
 
-  return `TASK: PROFESSIONAL LUXURY FASHION PHOTOSHOOT
+  return `YOU ARE A WORLD-CLASS PORTRAIT PHOTOGRAPHER AND RETOUCHER.
+YOUR SINGLE MOST IMPORTANT JOB: The person in the output MUST be 100% recognizable as the EXACT SAME PERSON from the input photo. If someone who knows this person in real life cannot immediately recognize them — you have FAILED.
 
-⚠️ CRITICAL CONCEPT: You are NOT editing or filtering the input photo.
-You are creating a COMPLETELY NEW, PROFESSIONALLY SHOT PHOTOGRAPH.
-The input photo is ONLY a biometric reference for the person's face.
-Everything else — background, lighting, outfit, setting, mood, camera angle — must be BRAND NEW and dramatically different from the input photo.
-Think: the person walked into a top fashion studio and had a professional shoot. That's what you are creating.
+══════════════════════════════════════════════════════
+PHASE 1 — FORENSIC FACE ANALYSIS (read the source photo like a passport officer)
+══════════════════════════════════════════════════════
 
-STEP 1 — SCAN & MEMORIZE THE FACE BIOMETRICS ONLY:
-Extract and lock these values from the source photo — they are the ONLY thing carried over to the new photo:
-• IRIS COLOR: Exact hue (green / brown / blue / gray / hazel / amber)
-• FACE SHAPE: Round / oval / square / heart / diamond / oblong
-• CHEEKBONE POSITION & HEIGHT
-• CHEEK HOLLOW DEPTH: Rate 1–5 (1=full, 5=sculpted hollow)
-• CHEEK CONCAVITY: concave (hollow) or convex (round) below cheekbone
-• NOSE: bridge width, tip shape, nostril spread
-• INNER EYE CORNERS: distance from each inner corner to nose bridge — FIXED bone measurement
-• INTER-PUPILLARY DISTANCE (IPD): narrow / average / wide — DO NOT widen
-• CHIN: short / medium / long
-• JAW: soft & rounded OR defined & angular
-• LOWER FACE WIDTH relative to cheekbones
-• BROW: arch height, thickness
-• SKIN TONE: exact undertone (warm/cool/neutral)
-• HAIR: color, length, texture
-• AGE: approximate range
-• DISTINCTIVE FEATURES: moles, freckles, asymmetry
+Examine the input photo and record the EXACT measurements internally:
 
-STEP 2 — LOCK ALL FACE VALUES. BIOMETRIC BLUEPRINT SEALED.
-✅ ONLY THE FACE IS CARRIED OVER. EVERYTHING ELSE IS CREATED FRESH.
+EYES:
+• Iris color: precise hue (e.g. "sage green with brown limbal ring", NOT just "green")
+• Eye shape: almond / round / hooded / deep-set / wide-set / close-set
+• Inter-pupillary distance (IPD): narrow / average / wide — this is BONE STRUCTURE, cannot change
+• Distance from each inner eye corner to nose bridge — EXACT, FIXED
+• Natural lash density: sparse / medium / full (DO NOT add heavy theatrical lashes)
 
-════════════════════════════════════════
-FACE BIOMETRIC RULES — ONLY THESE ARE PRESERVED
-════════════════════════════════════════
+NOSE:
+• Bridge width: narrow / medium / wide
+• Tip shape: pointed / rounded / bulbous / upturned
+• Nostril spread: narrow / medium / wide
 
-⛔ DO NOT change face shape — exact shape from Step 1
-⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
-⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
-⛔ DO NOT de-age, over-smooth skin, or remove distinctive features
-⛔ DO NOT apply a "generic beautiful person" face — this specific person MUST be recognizable
+FACE STRUCTURE:
+• Face shape: oval / round / square / heart / diamond / oblong
+• Cheekbone prominence: flat / medium / high
+• Cheek fullness BELOW cheekbone: concave/hollow (3–5) OR convex/full (1–2)
+• Jaw: soft & rounded OR defined & angular
+• Chin: short / medium / long, pointed / square / rounded
 
-⛔⛔ EYE SPACING & NOSE BRIDGE — FIXED BONE GEOMETRY ⛔⛔
-• The gap between each inner eye corner and the nose bridge MUST match the source exactly
-• ⛔ DO NOT push eyes wider apart — widened IPD = completely different person
-• Each eye must sit at the SAME distance from the nose center as in the source photo
-• VERIFY: Draw a vertical line down the nose bridge — each eye must be equidistant from it
+SKIN & AGE:
+• Skin tone: exact undertone (warm ivory / cool beige / neutral / olive / etc.)
+• Approximate age: reproduce EXACTLY — do NOT de-age, do NOT add years
+• Distinctive marks: moles, freckles, asymmetry — ALL must be reproduced
 
-⛔⛔ CHEEKS — MOST CRITICAL RULE ⛔⛔
-• If you scanned HOLLOW cheeks (rating 3–5):
-  → The area BELOW the cheekbone MUST be CONCAVE (sunken inward)
-  → DO NOT add fat, volume, or roundness to hollow cheeks
-  → Shadow under the cheekbone MUST remain visually present
-• If you scanned FULL cheeks (rating 1–2): keep them full
-• ⛔ Adding volume to a sculpted face = IDENTITY THEFT = FAILURE
+LIPS:
+• Natural lip shape: thin / medium / full; bow shape; natural pigment color
+• DO NOT change lip shape or add volume
 
-⛔ DO NOT soften a defined jawline
-⛔ DO NOT change jaw width or chin length
-⛔ DO NOT change hair length or texture — same cut and color
+HAIR:
+• Exact color and exact cut/texture — DO NOT change hairstyle whatsoever
 
-════════════════════════════════════════
-TRANSFORM EVERYTHING ELSE — THIS IS A PHOTOSHOOT
-════════════════════════════════════════
+══════════════════════════════════════════════════════
+PHASE 2 — ABSOLUTE BIOMETRIC LOCK — THESE CANNOT CHANGE
+══════════════════════════════════════════════════════
 
-✅ NEW SCENE: Create a completely new professional photography setting — NOT similar to the input photo
-✅ NEW LIGHTING: Professional studio lighting — octabox, rim light, dramatic shadows (NOT casual window light)
-✅ NEW POSE: Confident editorial pose — different from input photo pose
-✅ NEW CAMERA ANGLE: Choose the most flattering angle for this face — 3/4 turn, straight, slight down-tilt
-✅ NEW EXPRESSION: Choose the most CONFIDENT and FLATTERING expression — editorial magazine energy
-   - NOT a copy of whatever the person was doing in their selfie
-   - Choose from: powerful direct gaze, slight confident smile, serene composure, magnetic presence
-   - The goal: the person should look more powerful and beautiful than in their selfie
-✅ NEW BACKGROUND: Dramatic luxury setting — NOT whatever was behind them in the input photo
+⛔ Eye color — not one shade different
+⛔ Eye spacing (IPD) — bone structure, cannot be widened or narrowed
+⛔ Nose shape — bridge, tip, nostrils exactly as scanned
+⛔ Face shape — no slimming, no widening, no restructuring
+⛔ Cheek volume — hollow cheeks STAY hollow; full cheeks STAY full
+⛔ Jaw definition — do NOT soften a sharp jaw, do NOT sharpen a soft jaw
+⛔ Chin proportions — height and shape identical
+⛔ Lip shape — natural shape preserved, NO filler effect
+⛔ Age — same age as in source photo
+⛔ Hair — same cut, color, texture
+⛔ Skin tone — same undertone
+⛔ Distinctive marks — moles/freckles reproduced
 
-════════════════════════════════════════
-EYES — ALIVE AND MAGNETIC
-════════════════════════════════════════
+⛔ DO NOT "beautify" this person — they are beautiful AS THEY ARE
+⛔ DO NOT apply a generic "beautiful model" face — this is a SPECIFIC REAL HUMAN BEING
+⛔ DO NOT add heavy false lashes if source shows natural lashes
+⛔ DO NOT smooth skin into plastic perfection — keep natural texture and pores
 
-- Render EXACT iris color scanned in Step 1 — vivid and true to source
-- Add SHARP CATCHLIGHTS: 2 bright white reflections in each iris (one large ~2 o'clock, one small ~8 o'clock)
-- Iris must have depth and crystalline micro-texture
-- Slight moisture on lower lashline for natural luminosity
-- Lashes: defined, separated, naturally long — Vogue editorial quality
+══════════════════════════════════════════════════════
+PHASE 3 — CREATE A NEW PROFESSIONAL PHOTOSHOOT
+══════════════════════════════════════════════════════
 
-════════════════════════════════════════
-MAKEUP — ELEVATED EDITORIAL
-════════════════════════════════════════
+The input is just a selfie. You are creating a BRAND NEW photograph as if taken in a top fashion studio.
+The face (biometrics from Phase 1) is the ONLY connection to the source. Everything else is completely new:
 
-- Foundation: skin looks like skin — pores visible, healthy glow, NEVER plastic
-- Blush: warm, placed high on cheekbones
-- Lip color: choose the most flattering shade for this person's skin tone — nude-rose / warm mauve / berry / terracotta
+✅ NEW PROFESSIONAL SETTING: luxury studio editorial environment — completely different from the input
+✅ NEW LIGHTING: 85mm f/1.4, large octabox at 45° with rim light — cinematic, dimensional, sculpted
+✅ NEW POSE: confident editorial pose — hand position, body angle, head tilt all fresh
+✅ NEW BACKGROUND: luxury neutral — warm gray / ivory / slate / champagne — NEVER matching the outfit
+✅ EXPRESSION: determined, composed, magnetic — the most powerful version of this specific person
+
+OUTFIT: ${g}
+
+⛔ CRITICAL COLOR RULE: Outfit and background MUST be completely different colors
+   → Dark outfit → light neutral background
+   → Warm-toned outfit → cool/neutral background  
+   → ⛔ NEVER: same color family for outfit AND background
+
+MAKEUP — ELEVATED BUT NATURAL:
+• Foundation: skin looks like REAL SKIN — natural texture, healthy glow, NOT plastic
+• Lips: most flattering shade for THIS person's skin tone — warm nude / rose / mauve / berry
   → ⛔ DO NOT match lip color to outfit color
-  → ⛔ DO NOT add bright red lipstick if the person's natural skin tone doesn't suit it
-- Contouring: subtle — enhances existing bone structure, does NOT add fake structure
-- Eye makeup: clean definition — complements eye color, does NOT change eye shape
-- Overall: looks like a professional makeup artist did it for a Vogue shoot
+  → ⛔ DO NOT add bright red lipstick unless it clearly suits this specific skin tone
+• Lashes: enhance what exists — defined and separated, NOT theatrical or fake-looking
+• Overall: as if a professional makeup artist prepared them for Vogue — not a beauty pageant
 
-════════════════════════════════════════
-CLOTHING & PHOTOGRAPHY
-════════════════════════════════════════
+LENS & FILM:
+• 85mm portrait lens at f/2.0 — subject tack sharp, background creamy bokeh
+• Kodak Portra 800 film aesthetic — warm, rich, dimensional
+• Catchlights: 2 sharp white reflections in each iris — eyes alive and present
 
-Outfit: ${g}
-
-⛔⛔ OUTFIT-BACKGROUND CONTRAST — MANDATORY ⛔⛔
-- Outfit color and background color MUST be distinctly different — no monochromatic blending
-- ⛔ DO NOT put a red outfit against a red background
-- Subject must be clearly separated from background by color contrast
-- Dark outfit → light/neutral background; warm outfit → cool/neutral background
-
-LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT FILL IN CHEEK SHADOWS):
-- Main light: large octabox at 45° — sculpts and REVEALS bone structure, does NOT flatten it
-- Fill light: MINIMAL — cheek hollows must remain visible
-- Rim/hair light: separates subject from background, premium 3D depth
-- Catchlights in eyes: mandatory
-- Mood: Vogue Italia — dimensional, sculpted, three-dimensional
-
-LENS: 85mm f/1.4 at f/2.8 — subject sharp, background creamy bokeh
-FILM LOOK: Kodak Portra 800 — warm, rich tones, natural contrast
-BACKGROUND: luxury studio — neutral warm gray, ivory, or soft taupe — always contrasting with outfit
-
-${aspectRatio ? `Aspect ratio: MATCH INPUT EXACTLY — ${aspectRatio}` : ""}
+${aspectRatio ? `Aspect ratio: MATCH INPUT — ${aspectRatio}` : ""}
 ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
 ${customPrompt ? `Additional: ${customPrompt}` : ""}
 
-════════════════════════════════════════
-FINAL QUALITY CHECK — MANDATORY
-════════════════════════════════════════
+══════════════════════════════════════════════════════
+PHASE 4 — IDENTITY VERIFICATION (mandatory before rendering)
+══════════════════════════════════════════════════════
 
-Before rendering, verify ALL of these:
-✅ This looks like a PROFESSIONAL PHOTOSHOOT — NOT a filtered version of the input selfie
-✅ The setting, lighting, and pose are COMPLETELY DIFFERENT from the input photo
-✅ Eye color MATCHES source exactly
-✅ EYE SPACING: Inter-pupillary distance IDENTICAL to source — eyes NOT wider apart
-✅ NOSE BRIDGE GAP: Each inner eye corner at the SAME distance from nose bridge as in source
-✅ Face shape IDENTICAL — no rounding, no slimming, no widening
-✅ CHEEKS: hollow cheeks → concave shadow PRESENT; full cheeks → kept full
-✅ Jaw and chin IDENTICAL proportions
-✅ Hair: same cut and color as source
-✅ Eyes have CATCHLIGHTS — bright, sharp, alive
-✅ MAKEUP: flattering for this skin tone — NOT matching outfit color
-✅ OUTFIT vs BACKGROUND: clearly different colors
-✅ Photo belongs in a LUXURY FASHION MAGAZINE
-✅ The person is 100% RECOGNIZABLE as the same person from the input photo
+Answer each question. If ANY answer is NO — rebuild that element before rendering:
 
-FINAL TEST: "Is this a brand new professional fashion photograph of the same person — NOT a copy/edit of the input photo?"
-If NO → recreate with proper photoshoot transformation.`;
+1. Would this person's close friend IMMEDIATELY recognize them in this image? → MUST BE YES
+2. Are the eyes the EXACT same color and spacing as in the source? → MUST BE YES
+3. Is the nose the EXACT same shape — bridge width, tip, nostrils? → MUST BE YES
+4. Is the face shape IDENTICAL — same cheekbones, jaw, chin? → MUST BE YES
+5. Is the age IDENTICAL — not younger, not older? → MUST BE YES
+6. Are hollow cheeks still hollow? Are full cheeks still full? → MUST BE YES
+7. Is the hair the exact same cut and color? → MUST BE YES
+8. Does the outfit color CONTRAST clearly with the background? → MUST BE YES
+9. Does this look like a PROFESSIONAL FASHION MAGAZINE PHOTO (not a filtered selfie)? → MUST BE YES
+10. Is this a SPECIFIC REAL PERSON — not a generic AI-generated model face? → MUST BE YES
+
+All 10 = YES → render.
+Any = NO → fix and rebuild before rendering.`;
 }
 
 async function generateSingle(
