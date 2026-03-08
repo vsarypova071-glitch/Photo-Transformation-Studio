@@ -94,8 +94,15 @@ function App() {
         const newJob = await backend.refineJob(job.results[0], prompt);
         setCurrentJobId(newJob.id);
         pollJob(newJob.id);
-      } catch (e) {
-        alert("Ошибка.");
+      } catch (e: any) {
+        log.error('Refine failed', e);
+        if (e?.message === 'INSUFFICIENT_CREDITS') {
+          alert("Недостаточно кредитов для магической правки.");
+        } else if (e?.message === 'NOT_AUTHENTICATED') {
+          alert("Необходимо войти в аккаунт.");
+        } else {
+          alert("Ошибка правки. Попробуйте ещё раз.");
+        }
         navigateTo('results');
       }
     }
@@ -103,19 +110,28 @@ function App() {
 
   const handleFullBody = async () => {
     const job = backend.getJobs().find(j => j.id === currentJobId);
-    if (job && job.results[0]) {
-      navigateTo('processing');
-      try {
-        const newJob = await backend.refineJob(
-          job.results[0],
-          "Extend this specific portrait to a full-length standing shot, showing the person from head to toe including matching high-end shoes, maintaining exactly the same style and face."
-        );
-        setCurrentJobId(newJob.id);
-        pollJob(newJob.id);
-      } catch (e) {
-        alert("Ошибка.");
-        navigateTo('results');
+    if (!job || !job.results[0]) {
+      alert("Нет исходного изображения для генерации.");
+      return;
+    }
+    navigateTo('processing');
+    try {
+      const newJob = await backend.refineJob(
+        job.results[0],
+        "Extend this specific portrait to a full-length standing shot, showing the person from head to toe including matching high-end shoes, maintaining exactly the same style and face."
+      );
+      setCurrentJobId(newJob.id);
+      pollJob(newJob.id);
+    } catch (e: any) {
+      log.error('Full body failed', e);
+      if (e?.message === 'INSUFFICIENT_CREDITS') {
+        alert("Недостаточно кредитов. Пополните баланс для генерации во весь рост.");
+      } else if (e?.message === 'NOT_AUTHENTICATED') {
+        alert("Необходимо войти в аккаунт для использования этой функции.");
+      } else {
+        alert("Ошибка генерации во весь рост. Попробуйте ещё раз.");
       }
+      navigateTo('results');
     }
   };
 
