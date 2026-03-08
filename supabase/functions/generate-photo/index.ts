@@ -28,87 +28,77 @@ function getRandomGarment(): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string): string {
   const garment = getRandomGarment();
 
-  return `PHOTOREALISTIC IDENTITY TRANSFER — ZERO ARTISTIC INTERPRETATION
-
-⛔ ABSOLUTE RULE #1: DO NOT BEAUTIFY THE FACE. DO NOT "IMPROVE" ANY FEATURE.
-⛔ ABSOLUTE RULE #2: DO NOT ENLARGE THE EYES. DO NOT CHANGE EYE SHAPE.
-⛔ ABSOLUTE RULE #3: THIS IS NOT AN ILLUSTRATION. THIS IS A REAL PHOTO OF A REAL PERSON.
+  return `TASK: LUXURY FASHION PHOTOSHOOT — PHOTOREALISTIC IDENTITY TRANSFER
 
 ════════════════════════════════════════
-BIOMETRIC LOCK — READ THE INPUT PHOTO PIXEL BY PIXEL
+BIOMETRIC LOCK — FACE GEOMETRY IS SACRED
 ════════════════════════════════════════
 
-EYES — THE MOST CRITICAL ELEMENT:
-Measure the EXACT eye dimensions from the source photo:
-- Eye opening HEIGHT (vertical aperture): CLONE EXACTLY. If eyes look tired/heavy — keep them exactly that way.
-- Eye WIDTH (inner to outer corner): CLONE EXACTLY — DO NOT make wider
-- Inter-ocular distance: measure in pixels — DO NOT bring eyes closer OR further
-- Upper eyelid fold: if hooded — keep hooded. If heavy — keep heavy. DO NOT lift the lid.
-- Lower eyelid: if there is undereye area showing — CLONE it exactly
-- Outer corner tilt: upward/neutral/downward — LOCK THIS ANGLE, do not alter
-- Eyebrow shape, thickness, arch, gap from eye: IDENTICAL — do not raise or thicken
-- Eye size relative to face: MUST MATCH SOURCE. DO NOT make eyes appear larger.
-- Iris color: exact shade, do NOT make brighter or more vivid
-⛔ MOST FORBIDDEN: making eyes bigger, rounder, more "open", more "beautiful" — PROHIBITED
+⛔ DO NOT change face shape — no vertical compression, no oval-face "improvement"
+⛔ DO NOT resize or reposition features — nose width, chin length, jaw angle are locked
+⛔ DO NOT enlarge eyes or change their shape — only add LIGHT to them (see below)
+⛔ DO NOT de-age, smooth skin aggressively, or alter real age
+⛔ DO NOT change hair length or texture
 
-NOSE:
-- Bridge width: CLONE EXACTLY — do not narrow
-- Tip shape: CLONE EXACTLY — do not refine or lift
-- Nostril size and shape: IDENTICAL
-- Nose length: CLONE EXACTLY
-
-LIPS:
-- Mouth width: CLONE EXACTLY
-- Upper lip Cupid's bow shape: IDENTICAL
-- Lower lip fullness: CLONE — do not inflate
-- Lip color: natural, match source
-
-CHIN & JAW:
-- Chin LENGTH (lower lip to chin tip in pixels): CLONE EXACTLY — DO NOT shorten
-- Chin shape (pointed/square/round): LOCK AND CLONE
-- Jawline angle from ear to chin: IDENTICAL
-- Mandible width at widest point: CLONE
-⛔ FORBIDDEN: shortening chin, softening jaw, adding roundness not in source
-
-FACE SHAPE:
-- Face height-to-width ratio: MEASURE AND CLONE EXACTLY
-- Forehead height: CLONE
-- Cheekbone position and prominence: IDENTICAL to source
-- Overall face: if narrow — keep narrow. If long — keep long.
-⛔ FORBIDDEN: vertical compression, horizontal widening, "oval face" beautification
-
-SKIN & AGE:
-- Skin tone: exact match
-- Natural texture, pores, fine lines: PRESERVE — do not smooth or blur
-- Real age: KEEP — no de-aging
-- Any distinctive features (moles, asymmetry): CLONE
-
-HAIR:
-- Length: IDENTICAL — do not lengthen or shorten
-- Texture and style: CLONE EXACTLY
-- Color: exact match
+CLONE EXACTLY FROM SOURCE PHOTO:
+- Eye shape, width, inter-ocular distance, upper/lower lid shape, brow arch
+- Nose: bridge width, tip shape, nostril size, nose length
+- Chin: EXACT length from lower lip to chin tip — DO NOT shorten
+- Jawline angle, mandible width — IDENTICAL
+- Face height-to-width ratio — MEASURE AND LOCK
+- Forehead height, cheekbone position and prominence
+- Skin tone, age markers, distinctive features (moles, asymmetry)
 
 ════════════════════════════════════════
-CLOTHING & SETTING
+✨ WOW FACTOR — WHAT MUST BE TRANSFORMED
+════════════════════════════════════════
+
+EYES — ALIVE AND MAGNETIC (geometry unchanged, only light):
+- Add SHARP CATCHLIGHTS: 2 bright white reflections in each iris (one large ~2 o'clock, one small ~8 o'clock) — this is what separates a dead photo from a WOW photo
+- Iris must have depth and micro-texture — visible crystalline pattern
+- The gaze must feel PRESENT, CONFIDENT, DIRECT — not sad, not glazed
+- Slight moisture on the lower lashline for natural luminosity
+- Lashes: defined, separated, naturally long — not cartoon — think high-fashion Vogue editorial
+- IMPORTANT: all of this is achieved through LIGHTING only, NOT by changing eye shape, size or inter-ocular distance
+
+MAKEUP — EDITORIAL LUXURY:
+- Foundation: skin must look like skin — pores visible, healthy glow, not plastic
+- Blush: warm and sculpted, placed high on cheekbones
+- Lip color: choose the most FLATTERING shade for this person's skin tone — options: deep nude-rose, warm mauve, sophisticated berry, soft terracotta — NEVER random bright colors, NEVER garish pink, NEVER color that clashes with the outfit
+- Eye makeup: subtle definition that opens the eye and complements the style without changing the eye's natural shape
+- Overall: makeup must look professional, intentional, expensive
+
+════════════════════════════════════════
+CLOTHING & PHOTOGRAPHY
 ════════════════════════════════════════
 Outfit: ${garment}
-Lighting: natural studio light, soft and even, 85mm portrait lens
-Background: clean, neutral, slightly blurred
-Film aesthetic: Kodak Portra 400 — natural colors, no heavy grading
 
-${aspectRatio ? `Output aspect ratio: MUST match input EXACTLY — ${aspectRatio}` : ""}
+LIGHTING — CINEMATIC LUXURY:
+- Main light: large octabox at 45° — creates beautiful shadows that define cheekbones and jaw
+- Fill: white reflector on opposite side — lifts shadows without killing depth
+- Rim/hair light from behind: separates subject from background, adds premium 3D effect
+- Eye lights: catch lights MUST be visible — this is non-negotiable for WOW quality
+- Overall mood: Vogue Italia editorial — rich, dimensional, three-dimensional
+
+LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
+FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
+BACKGROUND: seamless paper, neutral warm gray or ivory — luxury studio feel
+
+${aspectRatio ? `Aspect ratio: MATCH INPUT EXACTLY — ${aspectRatio}` : ""}
 ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
-${customPrompt ? `Extra: ${customPrompt}` : ""}
+${customPrompt ? `Additional: ${customPrompt}` : ""}
 
 ════════════════════════════════════════
-FINAL CHECK BEFORE RENDERING
+FINAL QUALITY CHECK
 ════════════════════════════════════════
-Ask yourself: "Does this face look EXACTLY like the person in the input photo?"
-If ANY feature was changed — eyes larger, chin shorter, nose thinner, face rounder — REDO IT.
-The viewer must immediately recognize this as THE SAME PERSON.
-The face must NOT look "AI-generated pretty" — it must look REAL and IDENTICAL.
+Before rendering, confirm:
+✅ Face geometry IDENTICAL to source (chin length, jaw angle, face proportions)
+✅ Eyes have CATCHLIGHTS — bright, sharp, alive
+✅ Lip color is FLATTERING and intentional — not random, not garish
+✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
+✅ The person looks like THEMSELVES — just in a better photoshoot
 
-OUTPUT: One ultra-realistic photograph. Same person, same face geometry, same eyes, same chin. Only the clothing and background changed.`;
+This photo must make the client say "WOW — that's me, but in Vogue."`;
 }
 
 Deno.serve(async (req: Request) => {
