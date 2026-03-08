@@ -100,7 +100,6 @@ Before rendering, confirm:
 
 This photo must make the client say "WOW — that's me, but in Vogue."`;
 }
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
