@@ -192,24 +192,32 @@ Run both checks before rendering:
 □ JAW SHAPE: flat/round jaw in source = flat/round jaw in result? → FAIL if V-shaped → REBUILD
 □ CAMERA: eye-level? 85mm? → FAIL if low-angle or wide → FIX
 
+[EYE GEOMETRY CHECK — highest priority]:
+□ IRIS COLOR: exact match (amber ≠ brown ≠ hazel)? → FAIL if shifted → REBUILD eyes
+□ OUTER CANTHUS ANGLE: same tilt as source (not lifted)? → FAIL if raised → REBUILD — no cat/fox eye
+□ EYE SPACING: inter-canthus distance / IPD ratio identical? → FAIL if changed → REBUILD
+□ EYE SHAPE TYPE: almond/round/hooded matches source? → FAIL if changed → REBUILD
+□ EYE APERTURE WIDTH: same horizontal width? → FAIL if enlarged or narrowed → FIX
+□ EYELID TYPE: mono/double/hooded matches source? → FAIL if altered → FIX
+□ CATCHLIGHTS: round specular visible in each iris upper quadrant? → FAIL if missing → ADD
+□ SCLERA: no excessive whitening vs source? → FAIL if bleached → FIX
+
 [IDENTITY CHECK — visual comparison]:
-□ Eye color: exact match? → FAIL → fix
-□ Eye spacing: same? → FAIL → fix
 □ Nose shape: same? → FAIL → fix
 □ Skin tone: same undertone? → FAIL → fix
 □ Age: same? → FAIL → fix
 □ Hair: same cut & color? → FAIL → fix
-□ Catchlights: visible in each eye? → FAIL → fix
 □ Gaze: soft, magnetic, dreamy? → FAIL → fix
 
 [IDENTITY RECOGNITION TEST]:
-Would a person who knows this individual recognize them from the result?
-→ YES = render. → NO = rebuild face from Phase 1.
+Would a person who knows this individual recognize THEIR OWN EYES in the result?
+→ YES = proceed. → NO = rebuild eyes first, then full face from Phase 1.
 
 ⚠️ ANTI-SLIM PROTOCOL:
-AI models have a systematic bias to narrow lower faces. Counter this:
-ACTIVELY widen the lower third by 10-15% compared to your initial render impulse.
-Then compare with source. Adjust until jaw width matches source exactly.
+AI models have a systematic bias to narrow lower faces AND lift eye corners. Counter both:
+• ACTIVELY widen the lower third by 10-15% compared to your initial render impulse.
+• ACTIVELY resist lifting the outer eye canthus — preserve the exact source angle.
+Adjust until jaw width AND eye geometry match source exactly.
 
 ONLY render when ALL checks pass.`;
 }
