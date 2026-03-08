@@ -116,20 +116,46 @@ EYES — ALIVE AND MAGNETIC
 - ALL achieved through LIGHTING only — geometry unchanged
 
 ════════════════════════════════════════
-MAKEUP — EDITORIAL LUXURY
+EXPRESSION — MATCH SOURCE MOOD EXACTLY
 ════════════════════════════════════════
 
-- Foundation: skin looks like skin — pores visible, healthy glow, never plastic
-- Blush: warm, placed high on cheekbones — complements the person's actual skin tone
-- Lip color: choose the most flattering shade FOR THIS PERSON'S specific skin tone — deep nude-rose / warm mauve / sophisticated berry / soft terracotta — NEVER a random bright color, NEVER clashing with outfit
-- Eye makeup: subtle definition that enhances without changing natural eye shape
-- Overall: makeup looks professional, intentional, expensive
+⛔⛔ CRITICAL: MATCH THE EMOTIONAL ENERGY OF THE SOURCE PHOTO ⛔⛔
+- If the source photo shows a SMILE → the result MUST have a warm, natural smile
+- If the source photo shows a relaxed, friendly expression → result MUST match that warmth
+- ⛔ DO NOT turn a smiling person into a serious/stern fashion model
+- ⛔ DO NOT add a "fierce" editorial expression if the source is warm and approachable
+- The person's CHARACTER and MOOD must be preserved, not overridden by fashion aesthetics
+- The result should look like the SAME PERSON in a fashion photo — not a different person in a pose
+
+════════════════════════════════════════
+MAKEUP — ENHANCE, NEVER TRANSFORM
+════════════════════════════════════════
+
+⛔⛔ MAKEUP RULE #1: ENHANCE WHAT IS THERE — DO NOT CREATE A NEW LOOK ⛔⛔
+- Scan the source photo's existing makeup level: natural / light / medium / full
+- If source has NATURAL/LIGHT makeup → result must also be natural/light — only refine, not dramatize
+- ⛔ DO NOT add bright red lipstick, bold smoky eyes, or heavy contouring if the source person wears subtle makeup
+- ⛔ DO NOT change the person's makeup style to match the outfit color — lips must complement SKIN TONE, not clothing color
+- Foundation: skin looks like skin — pores visible, healthy glow, NEVER plastic or porcelain
+- Blush: soft and natural, matching source person's actual coloring
+- Lip color: if source has nude/pink lips → stay in nude/pink family (warm rose, soft mauve, natural berry)
+  → ⛔ NEVER jump to bright red/orange/fuchsia unless the source person already wears bold lips
+- Eye makeup: only subtle definition — lashes clean and defined, shadows neutral
+- Overall: makeup looks like the person did it themselves for a special occasion, not a costume
 
 ════════════════════════════════════════
 CLOTHING & PHOTOGRAPHY
 ════════════════════════════════════════
 
 Outfit: ${g}
+
+⛔⛔ OUTFIT-BACKGROUND CONTRAST — CRITICAL DEPTH RULE ⛔⛔
+- The outfit color and the background color MUST be distinctly different — no monochromatic blending
+- ⛔ DO NOT put a red outfit against a red background
+- ⛔ DO NOT match outfit to background — this creates a "floating head" effect with no depth
+- The subject must be clearly separated from the background by color contrast
+- Example: dark outfit → light/neutral background; warm outfit → cool/neutral background; bright outfit → dark or neutral background
+- ALWAYS ensure the background provides visual separation from the clothing
 
 LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
 - Main light: large octabox at 45° — sculpts and REVEALS existing bone structure, does NOT eliminate it
@@ -141,7 +167,7 @@ LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
 
 LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
 FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
-BACKGROUND: seamless paper, neutral warm gray or ivory — luxury studio feel
+BACKGROUND: seamless paper, neutral warm gray, ivory, or soft taupe — luxury studio feel — ALWAYS contrasting with outfit
 
 ${aspectRatio ? `Aspect ratio: MATCH INPUT EXACTLY — ${aspectRatio}` : ""}
 ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
@@ -161,13 +187,14 @@ Before rendering, verify ALL of these:
 ✅ Jaw and chin IDENTICAL proportions
 ✅ Lower face width MATCHES source
 ✅ Eyes have CATCHLIGHTS — bright, sharp, alive
-✅ Expression is WARM and CONFIDENT — not scared, not stiff
-✅ Lip color is FLATTERING for this specific person
+✅ EXPRESSION: Matches source photo mood — if source smiles → result smiles. NOT changed to serious/fierce.
+✅ MAKEUP: Level matches source — natural stays natural. NO bold red lips if source wore subtle makeup.
+✅ OUTFIT vs BACKGROUND: Clearly different colors — no monochromatic floating head effect.
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
 ✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-FINAL TEST: "Does this face have the SAME bone structure as the input — same eye spacing near nose bridge, same cheek hollows, same jaw, same proportions?"
-If NO → apply stricter geometric fidelity before output.`;
+FINAL TEST: "Does this face have the SAME bone structure, SAME expression warmth, and SAME makeup level as the input?"
+If NO → apply stricter fidelity before output.`;
 }
 
 async function generateSingle(
