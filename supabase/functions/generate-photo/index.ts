@@ -21,12 +21,13 @@ const WARDROBE: string[] = [
   "modern power blazer dress, sharp shoulders",
 ];
 
-function getRandomGarment(): string {
-  return WARDROBE[Math.floor(Math.random() * WARDROBE.length)];
+function getRandomGarment(exclude: string[] = []): string {
+  const available = WARDROBE.filter(g => !exclude.includes(g));
+  return available[Math.floor(Math.random() * available.length)];
 }
 
-function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string): string {
-  const garment = getRandomGarment();
+function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string, garment?: string): string {
+  const g = garment || getRandomGarment();
 
   return `TASK: LUXURY FASHION PHOTOSHOOT — PHOTOREALISTIC IDENTITY TRANSFER
 
@@ -116,7 +117,7 @@ MAKEUP — EDITORIAL LUXURY
 CLOTHING & PHOTOGRAPHY
 ════════════════════════════════════════
 
-Outfit: ${garment}
+Outfit: ${g}
 
 LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
 - Main light: large octabox at 45° — sculpts and REVEALS existing bone structure, does NOT eliminate it
@@ -155,6 +156,53 @@ FINAL TEST: "Does this face have the SAME bone structure as the input — same c
 If NO → apply stricter geometric fidelity before output.`;
 }
 
+async function generateSingle(
+  imageBase64: string,
+  stylePrompt: string,
+  customPrompt: string,
+  aspectRatio: string | undefined,
+  garment: string
+): Promise<string | null> {
+  const fullPrompt = buildPrompt(stylePrompt, customPrompt, aspectRatio, garment);
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: fullPrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageBase64.startsWith("data:")
+                  ? imageBase64
+                  : `data:image/jpeg;base64,${imageBase64}`,
+              },
+            },
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`AI error ${response.status}:`, errText.substring(0, 300));
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -162,14 +210,13 @@ Deno.serve(async (req: Request) => {
 
   try {
     if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "AI service not configured. Set LOVABLE_API_KEY in secrets." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { imageBase64, stylePrompt, customPrompt, originalDimensions } = await req.json();
+    const { imageBase64, stylePrompt, customPrompt, originalDimensions, count = 3 } = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -178,7 +225,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Calculate aspect ratio string from original dimensions
+    // Calculate aspect ratio
     let aspectRatio: string | undefined;
     if (originalDimensions?.width && originalDimensions?.height) {
       const w = originalDimensions.width;
@@ -186,78 +233,40 @@ Deno.serve(async (req: Request) => {
       const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
       const divisor = gcd(w, h);
       aspectRatio = `${w / divisor}:${h / divisor} (${w}x${h} pixels)`;
-      console.log(`Original aspect ratio: ${aspectRatio}`);
     }
 
-    const fullPrompt = buildPrompt(stylePrompt || "", customPrompt || "", aspectRatio);
+    const numVariants = Math.min(Math.max(1, count), 3);
 
-    console.log("Calling Lovable AI Gateway with model google/gemini-3-pro-image-preview");
-
-    // Use Lovable AI Gateway for image generation
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: fullPrompt },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageBase64.startsWith("data:")
-                    ? imageBase64
-                    : `data:image/jpeg;base64,${imageBase64}`,
-                },
-              },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`AI Gateway error: ${response.status}`, errorText);
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: "AI-кредиты исчерпаны. Пополните баланс в Workspace Settings → Usage.",
-          }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ error: `AI error: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Pick different garments for variety
+    const garments: string[] = [];
+    for (let i = 0; i < numVariants; i++) {
+      garments.push(getRandomGarment(garments));
     }
 
-    const data = await response.json();
-    console.log("AI Gateway response received");
+    console.log(`Generating ${numVariants} variants in parallel...`);
 
-    // Extract generated image from response
-    const generatedImage =
-      data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Generate all variants in parallel
+    const promises = garments.map(g =>
+      generateSingle(imageBase64, stylePrompt || "", customPrompt || "", aspectRatio, g)
+    );
 
-    if (!generatedImage) {
-      console.error("No image in response:", JSON.stringify(data).substring(0, 500));
+    const results = await Promise.all(promises);
+    const imageUrls = results.filter(Boolean) as string[];
+
+    if (imageUrls.length === 0) {
       return new Response(
-        JSON.stringify({ error: "No image returned from AI model" }),
+        JSON.stringify({ error: "No images returned from AI model" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log(`Generated ${imageUrls.length}/${numVariants} variants successfully`);
+
     return new Response(
-      JSON.stringify({ imageUrl: generatedImage }),
+      JSON.stringify({
+        imageUrl: imageUrls[0],   // backward compat
+        imageUrls,                // all variants
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

@@ -156,6 +156,7 @@ class BackendService {
             isPremium: false,
             customPrompt: job.customPrompt || '',
             originalDimensions: job.originalDimensions,
+            count: isRefinement ? 1 : 3,
           }),
           signal: controller.signal,
         }
@@ -169,17 +170,22 @@ class BackendService {
       const finalIndex = finalJobs.findIndex(j => j.id === jobId);
       if (finalIndex === -1) return;
 
-      if (error || !data?.imageUrl) {
+      if (error || (!data?.imageUrl && !data?.imageUrls?.length)) {
         log.error('AI generation failed', { error, data });
         finalJobs[finalIndex].status = 'error';
         this.saveJobs(finalJobs);
         return;
       }
 
-      finalJobs[finalIndex].results = [data.imageUrl];
+      // Support both single and multi-variant responses
+      const results: string[] = data.imageUrls?.length
+        ? data.imageUrls
+        : [data.imageUrl];
+
+      finalJobs[finalIndex].results = results;
       finalJobs[finalIndex].status = 'done';
       this.saveJobs(finalJobs);
-      log.info('Job completed with AI generation', { jobId });
+      log.info('Job completed with AI generation', { jobId, variants: results.length });
     } catch (err) {
       log.error('processJob error', err);
       const finalJobs = this.getJobs();
