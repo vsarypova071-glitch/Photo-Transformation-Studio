@@ -151,6 +151,9 @@ Look at your result and compare with the source photo:
 • Same age? → If NO — fix it
 • No heavy fake lashes if source was natural? → If NO — fix it
 • Outfit and background are clearly different colors? → If NO — fix it
+• Does each eye have a visible catchlight (specular highlight)? → If NO — the lighting is wrong, fix it
+• Is the gaze soft, magnetic and slightly dreamy — NOT hard stare, NOT dead eyes? → If NO — fix it
+• Do the eyes look ALIVE with moisture and inner light? → If NO — fix it
 
 Would a close friend of this person recognize them immediately? → If NO — rebuild the face from scratch.
 
