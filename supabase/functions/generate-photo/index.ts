@@ -40,6 +40,9 @@ Before generating anything, carefully read and memorize ALL of the following fro
 • CHEEK CONCAVITY: Is the area BELOW the cheekbone concave (sunken inward) or convex (rounded outward)?
 • ZYGOMATIC ARCH: Where exactly does the cheekbone protrude — high/mid/low?
 • NOSE: Bridge width, tip shape (rounded/pointed/wide/narrow), nostril spread
+• INNER EYE CORNERS: Measure the exact horizontal distance from the LEFT inner eye corner to the nose bridge, and from the RIGHT inner eye corner to the nose bridge. Note if they are equal, or if one eye sits closer/farther.
+• INTER-PUPILLARY DISTANCE (IPD): Measure the distance between the centers of both pupils. Rate as narrow / average / wide relative to face width.
+• EYE-TO-NOSE BRIDGE GAP: How much space is there between each inner eye corner and the nose bridge center? This is a FIXED anatomical measurement — it DOES NOT CHANGE between photos.
 • CHIN: Length from lower lip to chin tip — short / medium / long
 • JAW: Soft and rounded OR defined and angular? Note sharpness of jaw corners
 • LOWER FACE WIDTH: Narrow or wide relative to cheekbones?
@@ -59,6 +62,15 @@ ABSOLUTE RULES — APPLY TO EVERY PERSON
 ⛔ DO NOT change face shape — exact shape from Step 1
 ⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
+
+⛔⛔ EYE SPACING & NOSE BRIDGE — CRITICAL GEOMETRIC RULE ⛔⛔
+The distance between the eyes and the nose bridge is a FIXED BONE MEASUREMENT:
+• The gap between each inner eye corner and the nose bridge MUST match the source exactly
+• ⛔ DO NOT push eyes wider apart — widened IPD = completely different person
+• ⛔ DO NOT move either eye away from the nose bridge
+• Each eye must sit at the SAME distance from the nose center as in the source photo
+• If the source shows eyes close to the nose bridge → result must show the same closeness
+• VERIFY: Draw a vertical line down the nose bridge — each eye must be equidistant from it, matching source proportions exactly
 
 ⛔⛔ CHEEKS — THIS IS THE #1 MOST CRITICAL RULE ⛔⛔
 The cheek geometry is the most commonly distorted feature — pay maximum attention:
@@ -141,6 +153,8 @@ FINAL QUALITY CHECK — MANDATORY
 
 Before rendering, verify ALL of these:
 ✅ Eye color MATCHES source exactly — NOT changed
+✅ EYE SPACING: Inter-pupillary distance IDENTICAL to source — eyes are NOT wider apart than original
+✅ NOSE BRIDGE GAP: Each inner eye corner sits at the SAME distance from the nose bridge as in source — no eye has "drifted" outward
 ✅ Face shape IDENTICAL — no rounding, no slimming, no widening
 ✅ CHEEKS: If source had hollow/sculpted cheeks → the concave shadow under the cheekbone is PRESENT and visible in the result
 ✅ CHEEKBONE HEIGHT and protrusion IDENTICAL to source
@@ -152,7 +166,7 @@ Before rendering, verify ALL of these:
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
 ✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-FINAL TEST: "Does this face have the SAME bone structure as the input — same cheek hollows, same jaw, same proportions?"
+FINAL TEST: "Does this face have the SAME bone structure as the input — same eye spacing near nose bridge, same cheek hollows, same jaw, same proportions?"
 If NO → apply stricter geometric fidelity before output.`;
 }
 
