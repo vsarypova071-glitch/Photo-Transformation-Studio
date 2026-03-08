@@ -30,70 +30,85 @@ function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: st
 
   return `TASK: LUXURY FASHION PHOTOSHOOT — PHOTOREALISTIC IDENTITY TRANSFER
 
+STEP 1 — SCAN & MEMORIZE THE PERSON IN THE INPUT PHOTO:
+Before generating anything, carefully read and memorize ALL of the following from the source photo:
+• IRIS COLOR: What exact color are the eyes? (green / brown / blue / gray / hazel / amber) — note the exact hue and saturation
+• FACE SHAPE: Round / oval / square / heart / diamond / oblong — which is it?
+• CHEEK FULLNESS: Are cheeks full and round, OR sculpted and hollow? Note the depth of the cheekbone hollow
+• NOSE: Width of bridge, shape of tip (rounded / pointed / wide / narrow), nostril spread
+• CHIN: Length from lower lip to chin tip — short / medium / long?
+• JAW: Soft and rounded OR defined and angular?
+• BROW: Arch height, thickness, distance from eye
+• SKIN TONE: Fair / medium / olive / dark — exact undertone (warm/cool/neutral)
+• HAIR: Color, length, texture — note exactly what you see
+• AGE: Approximate range, do NOT de-age
+• BODY TYPE: Note build and proportions if visible
+• ANY DISTINCTIVE FEATURES: moles, freckles, asymmetry, unique traits
+
+STEP 2 — LOCK ALL SCANNED VALUES. THIS IS YOUR BIOMETRIC BLUEPRINT.
+
 ════════════════════════════════════════
-BIOMETRIC LOCK — FACE GEOMETRY IS SACRED
+ABSOLUTE RULES — APPLY TO EVERY PERSON
 ════════════════════════════════════════
 
-⛔ DO NOT change face shape — no vertical compression, no oval-face "improvement"
-⛔ DO NOT resize or reposition features — nose width, chin length, jaw angle are locked
-⛔ DO NOT enlarge eyes or change their shape — only add LIGHT to them (see below)
-⛔ DO NOT de-age, smooth skin aggressively, or alter real age
+⛔ DO NOT "IMPROVE" or "BEAUTIFY" — your job is IDENTITY TRANSFER, not idealization
+⛔ DO NOT change face shape — use the EXACT shape you scanned in Step 1
+⛔ DO NOT change eye color — if you scanned green, render green; brown stays brown; blue stays blue
+⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
+⛔ DO NOT add volume to cheeks if they are sculpted — hollow cheeks stay hollow
+⛔ DO NOT fill in or soften a defined jawline — angular stays angular
+⛔ DO NOT shorten or lengthen the chin — clone the exact length
+⛔ DO NOT de-age, over-smooth skin, or remove distinctive features
 ⛔ DO NOT change hair length or texture
-
-CLONE EXACTLY FROM SOURCE PHOTO:
-- Eye shape, width, inter-ocular distance, upper/lower lid shape, brow arch
-- EYE COLOR: measure the EXACT iris hue from source — if GREEN, render VIVID GREEN, not hazel, not gray, not brown — GREEN
-- Nose: bridge width, tip shape, nostril size, nose length
-- Chin: EXACT length from lower lip to chin tip — DO NOT shorten
-- Jawline angle, mandible width — IDENTICAL
-- Face height-to-width ratio — MEASURE AND LOCK
-- Forehead height, cheekbone position and prominence — COPY EXACTLY
-- ⛔ DO NOT add volume to cheeks — if the face has hollow/sculpted cheeks, keep them hollow and sculpted
-- ⛔ DO NOT round the face — angular, defined cheekbones must stay angular and defined
-- Cheek hollows depth, zygomatic arch height — IDENTICAL to source
-- Skin tone, age markers, distinctive features (moles, asymmetry)
+⛔ DO NOT apply a "generic beautiful person" face — this specific person's face must be recognizable
 
 ════════════════════════════════════════
-✨ WOW FACTOR — WHAT MUST BE TRANSFORMED
+EXPRESSION & POSE — ESSENTIAL FOR WOW
 ════════════════════════════════════════
 
-EXPRESSION & POSE — MOST IMPORTANT FOR WOW RESULT:
-⛔ ABSOLUTELY FORBIDDEN: passport photo expression, scared look, stiff frozen face, tense jaw, wide frightened eyes
-✅ REQUIRED: natural, relaxed, CONFIDENT expression — the person looks like they OWN the room
-- Lips: soft, slightly parted OR a subtle natural closed smile — warm, approachable, NOT forced grin, NOT frozen neutral
-- Jaw: relaxed, not clenched — slight softness under the chin
-- Head: very slight tilt (~5°) or natural straight — NEVER rigid passport-photo straight
-- Shoulders: relaxed, dropped naturally — not stiff or raised
-- The overall feeling: "I am exactly where I want to be. I am confident and beautiful."
-- Think: Cate Blanchett on a magazine cover — effortless, present, magnetic
-- Think: the person just heard something slightly amusing and is about to smile
+⛔ FORBIDDEN: passport photo expression, scared/frozen/tense face, stiff posture
+✅ REQUIRED: natural, relaxed, CONFIDENT presence — the person looks like they own the room
+- Lips: softly parted OR a subtle natural smile — warm, not forced
+- Jaw: completely relaxed — not clenched
+- Eyes: inner confidence, slight warmth — as if the person is about to smile
+- Head: natural slight tilt (~5°) or gently straight — never rigid
+- Shoulders: dropped and relaxed — not raised or stiff
+- Overall feeling: "I am exactly where I belong. I am confident."
+- Reference energy: editorial magazine cover — effortless, present, magnetic
 
-EYES — ALIVE AND MAGNETIC (geometry unchanged, only light):
-- Add SHARP CATCHLIGHTS: 2 bright white reflections in each iris (one large ~2 o'clock, one small ~8 o'clock) — this is what separates a dead photo from a WOW photo
-- Iris must have depth and micro-texture — visible crystalline pattern
-- The gaze must feel PRESENT, WARM, ENGAGED — eyes have a subtle inner smile even if lips are neutral
-- Slight moisture on the lower lashline for natural luminosity
-- Lashes: defined, separated, naturally long — not cartoon — think high-fashion Vogue editorial
-- IMPORTANT: all of this is achieved through LIGHTING only, NOT by changing eye shape, size or inter-ocular distance
+════════════════════════════════════════
+EYES — ALIVE AND MAGNETIC
+════════════════════════════════════════
 
-MAKEUP — EDITORIAL LUXURY:
-- Foundation: skin must look like skin — pores visible, healthy glow, not plastic
-- Blush: warm and sculpted, placed high on cheekbones
-- Lip color: choose the most FLATTERING shade for this person's skin tone — options: deep nude-rose, warm mauve, sophisticated berry, soft terracotta — NEVER random bright colors, NEVER garish pink, NEVER color that clashes with the outfit
-- Eye makeup: subtle definition that opens the eye and complements the style without changing the eye's natural shape
-- Overall: makeup must look professional, intentional, expensive
+- Render EXACT iris color scanned in Step 1 — vivid and true to source
+- Add SHARP CATCHLIGHTS: 2 bright white reflections in each iris (one large ~2 o'clock, one small ~8 o'clock)
+- Iris must have depth and crystalline micro-texture
+- Slight moisture on lower lashline for natural luminosity
+- Lashes: defined, separated, naturally long — Vogue editorial quality
+- ALL achieved through LIGHTING only — geometry unchanged
+
+════════════════════════════════════════
+MAKEUP — EDITORIAL LUXURY
+════════════════════════════════════════
+
+- Foundation: skin looks like skin — pores visible, healthy glow, never plastic
+- Blush: warm, placed high on cheekbones — complements the person's actual skin tone
+- Lip color: choose the most flattering shade FOR THIS PERSON'S specific skin tone — deep nude-rose / warm mauve / sophisticated berry / soft terracotta — NEVER a random bright color, NEVER clashing with outfit
+- Eye makeup: subtle definition that enhances without changing natural eye shape
+- Overall: makeup looks professional, intentional, expensive
 
 ════════════════════════════════════════
 CLOTHING & PHOTOGRAPHY
 ════════════════════════════════════════
+
 Outfit: ${garment}
 
 LIGHTING — CINEMATIC LUXURY:
-- Main light: large octabox at 45° — creates beautiful shadows that define cheekbones and jaw
-- Fill: white reflector on opposite side — lifts shadows without killing depth
-- Rim/hair light from behind: separates subject from background, adds premium 3D effect
-- Eye lights: catch lights MUST be visible — this is non-negotiable for WOW quality
-- Overall mood: Vogue Italia editorial — rich, dimensional, three-dimensional
+- Main light: large octabox at 45° — defines cheekbones and jaw of THIS person's face
+- Fill: white reflector — lifts shadows without losing depth
+- Rim/hair light from behind: separates subject from background, premium 3D effect
+- Catchlights MUST be visible in eyes — non-negotiable
+- Mood: Vogue Italia editorial — rich, dimensional, three-dimensional
 
 LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
 FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
@@ -106,14 +121,19 @@ ${customPrompt ? `Additional: ${customPrompt}` : ""}
 ════════════════════════════════════════
 FINAL QUALITY CHECK
 ════════════════════════════════════════
-Before rendering, confirm:
-✅ Face geometry IDENTICAL to source (chin length, jaw angle, face proportions)
-✅ Eyes have CATCHLIGHTS — bright, sharp, alive
-✅ Lip color is FLATTERING and intentional — not random, not garish
-✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
-✅ The person looks like THEMSELVES — just in a better photoshoot
 
-This photo must make the client say "WOW — that's me, but in Vogue."`;
+Before rendering, confirm:
+✅ Eye color MATCHES source exactly (green/brown/blue/etc — not altered)
+✅ Face shape IDENTICAL — no rounding, no slimming
+✅ Cheeks MATCH source — hollow if hollow, full if full
+✅ Jaw and chin IDENTICAL proportions
+✅ Eyes have CATCHLIGHTS — bright, sharp, alive
+✅ Expression is WARM and CONFIDENT — not scared, not stiff
+✅ Lip color is FLATTERING for this specific person
+✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
+✅ The person is 100% RECOGNIZABLE as themselves
+
+Ask yourself: "Would the person in the input photo look at this result and say — that's ME, but in Vogue?"`;
 }
 
 Deno.serve(async (req: Request) => {
