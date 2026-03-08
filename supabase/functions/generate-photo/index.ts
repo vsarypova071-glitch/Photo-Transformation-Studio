@@ -60,54 +60,46 @@ STEP 2 — LOCK ALL FACE VALUES. BIOMETRIC BLUEPRINT SEALED.
 ✅ ONLY THE FACE IS CARRIED OVER. EVERYTHING ELSE IS CREATED FRESH.
 
 ════════════════════════════════════════
-ABSOLUTE RULES — APPLY TO EVERY PERSON
+FACE BIOMETRIC RULES — ONLY THESE ARE PRESERVED
 ════════════════════════════════════════
 
-⛔ DO NOT "IMPROVE" or "BEAUTIFY" — IDENTITY TRANSFER only, not idealization
 ⛔ DO NOT change face shape — exact shape from Step 1
 ⛔ DO NOT change eye color — green stays green, brown stays brown, blue stays blue
 ⛔ DO NOT enlarge or reshape eyes — only add LIGHT (catchlights)
-
-⛔⛔ EYE SPACING & NOSE BRIDGE — CRITICAL GEOMETRIC RULE ⛔⛔
-The distance between the eyes and the nose bridge is a FIXED BONE MEASUREMENT:
-• The gap between each inner eye corner and the nose bridge MUST match the source exactly
-• ⛔ DO NOT push eyes wider apart — widened IPD = completely different person
-• ⛔ DO NOT move either eye away from the nose bridge
-• Each eye must sit at the SAME distance from the nose center as in the source photo
-• If the source shows eyes close to the nose bridge → result must show the same closeness
-• VERIFY: Draw a vertical line down the nose bridge — each eye must be equidistant from it, matching source proportions exactly
-
-⛔⛔ CHEEKS — THIS IS THE #1 MOST CRITICAL RULE ⛔⛔
-The cheek geometry is the most commonly distorted feature — pay maximum attention:
-• If you scanned HOLLOW cheeks (rating 3–5 from Step 1):
-  → The area BELOW the cheekbone MUST be CONCAVE (sunken inward) in the result
-  → This is STRUCTURAL BONE GEOMETRY — it does NOT disappear in fashion photos
-  → DO NOT add fat, volume, or roundness to hollow cheeks
-  → DO NOT let lighting fill in or soften the natural hollow shadows
-  → The shadow under the cheekbone MUST remain visually present — it defines the face
-• If you scanned FULL cheeks (rating 1–2): keep them full and round
-• ⛔ Adding volume to a sculpted face = IDENTITY THEFT = FAILURE
-
-⛔ DO NOT soften a defined jawline — angular jaw stays angular
-⛔ DO NOT shorten or lengthen the chin
-⛔ DO NOT narrow or widen the lower face — clone the exact width ratio
 ⛔ DO NOT de-age, over-smooth skin, or remove distinctive features
-⛔ DO NOT change hair length or texture
 ⛔ DO NOT apply a "generic beautiful person" face — this specific person MUST be recognizable
 
+⛔⛔ EYE SPACING & NOSE BRIDGE — FIXED BONE GEOMETRY ⛔⛔
+• The gap between each inner eye corner and the nose bridge MUST match the source exactly
+• ⛔ DO NOT push eyes wider apart — widened IPD = completely different person
+• Each eye must sit at the SAME distance from the nose center as in the source photo
+• VERIFY: Draw a vertical line down the nose bridge — each eye must be equidistant from it
+
+⛔⛔ CHEEKS — MOST CRITICAL RULE ⛔⛔
+• If you scanned HOLLOW cheeks (rating 3–5):
+  → The area BELOW the cheekbone MUST be CONCAVE (sunken inward)
+  → DO NOT add fat, volume, or roundness to hollow cheeks
+  → Shadow under the cheekbone MUST remain visually present
+• If you scanned FULL cheeks (rating 1–2): keep them full
+• ⛔ Adding volume to a sculpted face = IDENTITY THEFT = FAILURE
+
+⛔ DO NOT soften a defined jawline
+⛔ DO NOT change jaw width or chin length
+⛔ DO NOT change hair length or texture — same cut and color
+
 ════════════════════════════════════════
-EXPRESSION & POSE — ESSENTIAL FOR WOW
+TRANSFORM EVERYTHING ELSE — THIS IS A PHOTOSHOOT
 ════════════════════════════════════════
 
-⛔ FORBIDDEN: passport photo expression, scared/frozen/tense face, stiff posture
-✅ REQUIRED: natural, relaxed, CONFIDENT presence — the person looks like they own the room
-- Lips: softly parted OR a subtle natural smile — warm, not forced
-- Jaw: completely relaxed — not clenched
-- Eyes: inner confidence, slight warmth — as if the person is about to smile
-- Head: natural slight tilt (~5°) or gently straight — never rigid
-- Shoulders: dropped and relaxed — not raised or stiff
-- Overall feeling: "I am exactly where I belong. I am confident."
-- Reference energy: editorial magazine cover — effortless, present, magnetic
+✅ NEW SCENE: Create a completely new professional photography setting — NOT similar to the input photo
+✅ NEW LIGHTING: Professional studio lighting — octabox, rim light, dramatic shadows (NOT casual window light)
+✅ NEW POSE: Confident editorial pose — different from input photo pose
+✅ NEW CAMERA ANGLE: Choose the most flattering angle for this face — 3/4 turn, straight, slight down-tilt
+✅ NEW EXPRESSION: Choose the most CONFIDENT and FLATTERING expression — editorial magazine energy
+   - NOT a copy of whatever the person was doing in their selfie
+   - Choose from: powerful direct gaze, slight confident smile, serene composure, magnetic presence
+   - The goal: the person should look more powerful and beautiful than in their selfie
+✅ NEW BACKGROUND: Dramatic luxury setting — NOT whatever was behind them in the input photo
 
 ════════════════════════════════════════
 EYES — ALIVE AND MAGNETIC
@@ -118,35 +110,19 @@ EYES — ALIVE AND MAGNETIC
 - Iris must have depth and crystalline micro-texture
 - Slight moisture on lower lashline for natural luminosity
 - Lashes: defined, separated, naturally long — Vogue editorial quality
-- ALL achieved through LIGHTING only — geometry unchanged
 
 ════════════════════════════════════════
-EXPRESSION — MATCH SOURCE MOOD EXACTLY
+MAKEUP — ELEVATED EDITORIAL
 ════════════════════════════════════════
 
-⛔⛔ CRITICAL: MATCH THE EMOTIONAL ENERGY OF THE SOURCE PHOTO ⛔⛔
-- If the source photo shows a SMILE → the result MUST have a warm, natural smile
-- If the source photo shows a relaxed, friendly expression → result MUST match that warmth
-- ⛔ DO NOT turn a smiling person into a serious/stern fashion model
-- ⛔ DO NOT add a "fierce" editorial expression if the source is warm and approachable
-- The person's CHARACTER and MOOD must be preserved, not overridden by fashion aesthetics
-- The result should look like the SAME PERSON in a fashion photo — not a different person in a pose
-
-════════════════════════════════════════
-MAKEUP — ENHANCE, NEVER TRANSFORM
-════════════════════════════════════════
-
-⛔⛔ MAKEUP RULE #1: ENHANCE WHAT IS THERE — DO NOT CREATE A NEW LOOK ⛔⛔
-- Scan the source photo's existing makeup level: natural / light / medium / full
-- If source has NATURAL/LIGHT makeup → result must also be natural/light — only refine, not dramatize
-- ⛔ DO NOT add bright red lipstick, bold smoky eyes, or heavy contouring if the source person wears subtle makeup
-- ⛔ DO NOT change the person's makeup style to match the outfit color — lips must complement SKIN TONE, not clothing color
-- Foundation: skin looks like skin — pores visible, healthy glow, NEVER plastic or porcelain
-- Blush: soft and natural, matching source person's actual coloring
-- Lip color: if source has nude/pink lips → stay in nude/pink family (warm rose, soft mauve, natural berry)
-  → ⛔ NEVER jump to bright red/orange/fuchsia unless the source person already wears bold lips
-- Eye makeup: only subtle definition — lashes clean and defined, shadows neutral
-- Overall: makeup looks like the person did it themselves for a special occasion, not a costume
+- Foundation: skin looks like skin — pores visible, healthy glow, NEVER plastic
+- Blush: warm, placed high on cheekbones
+- Lip color: choose the most flattering shade for this person's skin tone — nude-rose / warm mauve / berry / terracotta
+  → ⛔ DO NOT match lip color to outfit color
+  → ⛔ DO NOT add bright red lipstick if the person's natural skin tone doesn't suit it
+- Contouring: subtle — enhances existing bone structure, does NOT add fake structure
+- Eye makeup: clean definition — complements eye color, does NOT change eye shape
+- Overall: looks like a professional makeup artist did it for a Vogue shoot
 
 ════════════════════════════════════════
 CLOTHING & PHOTOGRAPHY
@@ -154,25 +130,22 @@ CLOTHING & PHOTOGRAPHY
 
 Outfit: ${g}
 
-⛔⛔ OUTFIT-BACKGROUND CONTRAST — CRITICAL DEPTH RULE ⛔⛔
-- The outfit color and the background color MUST be distinctly different — no monochromatic blending
+⛔⛔ OUTFIT-BACKGROUND CONTRAST — MANDATORY ⛔⛔
+- Outfit color and background color MUST be distinctly different — no monochromatic blending
 - ⛔ DO NOT put a red outfit against a red background
-- ⛔ DO NOT match outfit to background — this creates a "floating head" effect with no depth
-- The subject must be clearly separated from the background by color contrast
-- Example: dark outfit → light/neutral background; warm outfit → cool/neutral background; bright outfit → dark or neutral background
-- ALWAYS ensure the background provides visual separation from the clothing
+- Subject must be clearly separated from background by color contrast
+- Dark outfit → light/neutral background; warm outfit → cool/neutral background
 
-LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT OVER-FILL CHEEK SHADOWS):
-- Main light: large octabox at 45° — sculpts and REVEALS existing bone structure, does NOT eliminate it
-- Fill light: MINIMAL — enough to see shadow detail, NOT enough to eliminate cheek hollows or flatten the face
-- ⛔ CRITICAL LIGHTING RULE: The natural shadow in the cheek hollow area MUST stay visible — it is BONE STRUCTURE, not a flaw to fix
+LIGHTING — CINEMATIC LUXURY (⚠️ DO NOT FILL IN CHEEK SHADOWS):
+- Main light: large octabox at 45° — sculpts and REVEALS bone structure, does NOT flatten it
+- Fill light: MINIMAL — cheek hollows must remain visible
 - Rim/hair light: separates subject from background, premium 3D depth
-- Catchlights MUST be visible in eyes — non-negotiable
-- Mood: Vogue Italia editorial — dimensional, sculpted, three-dimensional
+- Catchlights in eyes: mandatory
+- Mood: Vogue Italia — dimensional, sculpted, three-dimensional
 
-LENS & CAMERA: 85mm f/1.4, shot at f/2.8 — subject sharp, background creamy bokeh
-FILM AESTHETIC: Kodak Portra 800 — warm, rich tones, natural contrast, not oversaturated
-BACKGROUND: seamless paper, neutral warm gray, ivory, or soft taupe — luxury studio feel — ALWAYS contrasting with outfit
+LENS: 85mm f/1.4 at f/2.8 — subject sharp, background creamy bokeh
+FILM LOOK: Kodak Portra 800 — warm, rich tones, natural contrast
+BACKGROUND: luxury studio — neutral warm gray, ivory, or soft taupe — always contrasting with outfit
 
 ${aspectRatio ? `Aspect ratio: MATCH INPUT EXACTLY — ${aspectRatio}` : ""}
 ${stylePrompt ? `Style direction: ${stylePrompt}` : ""}
@@ -183,23 +156,23 @@ FINAL QUALITY CHECK — MANDATORY
 ════════════════════════════════════════
 
 Before rendering, verify ALL of these:
-✅ Eye color MATCHES source exactly — NOT changed
-✅ EYE SPACING: Inter-pupillary distance IDENTICAL to source — eyes are NOT wider apart than original
-✅ NOSE BRIDGE GAP: Each inner eye corner sits at the SAME distance from the nose bridge as in source — no eye has "drifted" outward
+✅ This looks like a PROFESSIONAL PHOTOSHOOT — NOT a filtered version of the input selfie
+✅ The setting, lighting, and pose are COMPLETELY DIFFERENT from the input photo
+✅ Eye color MATCHES source exactly
+✅ EYE SPACING: Inter-pupillary distance IDENTICAL to source — eyes NOT wider apart
+✅ NOSE BRIDGE GAP: Each inner eye corner at the SAME distance from nose bridge as in source
 ✅ Face shape IDENTICAL — no rounding, no slimming, no widening
-✅ CHEEKS: If source had hollow/sculpted cheeks → the concave shadow under the cheekbone is PRESENT and visible in the result
-✅ CHEEKBONE HEIGHT and protrusion IDENTICAL to source
+✅ CHEEKS: hollow cheeks → concave shadow PRESENT; full cheeks → kept full
 ✅ Jaw and chin IDENTICAL proportions
-✅ Lower face width MATCHES source
+✅ Hair: same cut and color as source
 ✅ Eyes have CATCHLIGHTS — bright, sharp, alive
-✅ EXPRESSION: Matches source photo mood — if source smiles → result smiles. NOT changed to serious/fierce.
-✅ MAKEUP: Level matches source — natural stays natural. NO bold red lips if source wore subtle makeup.
-✅ OUTFIT vs BACKGROUND: Clearly different colors — no monochromatic floating head effect.
-✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
-✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
+✅ MAKEUP: flattering for this skin tone — NOT matching outfit color
+✅ OUTFIT vs BACKGROUND: clearly different colors
+✅ Photo belongs in a LUXURY FASHION MAGAZINE
+✅ The person is 100% RECOGNIZABLE as the same person from the input photo
 
-FINAL TEST: "Does this face have the SAME bone structure, SAME expression warmth, and SAME makeup level as the input?"
-If NO → apply stricter fidelity before output.`;
+FINAL TEST: "Is this a brand new professional fashion photograph of the same person — NOT a copy/edit of the input photo?"
+If NO → recreate with proper photoshoot transformation.`;
 }
 
 async function generateSingle(
