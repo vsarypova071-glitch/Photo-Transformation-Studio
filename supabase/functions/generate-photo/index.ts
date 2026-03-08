@@ -153,6 +153,8 @@ FINAL QUALITY CHECK — MANDATORY
 
 Before rendering, verify ALL of these:
 ✅ Eye color MATCHES source exactly — NOT changed
+✅ EYE SPACING: Inter-pupillary distance IDENTICAL to source — eyes are NOT wider apart than original
+✅ NOSE BRIDGE GAP: Each inner eye corner sits at the SAME distance from the nose bridge as in source — no eye has "drifted" outward
 ✅ Face shape IDENTICAL — no rounding, no slimming, no widening
 ✅ CHEEKS: If source had hollow/sculpted cheeks → the concave shadow under the cheekbone is PRESENT and visible in the result
 ✅ CHEEKBONE HEIGHT and protrusion IDENTICAL to source
@@ -164,8 +166,8 @@ Before rendering, verify ALL of these:
 ✅ Photo looks like it belongs in a LUXURY FASHION MAGAZINE
 ✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
-FINAL TEST: "Does this face have the SAME bone structure as the input — same cheek hollows, same jaw, same proportions?"
-If NO → apply stricter geometric fidelity before output.`;
+FINAL TEST: "Does this face have the SAME bone structure as the input — same eye spacing near nose bridge, same cheek hollows, same jaw, same proportions?"
+If NO → apply stricter geometric fidelity before output.\`;
 }
 
 async function generateSingle(
