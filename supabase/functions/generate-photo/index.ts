@@ -167,7 +167,7 @@ Before rendering, verify ALL of these:
 ✅ The person is 100% RECOGNIZABLE — a close friend would immediately say "that's her/him!"
 
 FINAL TEST: "Does this face have the SAME bone structure as the input — same eye spacing near nose bridge, same cheek hollows, same jaw, same proportions?"
-If NO → apply stricter geometric fidelity before output.\`;
+If NO → apply stricter geometric fidelity before output.`;
 }
 
 async function generateSingle(
