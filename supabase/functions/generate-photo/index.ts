@@ -81,29 +81,14 @@ Before doing anything else, extract and record these measurements from the sourc
 PHASE 2: IDENTITY SCAN (face as person)
 ══════════════════════════════════════════════════
 
-▸ EYES (⚠️ CRITICAL DRIFT ZONE — AI alters eyes by default):
-  → Iris color: record EXACT HEX-like description (e.g. "warm amber-hazel with dark limbal ring",
-    "cool grey-green with brown flecks") — result MUST match this EXACTLY
-  → Eye spacing: measure inter-canthus distance / IPD ratio — LOCK THIS, it is bone structure
-  → Outer canthus angle: measure tilt in degrees (up / horizontal / slightly down) — LOCK EXACTLY
-    ⛔ FORBIDDEN: lifting outer corner, creating cat-eye or fox-eye tilt
-  → Eyelid crease: mono / single fold / double fold / hooded — COPY EXACTLY
-  → Eye shape type: almond / round / hooded / deep-set / prominent — COPY EXACTLY
-    ⛔ FORBIDDEN: converting round to almond, hooded to open, or any shape change
-  → Eye width (horizontal aperture): measure and lock
-  → Sclera tone: pure white / warm white / slightly veined — COPY, no whitening
-  → Natural lash density — DO NOT add theatrical lashes, DO NOT extend
-  → Brow shape: arch type, thickness, distance above eye — COPY EXACTLY
-  → CATCHLIGHTS: round specular highlight in each iris, upper quadrant — MANDATORY for life-like gaze
-  → EYE MOISTURE: subtle wet sheen on sclera — alive, NOT bloodshot, NOT dry
+▸ EYES:
+  → Exact iris color (be specific: sage-green / amber-hazel / storm-grey, not just "brown")
+  → Eye spacing: narrow / average / wide — THIS IS BONE
+  → Eyelid shape: heavy lid / visible crease / deep-set / almond
+  → Natural lash density — DO NOT add theatrical lashes
+  → CATCHLIGHTS: round specular highlight in each iris, upper quadrant — MANDATORY
+  → EYE MOISTURE: subtle wet sheen on sclera — alive, not bloodshot
   → GAZE: soft and magnetic, slightly dreamy, 5° downward tilt — NOT passport stare
-  → ⛔ ABSOLUTE RULES FOR EYES:
-    - DO NOT change iris color under ANY lighting condition
-    - DO NOT lift or lower outer canthus angle
-    - DO NOT change inter-eye distance
-    - DO NOT add double fold if source is mono-lid
-    - DO NOT elongate or widen eye aperture
-    - DO NOT "beautify" eyes — preserve every asymmetry from source
 
 ▸ NOSE:
   → Bridge width: narrow / medium / wide
@@ -130,14 +115,6 @@ face slimming, jawline contouring, chiseled jaw, sculpted jaw, defined jawline,
 pointed chin, sharp chin, narrow chin, V-chin, narrowed lower third, compressed jaw width,
 reduced chin width, face restructuring, altered facial structure, narrowed face,
 thinner face, supermodel jaw, editorial jaw proportions, fashion face geometry
-
-EYES FORBIDDEN (⚠️ highest priority):
-cat eyes, fox eyes, lifted eye corners, raised outer canthus, slanted eyes,
-anime eyes, stylized eyes, almond eyes (if source is round), wide eyes (if source is narrow),
-changed iris color, altered iris color, brightened eyes, whitened sclera,
-elongated eyes, enlarged eyes, beautified eyes, perfect eyes, symmetrical eyes (if source is asymmetric),
-double eyelid (if source is mono-lid), open eye surgery look, doe eyes, dramatic eyes,
-changed eye shape, modified eye geometry, altered eye spacing
 
 IDENTITY FORBIDDEN:
 model face, beautified face, idealized face, perfect skin, airbrushed skin,
@@ -192,32 +169,24 @@ Run both checks before rendering:
 □ JAW SHAPE: flat/round jaw in source = flat/round jaw in result? → FAIL if V-shaped → REBUILD
 □ CAMERA: eye-level? 85mm? → FAIL if low-angle or wide → FIX
 
-[EYE GEOMETRY CHECK — highest priority]:
-□ IRIS COLOR: exact match (amber ≠ brown ≠ hazel)? → FAIL if shifted → REBUILD eyes
-□ OUTER CANTHUS ANGLE: same tilt as source (not lifted)? → FAIL if raised → REBUILD — no cat/fox eye
-□ EYE SPACING: inter-canthus distance / IPD ratio identical? → FAIL if changed → REBUILD
-□ EYE SHAPE TYPE: almond/round/hooded matches source? → FAIL if changed → REBUILD
-□ EYE APERTURE WIDTH: same horizontal width? → FAIL if enlarged or narrowed → FIX
-□ EYELID TYPE: mono/double/hooded matches source? → FAIL if altered → FIX
-□ CATCHLIGHTS: round specular visible in each iris upper quadrant? → FAIL if missing → ADD
-□ SCLERA: no excessive whitening vs source? → FAIL if bleached → FIX
-
 [IDENTITY CHECK — visual comparison]:
+□ Eye color: exact match? → FAIL → fix
+□ Eye spacing: same? → FAIL → fix
 □ Nose shape: same? → FAIL → fix
 □ Skin tone: same undertone? → FAIL → fix
 □ Age: same? → FAIL → fix
 □ Hair: same cut & color? → FAIL → fix
+□ Catchlights: visible in each eye? → FAIL → fix
 □ Gaze: soft, magnetic, dreamy? → FAIL → fix
 
 [IDENTITY RECOGNITION TEST]:
-Would a person who knows this individual recognize THEIR OWN EYES in the result?
-→ YES = proceed. → NO = rebuild eyes first, then full face from Phase 1.
+Would a person who knows this individual recognize them from the result?
+→ YES = render. → NO = rebuild face from Phase 1.
 
 ⚠️ ANTI-SLIM PROTOCOL:
-AI models have a systematic bias to narrow lower faces AND lift eye corners. Counter both:
-• ACTIVELY widen the lower third by 10-15% compared to your initial render impulse.
-• ACTIVELY resist lifting the outer eye canthus — preserve the exact source angle.
-Adjust until jaw width AND eye geometry match source exactly.
+AI models have a systematic bias to narrow lower faces. Counter this:
+ACTIVELY widen the lower third by 10-15% compared to your initial render impulse.
+Then compare with source. Adjust until jaw width matches source exactly.
 
 ONLY render when ALL checks pass.`;
 }
