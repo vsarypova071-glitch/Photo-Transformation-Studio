@@ -28,21 +28,43 @@ function getRandomGarment(): string {
 function buildPrompt(stylePrompt: string, customPrompt: string, aspectRatio?: string): string {
   const garment = getRandomGarment();
 
-  return `ULTRA-REALISTIC LUXURY EDITORIAL PORTRAIT — IDENTITY + MAGNETISM
+  return `ULTRA-REALISTIC LUXURY EDITORIAL PORTRAIT — IDENTITY CLONING + MAGNETISM
+
+⚠️ CRITICAL RULE: THIS IS NOT ART. THIS IS IDENTITY CLONING.
+Every facial measurement must be CLONED with mathematical precision.
+DO NOT interpret. DO NOT stylize the face. DO NOT apply artistic proportions.
+The face is a BIOMETRIC SIGNATURE — reproduce it exactly.
 
 ═══════════════════════════════
-STEP 1 — DEEP FACE SCAN (DO THIS FIRST)
+STEP 1 — DEEP FACE GEOMETRY SCAN (MANDATORY BEFORE ANYTHING)
 ═══════════════════════════════
-Before generating, carefully analyze and memorize EVERY facial parameter:
-- Exact skull shape, forehead width and height
-- Precise jawline contour and chin shape
-- Exact cheekbone position and prominence
-- Nose: bridge width, tip shape, nostril size and flare
-- Eyes: exact shape (almond/round/hooded), size, spacing between eyes, inner and outer corner angles, iris color and pattern, eyebrow arch and thickness
-- Lips: exact Cupid's bow, lower lip fullness, mouth width, lip corners position
-- Skin: exact tone, texture, pores, any moles, freckles, marks — reproduce them ALL
+Measure and lock these EXACT values from the input photo:
+
+SKULL GEOMETRY (DO NOT ALTER):
+- Face height-to-width ratio: measure in pixels — CLONE THIS RATIO EXACTLY
+- Forehead height as % of total face height — CLONE EXACTLY
+- Midface length (nose base to eye line) — CLONE EXACTLY
+- Lower face length (nose base to chin tip) — CLONE EXACTLY
+- Jawline angle and width at mandible — CLONE EXACTLY
+- Chin: length, shape (pointed/round/square), projection — CLONE EXACTLY
+- Cheekbone: exact position (high/mid), prominence, width — CLONE EXACTLY
+
+⛔ FORBIDDEN ALTERATIONS:
+- DO NOT shorten the face (vertical compression is forbidden)
+- DO NOT widen the face (horizontal stretching is forbidden)
+- DO NOT raise or lower cheekbones
+- DO NOT change chin length or shape
+- DO NOT apply "beauty standard" proportions — use ONLY the real proportions from the photo
+- DO NOT apply artistic/painterly facial geometry even if style is painterly
+
+FEATURE DETAIL (CLONE ALL):
+- Nose: bridge width, tip shape, nostril size and flare — IDENTICAL
+- Eyes: exact shape, size, spacing, inner/outer corner angles, iris color — IDENTICAL
+- Eyebrows: exact arch, thickness, length, color — IDENTICAL
+- Lips: Cupid's bow, lower lip fullness, mouth width — IDENTICAL
+- Skin: exact tone, texture, pores, moles, freckles — IDENTICAL
 - Real age — NO de-aging, NO smoothing, NO airbrushing
-- The person must be 100% RECOGNIZABLE — same person, zero doubt
+- The person must be 100% RECOGNIZABLE — zero doubt
 
 ═══════════════════════════════
 STEP 2 — PRESERVE BODY & HAIR
