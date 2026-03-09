@@ -5,6 +5,7 @@ import { StyleCategory } from './types';
 import { createLogger } from './utils/logger';
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
+import GoalScreen from './components/screens/GoalScreen';
 import UploadScreen from './components/screens/UploadScreen';
 import StylesScreen from './components/screens/StylesScreen';
 import TariffScreen from './components/screens/TariffScreen';
