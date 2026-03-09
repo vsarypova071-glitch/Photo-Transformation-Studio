@@ -14,7 +14,7 @@ import ResultsScreen from './components/screens/ResultsScreen';
 
 const log = createLogger('App');
 
-export type Screen = 'welcome' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
+export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
 
 interface SelectedTariff {
   id: string;
