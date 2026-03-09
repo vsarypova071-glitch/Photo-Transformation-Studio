@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Style, StyleCategory } from '../../types';
+
 interface StylesScreenProps {
   styles: Style[];
   selectedStyles: string[];
+  selectedGoal: string | null;
   activeCategory: StyleCategory;
   isFullBody: boolean;
   onSelectStyle: (id: string) => void;
@@ -12,6 +14,21 @@ interface StylesScreenProps {
   onGenerate: () => void;
   onTestGenerate?: () => void;
 }
+
+const GOAL_CONFIG: Record<string, { priority: string[]; recommended: string }> = {
+  work: {
+    priority: ['business_elite', 'new_york_power', 'scandinavian_minimal'],
+    recommended: 'business_elite',
+  },
+  dating: {
+    priority: ['golden_hour_glow', 'parisian_chic', 'luxury_resort'],
+    recommended: 'golden_hour_glow',
+  },
+  social: {
+    priority: ['luxe_editorial', 'milano_style', 'evening_glamour'],
+    recommended: 'luxe_editorial',
+  },
+};
 const CATEGORIES: {
   id: StyleCategory;
   label: string;
@@ -25,6 +42,7 @@ const CATEGORIES: {
 export default function StylesScreen({
   styles,
   selectedStyles,
+  selectedGoal,
   activeCategory,
   isFullBody,
   onSelectStyle,
@@ -35,73 +53,125 @@ export default function StylesScreen({
   onTestGenerate
 }: StylesScreenProps) {
   const [customPrompt, setCustomPrompt] = useState('');
-  const filteredStyles = styles.filter(s => s.category === activeCategory);
   const canGenerate = selectedStyles.length > 0 || customPrompt.trim() !== '';
-  return <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
-       <div className="flex justify-between items-center mb-8 text-slate-50">
-         <div>
-           <h2 className="text-2xl font-black uppercase tracking-tight font-serif">Стиль образа</h2>
-           <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200 font-serif">Выберите направление</p>
-         </div>
-         <button onClick={onBack} className="text-[10px] font-bold border-b border-border text-slate-100 font-serif">
-           НАЗАД
-         </button>
-       </div>
- 
-       {/* Categories */}
-       <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2 snap-x">
-         {CATEGORIES.map(cat => <button key={cat.id} onClick={() => onCategoryChange(cat.id)} className={`px-5 py-3 rounded-full text-[10px] font-black border transition-all flex-shrink-0 snap-start ${activeCategory === cat.id ? 'bg-primary border-primary text-primary-foreground shadow-lg' : 'bg-secondary border-border text-muted-foreground'}`}>
-             {cat.label}
-           </button>)}
-       </div>
- 
-       {/* Style Grid */}
-       <div className="grid grid-cols-2 gap-4 mb-10">
-         {filteredStyles.map(style => {
-           const isSelected = selectedStyles.includes(style.id);
-           return <div key={style.id} onClick={() => onSelectStyle(style.id)} className={`relative rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-300 active:scale-95 group ${isSelected ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_20px_hsl(var(--primary)/0.5)]' : 'ring-4 ring-transparent hover:ring-primary/30 hover:scale-[1.01]'}`}>
-               <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" alt={style.name} />
-               <div className={`absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent transition-opacity duration-300 ${isSelected ? 'opacity-90' : 'opacity-75 group-hover:opacity-85'}`} />
-               <div className="absolute bottom-0 left-0 right-0 p-3">
-                 <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
-                 {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
-               </div>
-               {isSelected && <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                   <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                   </svg>
-                 </div>}
-             </div>;
-         })}
-       </div>
- 
-       {/* Full Body Toggle */}
-       <div onClick={onFullBodyToggle} className="glass p-6 rounded-[2.5rem] border-border mb-6 flex items-center justify-between cursor-pointer active:scale-95 transition-all">
-         <div>
-           <p className="text-[10px] font-black text-primary uppercase tracking-widest">ФОРМАТ: ВО ВЕСЬ РОСТ</p>
-           <p className="text-[8px] font-bold uppercase mt-1 text-slate-50">Видны обувь и полный силуэт</p>
-         </div>
-         <div className={`w-12 h-6 rounded-full relative transition-colors ${isFullBody ? 'bg-primary' : 'bg-secondary'}`}>
-           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isFullBody ? 'left-7' : 'left-1'}`} />
-         </div>
-       </div>
- 
-        {/* Custom Prompt */}
-       <div className="glass p-6 rounded-[2rem] border-border mb-10">
-         <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">ПОЖЕЛАНИЯ</p>
-         <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)} placeholder="Например: добавьте очки, поменяйте фон..." className="w-full bg-background/50 border border-border rounded-2xl p-4 text-xs h-28 outline-none focus:border-primary text-foreground resize-none" />
-       </div>
- 
-       {/* Fixed Bottom Button */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto flex gap-3">
-           {onTestGenerate && (
-             <button onClick={onTestGenerate} disabled={!canGenerate} className="flex-1 py-5 px-4 rounded-full font-semibold text-xs uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed bg-secondary border border-border text-foreground">
-               🧪 Тест
-             </button>
-           )}
-           <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer flex-[2] py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95">
-             ✦ Создать шедевр
-           </button>
+
+  const goalConfig = selectedGoal ? GOAL_CONFIG[selectedGoal] : null;
+
+  const filteredStyles = styles.filter(s => s.category === activeCategory);
+
+  // Sort: priority styles first, then the rest
+  const sortedStyles = goalConfig
+    ? [
+        ...goalConfig.priority.map(id => filteredStyles.find(s => s.id === id)).filter(Boolean) as typeof filteredStyles,
+        ...filteredStyles.filter(s => !goalConfig.priority.includes(s.id)),
+      ]
+    : filteredStyles;
+
+  const priorityStyles = goalConfig ? sortedStyles.filter(s => goalConfig.priority.includes(s.id)) : [];
+  const restStyles = goalConfig ? sortedStyles.filter(s => !goalConfig.priority.includes(s.id)) : sortedStyles;
+
+  const renderStyleCard = (style: Style) => {
+    const isSelected = selectedStyles.includes(style.id);
+    const isRecommended = goalConfig?.recommended === style.id;
+    return (
+      <div
+        key={style.id}
+        onClick={() => onSelectStyle(style.id)}
+        className={`relative rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-300 active:scale-95 group ${
+          isSelected
+            ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_20px_hsl(var(--primary)/0.5)]'
+            : isRecommended
+            ? 'ring-4 ring-primary/60 ring-offset-1 ring-offset-background shadow-[0_0_14px_hsl(var(--primary)/0.35)] hover:scale-[1.01]'
+            : 'ring-4 ring-transparent hover:ring-primary/30 hover:scale-[1.01]'
+        }`}
+      >
+        <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" alt={style.name} />
+        <div className={`absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent transition-opacity duration-300 ${isSelected ? 'opacity-90' : 'opacity-75 group-hover:opacity-85'}`} />
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
+          {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
         </div>
-      </section>;
+        {isRecommended && !isSelected && (
+          <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
+            <p className="text-[7px] font-black text-primary-foreground uppercase tracking-widest">★ Топ</p>
+          </div>
+        )}
+        {isSelected && (
+          <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
+            <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
+      <div className="flex justify-between items-center mb-8 text-slate-50">
+        <div>
+          <h2 className="text-2xl font-black uppercase tracking-tight font-serif">Стиль образа</h2>
+          <p className="text-[10px] font-bold uppercase tracking-widest mt-1 text-slate-200 font-serif">Выберите направление</p>
+        </div>
+        <button onClick={onBack} className="text-[10px] font-bold border-b border-border text-slate-100 font-serif">
+          НАЗАД
+        </button>
+      </div>
+
+      {/* Categories */}
+      <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2 snap-x">
+        {CATEGORIES.map(cat => (
+          <button key={cat.id} onClick={() => onCategoryChange(cat.id)} className={`px-5 py-3 rounded-full text-[10px] font-black border transition-all flex-shrink-0 snap-start ${activeCategory === cat.id ? 'bg-primary border-primary text-primary-foreground shadow-lg' : 'bg-secondary border-border text-muted-foreground'}`}>
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Recommended section */}
+      {goalConfig && priorityStyles.length > 0 && activeCategory === 'realistic' && (
+        <>
+          <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-4">✦ Рекомендуемые стили для вашей цели</p>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {priorityStyles.map(renderStyleCard)}
+          </div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">Все стили</p>
+        </>
+      )}
+
+      {/* Rest of styles grid */}
+      <div className="grid grid-cols-2 gap-4 mb-10">
+        {(goalConfig && activeCategory === 'realistic' ? restStyles : sortedStyles).map(renderStyleCard)}
+      </div>
+
+      {/* Full Body Toggle */}
+      <div onClick={onFullBodyToggle} className="glass p-6 rounded-[2.5rem] border-border mb-6 flex items-center justify-between cursor-pointer active:scale-95 transition-all">
+        <div>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">ФОРМАТ: ВО ВЕСЬ РОСТ</p>
+          <p className="text-[8px] font-bold uppercase mt-1 text-slate-50">Видны обувь и полный силуэт</p>
+        </div>
+        <div className={`w-12 h-6 rounded-full relative transition-colors ${isFullBody ? 'bg-primary' : 'bg-secondary'}`}>
+          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isFullBody ? 'left-7' : 'left-1'}`} />
+        </div>
+      </div>
+
+      {/* Custom Prompt */}
+      <div className="glass p-6 rounded-[2rem] border-border mb-10">
+        <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">ПОЖЕЛАНИЯ</p>
+        <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)} placeholder="Например: добавьте очки, поменяйте фон..." className="w-full bg-background/50 border border-border rounded-2xl p-4 text-xs h-28 outline-none focus:border-primary text-foreground resize-none" />
+      </div>
+
+      {/* Fixed Bottom Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto flex gap-3">
+        {onTestGenerate && (
+          <button onClick={onTestGenerate} disabled={!canGenerate} className="flex-1 py-5 px-4 rounded-full font-semibold text-xs uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed bg-secondary border border-border text-foreground">
+            🧪 Тест
+          </button>
+        )}
+        <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer flex-[2] py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95">
+          ✦ Создать шедевр
+        </button>
+      </div>
+    </section>
+  );
 }

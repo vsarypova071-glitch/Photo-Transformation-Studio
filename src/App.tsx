@@ -170,6 +170,7 @@ function App() {
           <StylesScreen
             styles={STYLES}
             selectedStyles={selectedStyles}
+            selectedGoal={selectedGoal}
             activeCategory={activeCategory}
             isFullBody={isFullBody}
             onSelectStyle={(id) => setSelectedStyles(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
