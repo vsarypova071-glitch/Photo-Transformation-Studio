@@ -32,6 +32,7 @@ function App() {
   const [isFullBody, setIsFullBody] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [selectedTariff, setSelectedTariff] = useState<SelectedTariff | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
