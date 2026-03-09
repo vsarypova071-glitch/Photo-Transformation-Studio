@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Style, StyleCategory } from '../../types';
+
 interface StylesScreenProps {
   styles: Style[];
   selectedStyles: string[];
+  selectedGoal: string | null;
   activeCategory: StyleCategory;
   isFullBody: boolean;
   onSelectStyle: (id: string) => void;
@@ -12,6 +14,21 @@ interface StylesScreenProps {
   onGenerate: () => void;
   onTestGenerate?: () => void;
 }
+
+const GOAL_CONFIG: Record<string, { priority: string[]; recommended: string }> = {
+  work: {
+    priority: ['business_elite', 'new_york_power', 'scandinavian_minimal'],
+    recommended: 'business_elite',
+  },
+  dating: {
+    priority: ['golden_hour_glow', 'parisian_chic', 'luxury_resort'],
+    recommended: 'golden_hour_glow',
+  },
+  social: {
+    priority: ['luxe_editorial', 'milano_style', 'evening_glamour'],
+    recommended: 'luxe_editorial',
+  },
+};
 const CATEGORIES: {
   id: StyleCategory;
   label: string;
