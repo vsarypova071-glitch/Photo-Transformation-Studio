@@ -33,7 +33,7 @@ export default function TariffScreen({
       {/* Назад */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6">
+        className="flex items-center gap-2 transition-colors mb-6 text-slate-200">
         
         ← Назад
       </button>
@@ -41,7 +41,7 @@ export default function TariffScreen({
       {/* Заголовок */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">Выберите тариф</h2>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-slate-200">
           Выберите количество фотографий для генерации
         </p>
       </div>
