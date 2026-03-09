@@ -135,6 +135,11 @@ export default function TariffScreen({
       <p className="text-center text-xs text-muted-foreground mt-6">
         💳 Безопасная оплата через ЮKassa
       </p>
+      <p className="text-center text-[10px] text-muted-foreground/60 mt-2 leading-relaxed px-4">
+        После оплаты запускается генерация AI-фотографий<br />
+        на основе загруженного изображения и выбранного стиля.<br />
+        Результаты предоставляются в цифровом виде.
+      </p>
     </section>
   );
 }
