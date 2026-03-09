@@ -150,7 +150,11 @@ function App() {
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
       <main className="relative min-h-screen">
         {screen === 'welcome' && (
-          <WelcomeScreen onStart={() => navigateTo('upload')} />
+          <WelcomeScreen onStart={() => navigateTo('goal')} />
+        )}
+
+        {screen === 'goal' && (
+          <GoalScreen onSelectGoal={(goal) => { setSelectedGoal(goal); navigateTo('upload'); }} />
         )}
         
         {screen === 'upload' && (
