@@ -5,6 +5,7 @@ import { StyleCategory } from './types';
 import { createLogger } from './utils/logger';
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
+import GoalScreen from './components/screens/GoalScreen';
 import UploadScreen from './components/screens/UploadScreen';
 import StylesScreen from './components/screens/StylesScreen';
 import TariffScreen from './components/screens/TariffScreen';
@@ -13,7 +14,7 @@ import ResultsScreen from './components/screens/ResultsScreen';
 
 const log = createLogger('App');
 
-export type Screen = 'welcome' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
+export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
 
 interface SelectedTariff {
   id: string;
@@ -31,6 +32,7 @@ function App() {
   const [isFullBody, setIsFullBody] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [selectedTariff, setSelectedTariff] = useState<SelectedTariff | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -148,7 +150,11 @@ function App() {
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
       <main className="relative min-h-screen">
         {screen === 'welcome' && (
-          <WelcomeScreen onStart={() => navigateTo('upload')} />
+          <WelcomeScreen onStart={() => navigateTo('goal')} />
+        )}
+
+        {screen === 'goal' && (
+          <GoalScreen onSelectGoal={(goal) => { setSelectedGoal(goal); navigateTo('upload'); }} />
         )}
         
         {screen === 'upload' && (
