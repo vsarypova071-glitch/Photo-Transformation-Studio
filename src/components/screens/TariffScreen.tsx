@@ -94,7 +94,7 @@ export default function TariffScreen({
               }>
               
               {tariff.popular &&
-              <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-slate-200">
+              <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300">
                   Популярный
                 </div>
               }
