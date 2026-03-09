@@ -132,7 +132,7 @@ export default function TariffScreen({
         })}
       </div>
 
-      <p className="text-center text-xs mt-6 text-slate-200">
+      <p className="text-center text-xs mt-6 text-slate-50">
         💳 Безопасная оплата через ЮKassa
       </p>
       <p className="text-center text-[10px] mt-2 leading-relaxed px-4 text-slate-200">
