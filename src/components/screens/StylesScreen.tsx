@@ -77,16 +77,26 @@ export default function StylesScreen({
       <div
         key={style.id}
         onClick={() => onSelectStyle(style.id)}
-        className={`relative rounded-[2rem] overflow-hidden cursor-pointer transition-all duration-300 active:scale-95 group ${
-          isSelected
-            ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_20px_hsl(var(--primary)/0.5)]'
+        style={{ transition: 'transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease, outline-color 200ms ease' }}
+        className={`relative rounded-[2rem] overflow-hidden cursor-pointer group
+          ${isSelected
+            ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_28px_4px_hsl(var(--primary)/0.55),0_8px_24px_hsl(var(--primary)/0.2)]'
             : isRecommended
-            ? 'ring-4 ring-primary/60 ring-offset-1 ring-offset-background shadow-[0_0_14px_hsl(var(--primary)/0.35)] hover:scale-[1.01]'
-            : 'ring-4 ring-transparent hover:ring-primary/30 hover:scale-[1.01]'
-        }`}
+            ? 'ring-4 ring-primary/60 ring-offset-1 ring-offset-background shadow-[0_0_16px_hsl(var(--primary)/0.35)] hover:scale-[1.025] hover:shadow-[0_0_22px_hsl(var(--primary)/0.45)] active:scale-[0.98]'
+            : 'ring-4 ring-transparent hover:ring-primary/25 hover:scale-[1.02] hover:shadow-[0_6px_20px_hsl(var(--primary)/0.18)] active:scale-[0.98]'
+          }`}
       >
-        <img src={style.previewUrl} className="w-full aspect-[3/4] object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" alt={style.name} />
-        <div className={`absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent transition-opacity duration-300 ${isSelected ? 'opacity-90' : 'opacity-75 group-hover:opacity-85'}`} />
+        <img
+          src={style.previewUrl}
+          style={{ transition: 'transform 250ms ease' }}
+          className="w-full aspect-[3/4] object-cover group-hover:scale-[1.04]"
+          loading="lazy"
+          alt={style.name}
+        />
+        <div
+          style={{ transition: 'opacity 200ms ease' }}
+          className={`absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent ${isSelected ? 'opacity-90' : 'opacity-75 group-hover:opacity-82'}`}
+        />
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
           {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
@@ -97,7 +107,10 @@ export default function StylesScreen({
           </div>
         )}
         {isSelected && (
-          <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
+          <div
+            style={{ animation: 'scale-in 0.18s cubic-bezier(0.34,1.56,0.64,1)' }}
+            className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg"
+          >
             <svg className="w-3.5 h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path d="M5 13l4 4L19 7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
