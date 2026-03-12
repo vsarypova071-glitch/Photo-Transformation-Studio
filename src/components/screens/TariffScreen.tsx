@@ -58,13 +58,21 @@ export default function TariffScreen({
           <span className="text-muted-foreground">
             Я соглашаюсь с{" "}
             <a
+              href="https://docs.google.com/document/d/15IpEOrOKkaEZ9MVpB2cvkeh1HGzYXr4jH3zne9BheRM/edit?usp=sharing"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-4"
+              onClick={(e) => e.stopPropagation()}>
+              Публичной офертой
+            </a>
+            {" "}и{" "}
+            <a
               href={privacyUrl}
               target="_blank"
               rel="noreferrer"
               className="text-foreground underline underline-offset-4"
               onClick={(e) => e.stopPropagation()}>
-              
-              политикой конфиденциальности
+              Политикой конфиденциальности
             </a>
           </span>
         </label>
