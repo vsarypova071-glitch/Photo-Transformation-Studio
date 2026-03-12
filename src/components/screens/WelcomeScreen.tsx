@@ -18,6 +18,12 @@ const SLIDES = [
     accent: 'from-slate-900/80 via-slate-800/40',
   },
   {
+    img: demoElegantImg,
+    title: 'Elegant Lifestyle',
+    sub: 'Элегантный современный образ',
+    accent: 'from-stone-900/80 via-stone-800/40',
+  },
+  {
     img: demoLuxuryImg,
     title: 'Luxury Editorial',
     sub: 'Фотосессия как в модном журнале',
@@ -34,12 +40,6 @@ const SLIDES = [
     title: 'Golden Hour',
     sub: 'Тёплый портрет на закате',
     accent: 'from-amber-900/80 via-amber-800/30',
-  },
-  {
-    img: demoElegantImg,
-    title: 'Elegant Lifestyle',
-    sub: 'Элегантный современный образ',
-    accent: 'from-stone-900/80 via-stone-800/40',
   },
 ];
 
