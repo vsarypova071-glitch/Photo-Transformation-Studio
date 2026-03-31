@@ -251,7 +251,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { imageBase64, stylePrompt, customPrompt, originalDimensions, count = 3 } = await req.json();
+    const { imageBase64, stylePrompt, customPrompt, originalDimensions, count = 1 } = await req.json();
 
     if (!imageBase64) {
       return new Response(
