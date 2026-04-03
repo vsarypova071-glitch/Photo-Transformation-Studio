@@ -176,12 +176,7 @@ export default function StylesScreen({
 
       {/* Fixed Bottom Button */}
       <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto flex gap-3">
-        {onTestGenerate && (
-          <button onClick={onTestGenerate} disabled={!canGenerate} className="flex-1 py-5 px-4 rounded-full font-semibold text-xs uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed bg-secondary border border-border text-foreground">
-            🧪 Тест
-          </button>
-        )}
-        <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer flex-[2] py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95">
+        <button onClick={onGenerate} disabled={!canGenerate} className="btn-shimmer flex-1 py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95">
           ✦ Создать шедевр
         </button>
       </div>
