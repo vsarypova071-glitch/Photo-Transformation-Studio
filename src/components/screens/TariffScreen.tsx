@@ -78,6 +78,15 @@ export default function TariffScreen({
         </label>
       </div>
 
+      {/* Стоимость услуг */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
+        <p className="font-semibold text-foreground mb-2">Стоимость услуг:</p>
+        <p>Базовый пакет — 479 ₽ (5 фотографий)</p>
+        <p>Стандартный пакет — 1 299 ₽ (15 фотографий)</p>
+        <p>Премиум пакет — 2 999 ₽ (50 фотографий)</p>
+        <p className="mt-2">Оплата производится онлайн на сайте.</p>
+      </div>
+
       {/* Карточки тарифов */}
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
