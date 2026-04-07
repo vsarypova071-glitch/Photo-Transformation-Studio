@@ -55,6 +55,13 @@ export default function TariffScreen({
         </p>
       </div>
 
+      {/* Ошибка оплаты */}
+      {paymentError && (
+        <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 text-center">
+          {paymentError}
+        </div>
+      )}
+
       {/* Галочка согласия */}
       <div className="mb-6 rounded-2xl border border-border bg-card p-4">
         <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
