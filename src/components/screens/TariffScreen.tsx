@@ -101,7 +101,10 @@ export default function TariffScreen({
           return (
             <button
               key={tariff.id}
-              onClick={() => onSelectTariff(tariff)}
+              onClick={() => {
+                window.open(PAYMENT_LINKS[tariff.id], "_blank");
+                onSelectTariff(tariff);
+              }}
               disabled={disabled}
               className={`w-full p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden
                 ${
