@@ -29,7 +29,8 @@ interface TariffScreenProps {
 
 export default function TariffScreen({
   onSelectTariff,
-  onBack
+  onBack,
+  paymentError
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
