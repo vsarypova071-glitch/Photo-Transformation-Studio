@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Create order in DB
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const supabase = supabaseAdmin;
     
     const { data: order, error: orderError } = await supabase
       .from("orders")
