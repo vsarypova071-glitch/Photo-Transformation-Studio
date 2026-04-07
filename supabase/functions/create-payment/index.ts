@@ -23,7 +23,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { tariffId, price, photosCount, userSessionId, styleIds, originalImage, customPrompt, isFullBody } = await req.json();
+    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody } = await req.json();
 
     if (!tariffId || !price || !photosCount || !userSessionId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
         photos_count: photosCount,
         price,
         style_ids: styleIds || [],
-        original_image: originalImage || null,
+        original_image: originalImageUrl || null,
         custom_prompt: customPrompt || null,
         is_full_body: isFullBody || false,
         payment_status: "pending",
