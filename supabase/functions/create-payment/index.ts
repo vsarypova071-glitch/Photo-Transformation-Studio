@@ -31,8 +31,35 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Resource availability check per tariff
+    const RESOURCE_THRESHOLDS: Record<string, number> = {
+      basic: 10,
+      standard: 25,
+      premium: 60,
+    };
+
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // Count active (non-completed) orders to estimate load
+    const { count: activeOrders, error: countError } = await supabaseAdmin
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .in("generation_status", ["waiting", "processing"]);
+
+    const currentLoad = activeOrders ?? 0;
+    const threshold = RESOURCE_THRESHOLDS[tariffId] ?? 10;
+
+    if (currentLoad >= threshold) {
+      console.log(`Resource check failed: ${currentLoad} active orders >= threshold ${threshold} for tariff ${tariffId}`);
+      return new Response(JSON.stringify({ 
+        error: "Сервис временно перегружен. Попробуйте через несколько минут." 
+      }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Create order in DB
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const supabase = supabaseAdmin;
     
     const { data: order, error: orderError } = await supabase
       .from("orders")

@@ -157,6 +157,9 @@ function App() {
       const data = await response.json();
 
       if (!response.ok || !data.paymentUrl) {
+        if (response.status === 503) {
+          throw new Error('Сервис временно перегружен. Попробуйте через несколько минут.');
+        }
         throw new Error(data.error || 'Ошибка создания платежа');
       }
 
@@ -165,7 +168,7 @@ function App() {
       window.location.href = data.paymentUrl;
     } catch (e: any) {
       log.error('Payment creation failed', e);
-      setPaymentError('Ошибка создания платежа. Попробуйте снова.');
+      setPaymentError(e.message || 'Ошибка создания платежа. Попробуйте снова.');
     }
   };
 
