@@ -75,6 +75,24 @@ Deno.serve(async (req: Request) => {
       },
       capture: true,
       description: `AI фотосессия — ${tariffId} (${photosCount} фото)`,
+      receipt: {
+        customer: {
+          email: "customer@example.com",
+        },
+        items: [
+          {
+            description: `AI фотосессия — ${photosCount} фото`,
+            quantity: "1.00",
+            amount: {
+              value: price.toFixed(2),
+              currency: "RUB",
+            },
+            vat_code: 1,
+            payment_subject: "service",
+            payment_mode: "full_payment",
+          },
+        ],
+      },
       metadata: {
         order_id: orderId,
         tariff_id: tariffId,
