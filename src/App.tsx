@@ -133,6 +133,35 @@ function App() {
     log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
 
     try {
+      // 1. Upload image to storage instead of sending base64
+      const sessionId = getSessionId();
+      const fileName = `${sessionId}/${Date.now()}.jpg`;
+      
+      // Convert base64 to blob
+      const base64Data = uploadedImage.replace(/^data:image\/\w+;base64,/, '');
+      const byteCharacters = atob(base64Data);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      const { error: uploadError } = await supabase.storage
+        .from('user-photos')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('user-photos')
+        .getPublicUrl(fileName);
+
+      const imageStoragePath = urlData.publicUrl;
+      log.info('Image uploaded to storage', { path: fileName });
+
+      // 2. Create payment with storage path instead of base64
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
         {
@@ -146,9 +175,9 @@ function App() {
             tariffId: tariff.id,
             price: tariff.price,
             photosCount: tariff.photos,
-            userSessionId: getSessionId(),
+            userSessionId: sessionId,
             styleIds: selectedStyles,
-            originalImage: uploadedImage,
+            originalImageUrl: imageStoragePath,
             customPrompt: '',
             isFullBody,
           }),
@@ -165,7 +194,6 @@ function App() {
       }
 
       setCurrentOrderId(data.orderId);
-      // Redirect to YooKassa payment page
       window.location.href = data.paymentUrl;
     } catch (e: any) {
       log.error('Payment creation failed', e);
