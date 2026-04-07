@@ -8,6 +8,12 @@ interface Tariff {
   popular?: boolean;
 }
 
+const PAYMENT_LINKS: Record<string, string> = {
+  basic: "https://yookassa.ru/my/i/adR9U0ePx7nf/l",
+  standard: "https://yookassa.ru/my/i/adR-45UFhkQJ/l",
+  premium: "https://yookassa.ru/my/i/adR_aYlPs-Gd/l",
+};
+
 const TARIFFS: Tariff[] = [
 { id: "basic", name: "Базовый", photos: 5, price: 479 },
 { id: "standard", name: "Стандарт", photos: 15, price: 1299, popular: true },
