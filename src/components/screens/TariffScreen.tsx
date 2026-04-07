@@ -3,6 +3,7 @@ import React, { useState } from "react";
 interface Tariff {
   id: string;
   name: string;
+
   photos: number;
   price: number;
   popular?: boolean;
