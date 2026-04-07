@@ -122,21 +122,39 @@ Deno.serve(async (req: Request) => {
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
+      // Fetch image from storage URL and convert to base64
+      let imageBase64: string;
+      try {
+        const imgResp = await fetch(order.original_image);
+        if (!imgResp.ok) throw new Error(`Image fetch failed: ${imgResp.status}`);
+        const imgBuf = await imgResp.arrayBuffer();
+        const uint8 = new Uint8Array(imgBuf);
+        let binary = '';
+        for (let i = 0; i < uint8.length; i++) {
+          binary += String.fromCharCode(uint8[i]);
+        }
+        imageBase64 = `data:image/jpeg;base64,${btoa(binary)}`;
+        console.log(`Image fetched from storage, size: ${uint8.length} bytes`);
+      } catch (imgErr: any) {
+        console.error("Failed to fetch image from storage:", imgErr.message);
+        await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
       // Generate photos
       try {
-        const count = Math.min(order.photos_count, 3); // Generate up to 3 at a time
+        const count = Math.min(order.photos_count, 3);
         const garments: string[] = [];
         for (let i = 0; i < count; i++) {
           garments.push(getRandomGarment(garments));
         }
 
-        // Build style prompt from style_ids
         const stylePrompt = order.style_ids?.length > 0
           ? order.style_ids.join(", ")
           : "Luxury fashion portrait photography";
 
         const promises = garments.map(g =>
-          generateSingle(order.original_image, stylePrompt, order.custom_prompt || "", g)
+          generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g)
         );
 
         const results = await Promise.all(promises);
