@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory } from './types';
@@ -23,6 +23,15 @@ interface SelectedTariff {
   price: number;
 }
 
+function getSessionId(): string {
+  let id = sessionStorage.getItem('anon_user_id');
+  if (!id) {
+    id = 'anon_' + Math.random().toString(36).substring(2);
+    sessionStorage.setItem('anon_user_id', id);
+  }
+  return id;
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [uploadedImage, setUploadedImage] = useState('');
@@ -33,6 +42,9 @@ function App() {
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [selectedTariff, setSelectedTariff] = useState<SelectedTariff | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [orderResults, setOrderResults] = useState<string[]>([]);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -40,12 +52,121 @@ function App() {
     window.scrollTo(0, 0);
   };
 
-  const handleSelectTariff = (tariff: SelectedTariff) => {
+  // Poll order status after payment
+  const pollOrderStatus = useCallback((orderId: string) => {
+    log.info('Polling order', { orderId });
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const data = await response.json();
+        log.info('Order status', data);
+
+        if (data.paymentStatus === 'canceled') {
+          clearInterval(interval);
+          setPaymentError('Оплата не подтверждена. Попробуйте снова.');
+          navigateTo('tariff');
+          return;
+        }
+
+        if (data.generationStatus === 'done' && data.results?.length > 0) {
+          clearInterval(interval);
+          setOrderResults(data.results);
+
+          // Save as job for ResultsScreen compatibility
+          const jobId = 'order_' + orderId;
+          const job = {
+            id: jobId,
+            userId: getSessionId(),
+            status: 'done' as const,
+            styleIds: selectedStyles,
+            isFullBody,
+            originalImage: uploadedImage,
+            results: data.results,
+            createdAt: Date.now(),
+          };
+          sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([job]));
+          setCurrentJobId(jobId);
+          navigateTo('results');
+          return;
+        }
+
+        if (data.generationStatus === 'error') {
+          clearInterval(interval);
+          setPaymentError('Ошибка генерации. Попробуйте снова.');
+          navigateTo('tariff');
+          return;
+        }
+      } catch (e) {
+        log.error('Poll error', e);
+      }
+    }, 3000);
+
+    // Stop polling after 10 minutes
+    setTimeout(() => clearInterval(interval), 600000);
+  }, [selectedStyles, isFullBody, uploadedImage]);
+
+  // Check URL for returning from payment
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    if (orderId) {
+      setCurrentOrderId(orderId);
+      setScreen('processing');
+      pollOrderStatus(orderId);
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [pollOrderStatus]);
+
+  const handleSelectTariff = async (tariff: SelectedTariff) => {
     setSelectedTariff(tariff);
-    log.info('Tariff selected', { tariff: tariff.name, price: tariff.price });
-    // TODO: Здесь будет интеграция с ЮKassa
-    // После успешной оплаты -> navigateTo('processing')
-    alert(`Тариф "${tariff.name}" выбран!\n\nИнтеграция с ЮKassa в разработке.\nПосле подключения платежей здесь откроется форма оплаты.`);
+    setPaymentError(null);
+    log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            tariffId: tariff.id,
+            price: tariff.price,
+            photosCount: tariff.photos,
+            userSessionId: getSessionId(),
+            styleIds: selectedStyles,
+            originalImage: uploadedImage,
+            customPrompt: '',
+            isFullBody,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.paymentUrl) {
+        throw new Error(data.error || 'Ошибка создания платежа');
+      }
+
+      setCurrentOrderId(data.orderId);
+      // Redirect to YooKassa payment page
+      window.location.href = data.paymentUrl;
+    } catch (e: any) {
+      log.error('Payment creation failed', e);
+      setPaymentError('Ошибка создания платежа. Попробуйте снова.');
+    }
   };
 
   const handleStartJob = async (customPrompt: string) => {
@@ -98,13 +219,7 @@ function App() {
         pollJob(newJob.id);
       } catch (e: any) {
         log.error('Refine failed', e);
-        if (e?.message === 'INSUFFICIENT_CREDITS') {
-          alert("Недостаточно кредитов для магической правки.");
-        } else if (e?.message === 'NOT_AUTHENTICATED') {
-          alert("Необходимо войти в аккаунт.");
-        } else {
-          alert("Ошибка правки. Попробуйте ещё раз.");
-        }
+        alert("Ошибка правки. Попробуйте ещё раз.");
         navigateTo('results');
       }
     }
@@ -126,13 +241,7 @@ function App() {
       pollJob(newJob.id);
     } catch (e: any) {
       log.error('Full body failed', e);
-      if (e?.message === 'INSUFFICIENT_CREDITS') {
-        alert("Недостаточно кредитов. Пополните баланс для генерации во весь рост.");
-      } else if (e?.message === 'NOT_AUTHENTICATED') {
-        alert("Необходимо войти в аккаунт для использования этой функции.");
-      } else {
-        alert("Ошибка генерации во весь рост. Попробуйте ещё раз.");
-      }
+      alert("Ошибка генерации во весь рост. Попробуйте ещё раз.");
       navigateTo('results');
     }
   };
@@ -141,6 +250,8 @@ function App() {
     setUploadedImage('');
     setSelectedStyles([]);
     setSelectedTariff(null);
+    setCurrentOrderId(null);
+    setOrderResults([]);
     navigateTo('upload');
   };
 
@@ -185,7 +296,6 @@ function App() {
               }
               navigateTo('processing');
               try {
-                // Прямой вызов edge function с увеличенным таймаутом (300 сек)
                 const stylePrompts = selectedStyles
                   .map(id => STYLES.find(s => s.id === id)?.prompt)
                   .filter(Boolean)
@@ -219,7 +329,6 @@ function App() {
                   throw new Error(data?.error || 'Ошибка генерации');
                 }
 
-                // Сохраняем результат как фейковый job
                 const testJobId = 'test_' + Date.now();
                 const testJob = {
                   id: testJobId,
@@ -231,7 +340,6 @@ function App() {
                   results: [data.imageUrl],
                   createdAt: Date.now(),
                 };
-                // Сохраняем в sessionStorage напрямую
                 sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([testJob]));
                 setCurrentJobId(testJobId);
                 navigateTo('results');
@@ -248,6 +356,7 @@ function App() {
           <TariffScreen
             onSelectTariff={handleSelectTariff}
             onBack={() => navigateTo('styles')}
+            paymentError={paymentError}
           />
         )}
         

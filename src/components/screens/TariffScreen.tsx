@@ -3,6 +3,7 @@ import React, { useState } from "react";
 interface Tariff {
   id: string;
   name: string;
+
   photos: number;
   price: number;
   popular?: boolean;
@@ -23,11 +24,13 @@ const TARIFFS: Tariff[] = [
 interface TariffScreenProps {
   onSelectTariff: (tariff: Tariff) => void;
   onBack: () => void;
+  paymentError?: string | null;
 }
 
 export default function TariffScreen({
   onSelectTariff,
-  onBack
+  onBack,
+  paymentError
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
@@ -51,6 +54,13 @@ export default function TariffScreen({
           Выберите количество фотографий для генерации
         </p>
       </div>
+
+      {/* Ошибка оплаты */}
+      {paymentError && (
+        <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 text-center">
+          {paymentError}
+        </div>
+      )}
 
       {/* Галочка согласия */}
       <div className="mb-6 rounded-2xl border border-border bg-card p-4">
@@ -102,7 +112,6 @@ export default function TariffScreen({
             <button
               key={tariff.id}
               onClick={() => {
-                window.open(PAYMENT_LINKS[tariff.id], "_blank");
                 onSelectTariff(tariff);
               }}
               disabled={disabled}
