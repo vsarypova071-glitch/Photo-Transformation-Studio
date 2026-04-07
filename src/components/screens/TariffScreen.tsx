@@ -24,6 +24,7 @@ const TARIFFS: Tariff[] = [
 interface TariffScreenProps {
   onSelectTariff: (tariff: Tariff) => void;
   onBack: () => void;
+  paymentError?: string | null;
 }
 
 export default function TariffScreen({
