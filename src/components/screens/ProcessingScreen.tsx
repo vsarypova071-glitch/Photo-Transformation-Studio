@@ -24,12 +24,13 @@
            {seconds}s
          </div>
        </div>
-       <h2 className="text-4xl font-black mb-6 uppercase tracking-tight leading-tight text-foreground">
-         Создание <br/> шедевра
-       </h2>
-       <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest animate-pulse">
-         {status}
-       </p>
+        <p className="text-2xl mb-4">Оплата прошла ✅</p>
+        <h2 className="text-4xl font-black mb-6 uppercase tracking-tight leading-tight text-foreground">
+          Мы уже создаём <br/> ваши фото
+        </h2>
+        <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest animate-pulse">
+          Это займёт до 1–2 минут
+        </p>
      </section>
    );
  }
