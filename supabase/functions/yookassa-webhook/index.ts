@@ -101,7 +101,18 @@ Deno.serve(async (req: Request) => {
     }
 
     if (event === "payment.succeeded" && payment.status === "succeeded") {
-      // Update order payment status
+      // Check if order was expired before payment came through
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("payment_status")
+        .eq("id", orderId)
+        .single();
+
+      if (existingOrder?.payment_status === "expired") {
+        console.log(`Order ${orderId} already expired, but payment succeeded — restoring`);
+      }
+
+      // Update order payment status (works for both pending and expired)
       await supabase
         .from("orders")
         .update({ payment_status: "succeeded", generation_status: "running" })
