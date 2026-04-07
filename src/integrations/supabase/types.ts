@@ -76,6 +76,60 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          created_at: string
+          custom_prompt: string | null
+          generation_status: string
+          id: string
+          is_full_body: boolean | null
+          original_image: string | null
+          payment_id: string | null
+          payment_status: string
+          photos_count: number
+          price: number
+          results: string[]
+          style_ids: string[]
+          tariff_id: string
+          updated_at: string
+          user_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_prompt?: string | null
+          generation_status?: string
+          id?: string
+          is_full_body?: boolean | null
+          original_image?: string | null
+          payment_id?: string | null
+          payment_status?: string
+          photos_count: number
+          price: number
+          results?: string[]
+          style_ids?: string[]
+          tariff_id: string
+          updated_at?: string
+          user_session_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_prompt?: string | null
+          generation_status?: string
+          id?: string
+          is_full_body?: boolean | null
+          original_image?: string | null
+          payment_id?: string | null
+          payment_status?: string
+          photos_count?: number
+          price?: number
+          results?: string[]
+          style_ids?: string[]
+          tariff_id?: string
+          updated_at?: string
+          user_session_id?: string
+        }
+        Relationships: []
+      }
       user_credits: {
         Row: {
           allowed_styles_count: number
