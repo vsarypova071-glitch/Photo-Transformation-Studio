@@ -31,32 +31,47 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Resource availability check per tariff
-    const RESOURCE_THRESHOLDS: Record<string, number> = {
-      basic: 10,
-      standard: 25,
-      premium: 60,
+    // Credits required per tariff
+    const CREDITS_REQUIRED: Record<string, number> = {
+      basic: 5,
+      standard: 15,
+      premium: 50,
     };
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const requiredCredits = CREDITS_REQUIRED[tariffId] ?? 5;
 
-    // Count active (non-completed) orders to estimate load
-    const { count: activeOrders, error: countError } = await supabaseAdmin
-      .from("orders")
-      .select("*", { count: "exact", head: true })
-      .in("generation_status", ["waiting", "processing"]);
+    // Check AI balance with a lightweight test request
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (LOVABLE_API_KEY) {
+      try {
+        const testResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [{ role: "user", content: "test" }],
+            max_tokens: 1,
+          }),
+        });
 
-    const currentLoad = activeOrders ?? 0;
-    const threshold = RESOURCE_THRESHOLDS[tariffId] ?? 10;
-
-    if (currentLoad >= threshold) {
-      console.log(`Resource check failed: ${currentLoad} active orders >= threshold ${threshold} for tariff ${tariffId}`);
-      return new Response(JSON.stringify({ 
-        error: "Сервис временно перегружен. Попробуйте через несколько минут." 
-      }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        if (testResponse.status === 402) {
+          console.log(`AI balance insufficient for tariff ${tariffId} (needs ${requiredCredits} credits)`);
+          return new Response(JSON.stringify({ 
+            error: "Временно нет доступных ресурсов, попробуйте позже" 
+          }), {
+            status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } catch (aiErr: any) {
+        console.error("AI balance check failed:", aiErr.message);
+        // Allow payment to proceed if check itself fails
+      }
     }
+
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Create order in DB
     const supabase = supabaseAdmin;
