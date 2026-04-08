@@ -114,9 +114,7 @@ Deno.serve(async (req: Request) => {
       console.warn(`AI check did not pass for ${tariffId}, allowing with caution`);
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-
-    // Create order in DB
+    // === CREATE ORDER ===
     const supabase = supabaseAdmin;
     
     const { data: order, error: orderError } = await supabase
