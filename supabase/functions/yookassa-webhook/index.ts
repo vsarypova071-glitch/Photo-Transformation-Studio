@@ -169,9 +169,10 @@ Deno.serve(async (req: Request) => {
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // === GENERATE ALL PHOTOS from orders.photos_count ===
+      // === GENERATE ALL PHOTOS from orders.photos_count (DB is source of truth) ===
       try {
-        const totalPhotos = order.photos_count; // 5, 15, or 50 — from DB
+        const totalPhotos = order.photos_count; // 5, 15, or 50 — strictly from DB, no hardcodes
+        console.log(`[GENERATION] Order ${orderId}: photos_count=${totalPhotos} from DB`);
         const BATCH_SIZE = 3;
         const allImageUrls: string[] = [];
 
