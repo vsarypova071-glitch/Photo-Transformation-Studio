@@ -14,6 +14,11 @@ const WARDROBE: string[] = [
   "silk blouse in ivory with high-waist charcoal trousers",
   "architectural couture coat in camel",
   "luxury power suit in slate gray, precision tailoring",
+  "oversized cashmere coat in off-white, The Row aesthetic",
+  "structured leather blazer in cognac brown",
+  "silk midi dress in deep burgundy with architectural draping",
+  "wide-leg trousers in charcoal with ivory cashmere turtleneck",
+  "blazer dress in midnight blue, sharp structured shoulders",
 ];
 
 function getRandomGarment(exclude: string[] = []): string {
@@ -81,8 +86,6 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     const body = await req.json();
-    
-    // YooKassa sends { type: "notification", event: "payment.succeeded", object: {...} }
     const event = body.event;
     const payment = body.object;
 
@@ -101,18 +104,25 @@ Deno.serve(async (req: Request) => {
     }
 
     if (event === "payment.succeeded" && payment.status === "succeeded") {
-      // Check if order was expired before payment came through
+      // === IDEMPOTENCY: Only process if order is not already running/done ===
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("payment_status")
+        .select("payment_status, generation_status, photos_count")
         .eq("id", orderId)
         .single();
 
-      if (existingOrder?.payment_status === "expired") {
-        console.log(`Order ${orderId} already expired, but payment succeeded — restoring`);
+      if (!existingOrder) {
+        console.error(`Order ${orderId} not found`);
+        return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // Update order payment status (works for both pending and expired)
+      // Skip if already processing or done
+      if (existingOrder.generation_status === "running" || existingOrder.generation_status === "done") {
+        console.log(`Order ${orderId} already in ${existingOrder.generation_status}, skipping`);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      // Update order payment status and start generation
       await supabase
         .from("orders")
         .update({ payment_status: "succeeded", generation_status: "running" })
@@ -120,7 +130,7 @@ Deno.serve(async (req: Request) => {
 
       console.log(`Order ${orderId} marked as paid, starting generation...`);
 
-      // Fetch order details
+      // Fetch full order details
       const { data: order } = await supabase
         .from("orders")
         .select("*")
@@ -133,7 +143,7 @@ Deno.serve(async (req: Request) => {
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // Fetch image from storage URL and convert to base64
+      // Fetch image from storage
       let imageBase64: string;
       try {
         const imgResp = await fetch(order.original_image);
@@ -145,41 +155,65 @@ Deno.serve(async (req: Request) => {
           binary += String.fromCharCode(uint8[i]);
         }
         imageBase64 = `data:image/jpeg;base64,${btoa(binary)}`;
-        console.log(`Image fetched from storage, size: ${uint8.length} bytes`);
+        console.log(`Image fetched, size: ${uint8.length} bytes`);
       } catch (imgErr: any) {
-        console.error("Failed to fetch image from storage:", imgErr.message);
+        console.error("Failed to fetch image:", imgErr.message);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // Generate photos
+      // === GENERATE ALL PHOTOS from orders.photos_count ===
       try {
-        const count = Math.min(order.photos_count, 3);
-        const garments: string[] = [];
-        for (let i = 0; i < count; i++) {
-          garments.push(getRandomGarment(garments));
-        }
+        const totalPhotos = order.photos_count; // 5, 15, or 50 — from DB
+        const BATCH_SIZE = 3;
+        const allImageUrls: string[] = [];
 
         const stylePrompt = order.style_ids?.length > 0
           ? order.style_ids.join(", ")
           : "Luxury fashion portrait photography";
 
-        const promises = garments.map(g =>
-          generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g)
-        );
+        console.log(`Generating ${totalPhotos} photos in batches of ${BATCH_SIZE}...`);
 
-        const results = await Promise.all(promises);
-        const imageUrls = results.filter(Boolean) as string[];
+        const usedGarments: string[] = [];
 
-        if (imageUrls.length === 0) {
+        for (let batchStart = 0; batchStart < totalPhotos; batchStart += BATCH_SIZE) {
+          const batchCount = Math.min(BATCH_SIZE, totalPhotos - batchStart);
+          const garments: string[] = [];
+          for (let i = 0; i < batchCount; i++) {
+            garments.push(getRandomGarment(usedGarments));
+            usedGarments.push(garments[garments.length - 1]);
+            // Reset used garments if we've used them all
+            if (usedGarments.length >= WARDROBE.length) {
+              usedGarments.length = 0;
+            }
+          }
+
+          const promises = garments.map(g =>
+            generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g)
+          );
+
+          const results = await Promise.all(promises);
+          const batchUrls = results.filter(Boolean) as string[];
+          allImageUrls.push(...batchUrls);
+
+          // Save intermediate results so user can see progress
+          await supabase
+            .from("orders")
+            .update({ results: allImageUrls })
+            .eq("id", orderId);
+
+          console.log(`Batch ${Math.floor(batchStart / BATCH_SIZE) + 1}: ${batchUrls.length}/${batchCount} generated, total: ${allImageUrls.length}`);
+        }
+
+        if (allImageUrls.length === 0) {
           await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
           console.error("No images generated");
         } else {
           await supabase
             .from("orders")
-            .update({ generation_status: "done", results: imageUrls })
+            .update({ generation_status: "done", results: allImageUrls })
             .eq("id", orderId);
-          console.log(`Order ${orderId}: ${imageUrls.length} photos generated`);
+          console.log(`Order ${orderId}: ${allImageUrls.length}/${totalPhotos} photos generated`);
         }
       } catch (genErr: any) {
         console.error("Generation error:", genErr.message);
@@ -189,7 +223,7 @@ Deno.serve(async (req: Request) => {
     } else if (event === "payment.canceled") {
       await supabase
         .from("orders")
-        .update({ payment_status: "canceled" })
+        .update({ payment_status: "canceled", generation_status: "canceled" })
         .eq("id", orderId);
       console.log(`Order ${orderId} payment canceled`);
     }

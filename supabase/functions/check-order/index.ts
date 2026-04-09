@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, generation_status, results, payment_id")
+      .select("id, payment_status, generation_status, results, payment_id, photos_count")
       .eq("id", orderId)
       .single();
 
@@ -38,6 +38,17 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Order not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // If already done or has results — return immediately
+    if (order.generation_status === "done" && order.results?.length > 0) {
+      return new Response(JSON.stringify({
+        orderId: order.id,
+        paymentStatus: order.payment_status,
+        generationStatus: order.generation_status,
+        results: order.results,
+        photosCount: order.photos_count,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // If still pending, check YooKassa directly
@@ -50,39 +61,46 @@ Deno.serve(async (req: Request) => {
         const yooData = await yooRes.json();
 
         if (yooData.status === "succeeded") {
-          // Trigger the same flow as webhook
-          await supabase
-            .from("orders")
-            .update({ payment_status: "succeeded", generation_status: "running" })
-            .eq("id", orderId);
+          // Only trigger generation if not already running/done (idempotency)
+          if (order.generation_status === "waiting") {
+            await supabase
+              .from("orders")
+              .update({ payment_status: "succeeded", generation_status: "running" })
+              .eq("id", orderId);
 
-          // Trigger generation via webhook function
-          const webhookUrl = `${SUPABASE_URL}/functions/v1/yookassa-webhook`;
-          fetch(webhookUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-            },
-            body: JSON.stringify({
-              event: "payment.succeeded",
-              object: { id: order.payment_id, status: "succeeded", metadata: { order_id: orderId } },
-            }),
-          }).catch(e => console.error("Trigger webhook error:", e));
+            // Trigger generation via webhook function (fire-and-forget)
+            const webhookUrl = `${SUPABASE_URL}/functions/v1/yookassa-webhook`;
+            fetch(webhookUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({
+                event: "payment.succeeded",
+                object: { id: order.payment_id, status: "succeeded", metadata: { order_id: orderId } },
+              }),
+            }).catch(e => console.error("Trigger webhook error:", e));
+          }
 
           return new Response(JSON.stringify({
             orderId,
             paymentStatus: "succeeded",
-            generationStatus: "running",
-            results: [],
+            generationStatus: order.generation_status === "waiting" ? "running" : order.generation_status,
+            results: order.results || [],
+            photosCount: order.photos_count,
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
         } else if (yooData.status === "canceled") {
-          await supabase.from("orders").update({ payment_status: "canceled" }).eq("id", orderId);
+          await supabase.from("orders")
+            .update({ payment_status: "canceled", generation_status: "canceled" })
+            .eq("id", orderId);
           return new Response(JSON.stringify({
             orderId,
             paymentStatus: "canceled",
-            generationStatus: "waiting",
+            generationStatus: "canceled",
             results: [],
+            photosCount: order.photos_count,
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
       } catch (e) {
@@ -90,11 +108,13 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Return current partial results if generation is running
     return new Response(JSON.stringify({
       orderId: order.id,
       paymentStatus: order.payment_status,
       generationStatus: order.generation_status,
       results: order.results || [],
+      photosCount: order.photos_count,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

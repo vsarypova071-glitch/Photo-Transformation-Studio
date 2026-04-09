@@ -19,6 +19,7 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000).toISOString();
+    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
 
     // 1. Expire pending orders older than 10 minutes
     const { data: expiredOrders, error: expireError } = await supabase
@@ -33,7 +34,20 @@ Deno.serve(async (req: Request) => {
     if (expireError) console.error("Expire error:", expireError.message);
     else if (expiredCount > 0) console.log(`Expired ${expiredCount} stale orders`);
 
-    // 2. Delete storage photos for orders expired > 20 minutes ago
+    // 2. Unstick orders stuck in "running" for > 15 minutes → error
+    const { data: stuckOrders, error: stuckError } = await supabase
+      .from("orders")
+      .update({ generation_status: "error" })
+      .eq("generation_status", "running")
+      .eq("payment_status", "succeeded")
+      .lt("updated_at", fifteenMinutesAgo)
+      .select("id");
+
+    const stuckCount = stuckOrders?.length ?? 0;
+    if (stuckError) console.error("Stuck orders error:", stuckError.message);
+    else if (stuckCount > 0) console.log(`Marked ${stuckCount} stuck orders as error`);
+
+    // 3. Delete storage photos for orders expired > 20 minutes ago
     const { data: oldExpired, error: fetchError } = await supabase
       .from("orders")
       .select("id, original_image, updated_at")
@@ -49,7 +63,6 @@ Deno.serve(async (req: Request) => {
     if (oldExpired && oldExpired.length > 0) {
       for (const order of oldExpired) {
         const imageUrl = order.original_image as string;
-        // Extract path from storage URL: .../user-photos/filename
         const match = imageUrl.match(/\/user-photos\/(.+)$/);
         if (match) {
           const filePath = match[1];
@@ -64,7 +77,6 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        // Clear the image reference
         await supabase
           .from("orders")
           .update({ original_image: null })
@@ -74,7 +86,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ expired: expiredCount, photosDeleted: deletedPhotos }),
+      JSON.stringify({ expired: expiredCount, stuck: stuckCount, photosDeleted: deletedPhotos }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
