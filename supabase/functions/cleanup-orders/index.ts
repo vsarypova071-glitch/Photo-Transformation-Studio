@@ -6,6 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Timeout per photos_count: ~2 min per batch of 3, plus buffer
+// basic(5) = 2 batches × 2min = 4min + 2min buffer = 6min
+// standard(15) = 5 batches × 2min = 10min + 5min buffer = 15min
+// premium(50) = 17 batches × 2min = 34min + 6min buffer = 40min
+function getTimeoutMinutes(photosCount: number): number {
+  const batches = Math.ceil(photosCount / 3);
+  const estimatedMinutes = batches * 2;
+  const buffer = Math.max(2, Math.ceil(estimatedMinutes * 0.3));
+  return estimatedMinutes + buffer;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,7 +30,6 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000).toISOString();
-    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
 
     // 1. Expire pending orders older than 10 minutes
     const { data: expiredOrders, error: expireError } = await supabase
@@ -34,18 +44,33 @@ Deno.serve(async (req: Request) => {
     if (expireError) console.error("Expire error:", expireError.message);
     else if (expiredCount > 0) console.log(`Expired ${expiredCount} stale orders`);
 
-    // 2. Unstick orders stuck in "running" for > 2 minutes → error
-    const { data: stuckOrders, error: stuckError } = await supabase
+    // 2. Unstick running orders — timeout depends on photos_count
+    const { data: runningOrders, error: runningError } = await supabase
       .from("orders")
-      .update({ generation_status: "error" })
+      .select("id, photos_count, updated_at")
       .eq("generation_status", "running")
-      .eq("payment_status", "succeeded")
-      .lt("updated_at", twoMinutesAgo)
-      .select("id");
+      .eq("payment_status", "succeeded");
 
-    const stuckCount = stuckOrders?.length ?? 0;
-    if (stuckError) console.error("Stuck orders error:", stuckError.message);
-    else if (stuckCount > 0) console.log(`Marked ${stuckCount} stuck orders as error`);
+    let stuckCount = 0;
+    if (runningError) {
+      console.error("Running orders fetch error:", runningError.message);
+    } else if (runningOrders && runningOrders.length > 0) {
+      for (const order of runningOrders) {
+        const timeoutMin = getTimeoutMinutes(order.photos_count);
+        const deadline = new Date(now.getTime() - timeoutMin * 60 * 1000);
+        const updatedAt = new Date(order.updated_at);
+
+        if (updatedAt < deadline) {
+          await supabase
+            .from("orders")
+            .update({ generation_status: "error" })
+            .eq("id", order.id);
+          stuckCount++;
+          console.log(`Order ${order.id} stuck (photos=${order.photos_count}, timeout=${timeoutMin}min) → error`);
+        }
+      }
+    }
+    if (stuckCount > 0) console.log(`Marked ${stuckCount} stuck orders as error`);
 
     // 3. Delete storage photos for orders expired > 20 minutes ago
     const { data: oldExpired, error: fetchError } = await supabase
