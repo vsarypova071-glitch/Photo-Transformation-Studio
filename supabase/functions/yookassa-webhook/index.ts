@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.log(`Webhook received: ${event}, payment ${payment.id}, status ${payment.status}`);
+    console.log(`[WEBHOOK] event=${event}, payment_id=${payment.id}, status=${payment.status}`);
 
     const orderId = payment.metadata?.order_id;
     if (!orderId) {
