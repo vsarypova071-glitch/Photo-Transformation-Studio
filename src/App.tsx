@@ -128,6 +128,67 @@ function App() {
     setTimeout(() => clearInterval(interval), 600000);
   }, [selectedStyles, isFullBody, uploadedImage]);
 
+  // Restore order from localStorage on mount
+  useEffect(() => {
+    const savedOrderId = localStorage.getItem('current_order_id');
+    if (savedOrderId && !currentOrderId) {
+      log.info('Restoring order from localStorage', { orderId: savedOrderId });
+      setCurrentOrderId(savedOrderId);
+      restoreOrder(savedOrderId);
+    }
+  }, []);
+
+  const restoreOrder = async (orderId: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (data.generationStatus === 'done' && data.results?.length > 0) {
+        const job: Job = {
+          id: 'order_' + orderId,
+          userId: getSessionId(),
+          status: 'done',
+          styleIds: [],
+          isFullBody: false,
+          originalImage: '',
+          results: data.results,
+          createdAt: Date.now(),
+        };
+        setOrderJob(job);
+        setCurrentJobId(job.id);
+        setOrderResults(data.results);
+        setScreen('results');
+        return;
+      }
+
+      if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
+        localStorage.removeItem('current_order_id');
+        return;
+      }
+
+      if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+        localStorage.removeItem('current_order_id');
+        return;
+      }
+
+      // Still running — show processing
+      if (data.paymentStatus === 'succeeded' && (data.generationStatus === 'running' || data.generationStatus === 'waiting')) {
+        setScreen('processing');
+        pollOrderStatus(orderId);
+      }
+    } catch (e) {
+      log.error('Restore order failed', e);
+    }
+  };
+
   // Check URL for returning from payment
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -136,6 +197,8 @@ function App() {
       // Clean URL immediately
       window.history.replaceState({}, '', window.location.pathname);
       setCurrentOrderId(orderId);
+      // Save to localStorage for persistence
+      localStorage.setItem('current_order_id', orderId);
 
       // First check order status before showing processing
       (async () => {
@@ -261,6 +324,8 @@ function App() {
       }
 
       setCurrentOrderId(data.orderId);
+      // Save order_id to localStorage before redirect
+      localStorage.setItem('current_order_id', data.orderId);
       window.location.href = data.paymentUrl;
     } catch (e: any) {
       log.error('Payment creation failed', e);
