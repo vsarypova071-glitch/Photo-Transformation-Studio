@@ -419,6 +419,7 @@ function App() {
     setCurrentOrderId(null);
     setOrderResults([]);
     setOrderJob(null);
+    localStorage.removeItem('current_order_id');
     navigateTo('upload');
   };
 
