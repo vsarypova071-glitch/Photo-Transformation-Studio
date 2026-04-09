@@ -112,13 +112,20 @@ Deno.serve(async (req: Request) => {
         .single();
 
       if (!existingOrder) {
-        console.error(`Order ${orderId} not found`);
+        console.error(`[WEBHOOK] Order ${orderId} not found in DB`);
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // Skip if already processing or done
-      if (existingOrder.generation_status === "running" || existingOrder.generation_status === "done") {
-        console.log(`Order ${orderId} already in ${existingOrder.generation_status}, skipping`);
+      console.log(`[WEBHOOK] Order ${orderId}: payment_status=${existingOrder.payment_status}, generation_status=${existingOrder.generation_status}, photos_count=${existingOrder.photos_count}`);
+
+      // CRITICAL: verify payment before generation
+      if (existingOrder.payment_status === "succeeded" && existingOrder.generation_status !== "waiting") {
+        console.log(`[WEBHOOK] Order ${orderId} already in ${existingOrder.generation_status}, skipping`);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      if (existingOrder.payment_status !== "succeeded" && payment.status !== "succeeded") {
+        console.error(`[WEBHOOK] Order ${orderId}: payment NOT succeeded (${existingOrder.payment_status}), refusing generation`);
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
@@ -128,7 +135,7 @@ Deno.serve(async (req: Request) => {
         .update({ payment_status: "succeeded", generation_status: "running" })
         .eq("id", orderId);
 
-      console.log(`Order ${orderId} marked as paid, starting generation...`);
+      console.log(`[WEBHOOK] Order ${orderId}: payment verified, starting generation for ${existingOrder.photos_count} photos`);
 
       // Fetch full order details
       const { data: order } = await supabase
