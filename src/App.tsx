@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
-import { StyleCategory } from './types';
+import { StyleCategory, Job } from './types';
 import { createLogger } from './utils/logger';
 import { supabase } from './integrations/supabase/client';
 
@@ -46,6 +46,8 @@ function App() {
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [orderResults, setOrderResults] = useState<string[]>([]);
+  // Store order-based job directly (not from sessionStorage)
+  const [orderJob, setOrderJob] = useState<Job | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -56,7 +58,9 @@ function App() {
   // Poll order status after payment
   const pollOrderStatus = useCallback((orderId: string) => {
     log.info('Polling order', { orderId });
+    let pollCount = 0;
     const interval = setInterval(async () => {
+      pollCount++;
       try {
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
@@ -70,38 +74,48 @@ function App() {
         const data = await response.json();
         log.info('Order status', data);
 
-        if (data.paymentStatus === 'canceled') {
+        // Handle canceled/expired payment
+        if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
           clearInterval(interval);
-          setPaymentError('Оплата не подтверждена. Попробуйте снова.');
+          setPaymentError('Оплата не прошла. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
 
+        // Handle generation error
+        if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+          clearInterval(interval);
+          setPaymentError('Ошибка генерации. Попробуйте снова.');
+          navigateTo('tariff');
+          return;
+        }
+
+        // Handle done with results
         if (data.generationStatus === 'done' && data.results?.length > 0) {
           clearInterval(interval);
           setOrderResults(data.results);
 
-          // Save as job for ResultsScreen compatibility
-          const jobId = 'order_' + orderId;
-          const job = {
-            id: jobId,
+          // Create job object directly — no sessionStorage
+          const job: Job = {
+            id: 'order_' + orderId,
             userId: getSessionId(),
-            status: 'done' as const,
+            status: 'done',
             styleIds: selectedStyles,
             isFullBody,
             originalImage: uploadedImage,
             results: data.results,
             createdAt: Date.now(),
           };
-          sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([job]));
-          setCurrentJobId(jobId);
+          setOrderJob(job);
+          setCurrentJobId(job.id);
           navigateTo('results');
           return;
         }
 
-        if (data.generationStatus === 'error') {
+        // If still pending after 60 polls (3 min), something is wrong
+        if (data.paymentStatus === 'pending' && pollCount > 60) {
           clearInterval(interval);
-          setPaymentError('Ошибка генерации. Попробуйте снова.');
+          setPaymentError('Оплата не подтверждена. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
@@ -119,11 +133,66 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('order_id');
     if (orderId) {
-      setCurrentOrderId(orderId);
-      setScreen('processing');
-      pollOrderStatus(orderId);
-      // Clean URL
+      // Clean URL immediately
       window.history.replaceState({}, '', window.location.pathname);
+      setCurrentOrderId(orderId);
+
+      // First check order status before showing processing
+      (async () => {
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+            }
+          );
+          const data = await response.json();
+
+          // Already done — show results directly
+          if (data.generationStatus === 'done' && data.results?.length > 0) {
+            const job: Job = {
+              id: 'order_' + orderId,
+              userId: getSessionId(),
+              status: 'done',
+              styleIds: [],
+              isFullBody: false,
+              originalImage: '',
+              results: data.results,
+              createdAt: Date.now(),
+            };
+            setOrderJob(job);
+            setCurrentJobId(job.id);
+            setOrderResults(data.results);
+            setScreen('results');
+            return;
+          }
+
+          // Canceled or expired — back to tariff
+          if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
+            setPaymentError('Оплата не прошла. Попробуйте снова.');
+            setScreen('tariff');
+            return;
+          }
+
+          // Error — back to tariff
+          if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+            setPaymentError('Ошибка генерации. Попробуйте снова.');
+            setScreen('tariff');
+            return;
+          }
+
+          // Still processing or pending — show processing and poll
+          setScreen('processing');
+          pollOrderStatus(orderId);
+        } catch (e) {
+          log.error('Initial order check failed', e);
+          setScreen('processing');
+          pollOrderStatus(orderId);
+        }
+      })();
     }
   }, [pollOrderStatus]);
 
@@ -133,7 +202,6 @@ function App() {
     log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
 
     try {
-      // 1. Upload image to storage instead of sending base64
       const sessionId = getSessionId();
       const fileName = `${sessionId}/${Date.now()}.jpg`;
       
@@ -161,7 +229,6 @@ function App() {
       const imageStoragePath = urlData.publicUrl;
       log.info('Image uploaded to storage', { path: fileName });
 
-      // 2. Create payment with storage path instead of base64
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
         {
@@ -188,7 +255,7 @@ function App() {
 
       if (!response.ok || !data.paymentUrl) {
         if (response.status === 503) {
-          throw new Error('Сервис временно перегружен. Попробуйте через несколько минут.');
+          throw new Error(data.error || 'Сервис временно перегружен. Попробуйте через несколько минут.');
         }
         throw new Error(data.error || 'Ошибка создания платежа');
       }
@@ -242,12 +309,13 @@ function App() {
   };
 
   const handleRefine = async (prompt: string) => {
-    const job = backend.getJobs().find(j => j.id === currentJobId);
+    const job = currentJob;
     if (job && job.results[0]) {
       navigateTo('processing');
       try {
         const newJob = await backend.refineJob(job.results[0], prompt);
         setCurrentJobId(newJob.id);
+        setOrderJob(null); // Clear order job, now using backend job
         pollJob(newJob.id);
       } catch (e: any) {
         log.error('Refine failed', e);
@@ -258,7 +326,7 @@ function App() {
   };
 
   const handleFullBody = async () => {
-    const job = backend.getJobs().find(j => j.id === currentJobId);
+    const job = currentJob;
     if (!job || !job.results[0]) {
       alert("Нет исходного изображения для генерации.");
       return;
@@ -270,6 +338,7 @@ function App() {
         "Extend this specific portrait to a full-length standing shot, showing the person from head to toe including matching high-end shoes, maintaining exactly the same style and face."
       );
       setCurrentJobId(newJob.id);
+      setOrderJob(null);
       pollJob(newJob.id);
     } catch (e: any) {
       log.error('Full body failed', e);
@@ -284,10 +353,12 @@ function App() {
     setSelectedTariff(null);
     setCurrentOrderId(null);
     setOrderResults([]);
+    setOrderJob(null);
     navigateTo('upload');
   };
 
-  const currentJob = backend.getJobs().find(j => j.id === currentJobId);
+  // Resolve current job: prefer orderJob (from DB), fallback to backend sessionStorage jobs
+  const currentJob: Job | undefined = orderJob || backend.getJobs().find(j => j.id === currentJobId);
 
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
@@ -361,19 +432,18 @@ function App() {
                   throw new Error(data?.error || 'Ошибка генерации');
                 }
 
-                const testJobId = 'test_' + Date.now();
-                const testJob = {
-                  id: testJobId,
+                const testJob: Job = {
+                  id: 'test_' + Date.now(),
                   userId: 'test',
-                  status: 'done' as const,
+                  status: 'done',
                   styleIds: selectedStyles,
                   isFullBody,
                   originalImage: uploadedImage,
                   results: [data.imageUrl],
                   createdAt: Date.now(),
                 };
-                sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([testJob]));
-                setCurrentJobId(testJobId);
+                setOrderJob(testJob);
+                setCurrentJobId(testJob.id);
                 navigateTo('results');
               } catch (e: any) {
                 log.error('Test generation failed', e);
