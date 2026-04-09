@@ -215,16 +215,16 @@ Deno.serve(async (req: Request) => {
 
         if (allImageUrls.length === 0) {
           await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
-          console.error("No images generated");
+          console.error(`[GENERATION] Order ${orderId}: FAILED — 0 images generated`);
         } else {
           await supabase
             .from("orders")
             .update({ generation_status: "done", results: allImageUrls })
             .eq("id", orderId);
-          console.log(`Order ${orderId}: ${allImageUrls.length}/${totalPhotos} photos generated`);
+          console.log(`[GENERATION] Order ${orderId}: DONE — ${allImageUrls.length}/${totalPhotos} photos`);
         }
       } catch (genErr: any) {
-        console.error("Generation error:", genErr.message);
+        console.error(`[GENERATION] Order ${orderId}: ERROR — ${genErr.message}`);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
       }
 

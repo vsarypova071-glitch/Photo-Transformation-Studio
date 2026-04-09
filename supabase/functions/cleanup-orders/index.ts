@@ -34,13 +34,13 @@ Deno.serve(async (req: Request) => {
     if (expireError) console.error("Expire error:", expireError.message);
     else if (expiredCount > 0) console.log(`Expired ${expiredCount} stale orders`);
 
-    // 2. Unstick orders stuck in "running" for > 15 minutes → error
+    // 2. Unstick orders stuck in "running" for > 2 minutes → error
     const { data: stuckOrders, error: stuckError } = await supabase
       .from("orders")
       .update({ generation_status: "error" })
       .eq("generation_status", "running")
       .eq("payment_status", "succeeded")
-      .lt("updated_at", fifteenMinutesAgo)
+      .lt("updated_at", twoMinutesAgo)
       .select("id");
 
     const stuckCount = stuckOrders?.length ?? 0;
