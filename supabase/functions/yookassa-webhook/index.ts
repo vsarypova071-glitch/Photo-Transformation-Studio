@@ -171,26 +171,27 @@ Deno.serve(async (req: Request) => {
 
       // === GENERATE ALL PHOTOS from orders.photos_count (DB is source of truth) ===
       try {
-        const totalPhotos = order.photos_count; // 5, 15, or 50 — strictly from DB, no hardcodes
+        const totalPhotos = order.photos_count; // 5, 15, or 50 — strictly from DB
         console.log(`[GENERATION] Order ${orderId}: photos_count=${totalPhotos} from DB`);
         const BATCH_SIZE = 3;
+        const MAX_RETRIES = 2;
         const allImageUrls: string[] = [];
 
         const stylePrompt = order.style_ids?.length > 0
           ? order.style_ids.join(", ")
           : "Luxury fashion portrait photography";
 
-        console.log(`Generating ${totalPhotos} photos in batches of ${BATCH_SIZE}...`);
+        console.log(`Generating ${totalPhotos} photos in batches of ${BATCH_SIZE}, max retries per photo: ${MAX_RETRIES}...`);
 
         const usedGarments: string[] = [];
 
+        // --- Main generation loop ---
         for (let batchStart = 0; batchStart < totalPhotos; batchStart += BATCH_SIZE) {
           const batchCount = Math.min(BATCH_SIZE, totalPhotos - batchStart);
           const garments: string[] = [];
           for (let i = 0; i < batchCount; i++) {
             garments.push(getRandomGarment(usedGarments));
             usedGarments.push(garments[garments.length - 1]);
-            // Reset used garments if we've used them all
             if (usedGarments.length >= WARDROBE.length) {
               usedGarments.length = 0;
             }
@@ -204,18 +205,65 @@ Deno.serve(async (req: Request) => {
           const batchUrls = results.filter(Boolean) as string[];
           allImageUrls.push(...batchUrls);
 
-          // Save intermediate results so user can see progress
+          // Save intermediate results
           await supabase
             .from("orders")
             .update({ results: allImageUrls })
             .eq("id", orderId);
 
-          console.log(`Batch ${Math.floor(batchStart / BATCH_SIZE) + 1}: ${batchUrls.length}/${batchCount} generated, total: ${allImageUrls.length}`);
+          const batchNum = Math.floor(batchStart / BATCH_SIZE) + 1;
+          console.log(`Batch ${batchNum}: ${batchUrls.length}/${batchCount} ok, total: ${allImageUrls.length}/${totalPhotos}`);
         }
 
+        // --- Retry loop: fill missing photos up to MAX_RETRIES attempts ---
+        let retryRound = 0;
+        while (allImageUrls.length < totalPhotos && retryRound < MAX_RETRIES) {
+          retryRound++;
+          const missing = totalPhotos - allImageUrls.length;
+          console.log(`[RETRY ${retryRound}/${MAX_RETRIES}] Order ${orderId}: ${missing} photos missing, retrying...`);
+
+          for (let i = 0; i < missing; i += BATCH_SIZE) {
+            const batchCount = Math.min(BATCH_SIZE, missing - i);
+            const garments: string[] = [];
+            for (let j = 0; j < batchCount; j++) {
+              garments.push(getRandomGarment(usedGarments));
+              usedGarments.push(garments[garments.length - 1]);
+              if (usedGarments.length >= WARDROBE.length) {
+                usedGarments.length = 0;
+              }
+            }
+
+            const retryResults = await Promise.all(
+              garments.map(g => generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g))
+            );
+            const retryUrls = retryResults.filter(Boolean) as string[];
+            allImageUrls.push(...retryUrls);
+
+            // Don't exceed target
+            if (allImageUrls.length >= totalPhotos) {
+              allImageUrls.length = totalPhotos;
+              break;
+            }
+
+            await supabase
+              .from("orders")
+              .update({ results: allImageUrls })
+              .eq("id", orderId);
+          }
+          console.log(`[RETRY ${retryRound}] After retry: ${allImageUrls.length}/${totalPhotos}`);
+        }
+
+        // --- Final status ---
         if (allImageUrls.length === 0) {
           await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
           console.error(`[GENERATION] Order ${orderId}: FAILED — 0 images generated`);
+        } else if (allImageUrls.length < totalPhotos) {
+          // Partial success — mark done with what we have, log warning
+          await supabase
+            .from("orders")
+            .update({ generation_status: "done", results: allImageUrls })
+            .eq("id", orderId);
+          console.warn(`[GENERATION] Order ${orderId}: PARTIAL — ${allImageUrls.length}/${totalPhotos} photos after ${MAX_RETRIES} retries`);
         } else {
           await supabase
             .from("orders")
