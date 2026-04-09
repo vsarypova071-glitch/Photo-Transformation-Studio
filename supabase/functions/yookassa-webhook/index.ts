@@ -253,23 +253,20 @@ Deno.serve(async (req: Request) => {
           console.log(`[RETRY ${retryRound}] After retry: ${allImageUrls.length}/${totalPhotos}`);
         }
 
-        // --- Final status ---
-        if (allImageUrls.length === 0) {
-          await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
-          console.error(`[GENERATION] Order ${orderId}: FAILED — 0 images generated`);
-        } else if (allImageUrls.length < totalPhotos) {
-          // Partial success — mark done with what we have, log warning
-          await supabase
-            .from("orders")
-            .update({ generation_status: "done", results: allImageUrls })
-            .eq("id", orderId);
-          console.warn(`[GENERATION] Order ${orderId}: PARTIAL — ${allImageUrls.length}/${totalPhotos} photos after ${MAX_RETRIES} retries`);
-        } else {
+        // --- Final status: done ONLY if all photos generated ---
+        if (allImageUrls.length === totalPhotos) {
           await supabase
             .from("orders")
             .update({ generation_status: "done", results: allImageUrls })
             .eq("id", orderId);
           console.log(`[GENERATION] Order ${orderId}: DONE — ${allImageUrls.length}/${totalPhotos} photos`);
+        } else {
+          // Partial or zero — always ERROR, never done
+          await supabase
+            .from("orders")
+            .update({ generation_status: "error", results: allImageUrls })
+            .eq("id", orderId);
+          console.error(`[GENERATION] Order ${orderId}: ERROR — only ${allImageUrls.length}/${totalPhotos} photos after ${MAX_RETRIES} retries. Marking as error, not done.`);
         }
       } catch (genErr: any) {
         console.error(`[GENERATION] Order ${orderId}: ERROR — ${genErr.message}`);
