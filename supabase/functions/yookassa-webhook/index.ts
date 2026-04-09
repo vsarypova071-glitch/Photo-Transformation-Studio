@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.log(`Webhook received: ${event}, payment ${payment.id}, status ${payment.status}`);
+    console.log(`[WEBHOOK] event=${event}, payment_id=${payment.id}, status=${payment.status}`);
 
     const orderId = payment.metadata?.order_id;
     if (!orderId) {
@@ -112,13 +112,20 @@ Deno.serve(async (req: Request) => {
         .single();
 
       if (!existingOrder) {
-        console.error(`Order ${orderId} not found`);
+        console.error(`[WEBHOOK] Order ${orderId} not found in DB`);
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // Skip if already processing or done
-      if (existingOrder.generation_status === "running" || existingOrder.generation_status === "done") {
-        console.log(`Order ${orderId} already in ${existingOrder.generation_status}, skipping`);
+      console.log(`[WEBHOOK] Order ${orderId}: payment_status=${existingOrder.payment_status}, generation_status=${existingOrder.generation_status}, photos_count=${existingOrder.photos_count}`);
+
+      // CRITICAL: verify payment before generation
+      if (existingOrder.payment_status === "succeeded" && existingOrder.generation_status !== "waiting") {
+        console.log(`[WEBHOOK] Order ${orderId} already in ${existingOrder.generation_status}, skipping`);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      if (existingOrder.payment_status !== "succeeded" && payment.status !== "succeeded") {
+        console.error(`[WEBHOOK] Order ${orderId}: payment NOT succeeded (${existingOrder.payment_status}), refusing generation`);
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
@@ -128,7 +135,7 @@ Deno.serve(async (req: Request) => {
         .update({ payment_status: "succeeded", generation_status: "running" })
         .eq("id", orderId);
 
-      console.log(`Order ${orderId} marked as paid, starting generation...`);
+      console.log(`[WEBHOOK] Order ${orderId}: payment verified, starting generation for ${existingOrder.photos_count} photos`);
 
       // Fetch full order details
       const { data: order } = await supabase
@@ -162,9 +169,10 @@ Deno.serve(async (req: Request) => {
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
-      // === GENERATE ALL PHOTOS from orders.photos_count ===
+      // === GENERATE ALL PHOTOS from orders.photos_count (DB is source of truth) ===
       try {
-        const totalPhotos = order.photos_count; // 5, 15, or 50 — from DB
+        const totalPhotos = order.photos_count; // 5, 15, or 50 — strictly from DB, no hardcodes
+        console.log(`[GENERATION] Order ${orderId}: photos_count=${totalPhotos} from DB`);
         const BATCH_SIZE = 3;
         const allImageUrls: string[] = [];
 
@@ -207,16 +215,16 @@ Deno.serve(async (req: Request) => {
 
         if (allImageUrls.length === 0) {
           await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
-          console.error("No images generated");
+          console.error(`[GENERATION] Order ${orderId}: FAILED — 0 images generated`);
         } else {
           await supabase
             .from("orders")
             .update({ generation_status: "done", results: allImageUrls })
             .eq("id", orderId);
-          console.log(`Order ${orderId}: ${allImageUrls.length}/${totalPhotos} photos generated`);
+          console.log(`[GENERATION] Order ${orderId}: DONE — ${allImageUrls.length}/${totalPhotos} photos`);
         }
       } catch (genErr: any) {
-        console.error("Generation error:", genErr.message);
+        console.error(`[GENERATION] Order ${orderId}: ERROR — ${genErr.message}`);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
       }
 
