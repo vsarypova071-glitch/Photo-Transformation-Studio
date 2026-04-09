@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
     const now = new Date();
     const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000).toISOString();
-    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+    const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
 
     // 1. Expire pending orders older than 10 minutes
     const { data: expiredOrders, error: expireError } = await supabase
