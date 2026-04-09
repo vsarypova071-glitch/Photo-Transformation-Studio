@@ -44,8 +44,8 @@ Deno.serve(async (req: Request) => {
     const { count: activeCount, error: countError } = await supabaseAdmin
       .from("orders")
       .select("id", { count: "exact", head: true })
-      .in("generation_status", ["waiting", "running"])
-      .in("payment_status", ["succeeded", "pending"]);
+      .eq("generation_status", "running")
+      .eq("payment_status", "succeeded");
 
     if (countError) {
       console.error("Load check query error:", countError);
