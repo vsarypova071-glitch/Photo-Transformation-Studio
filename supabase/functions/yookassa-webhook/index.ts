@@ -458,6 +458,7 @@ Deno.serve(async (req: Request) => {
       } catch (imgErr: any) {
         console.error("Failed to fetch image:", imgErr.message);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        await refundCredits(order?.customer_key || existingOrder.customer_key, orderId, existingOrder.photos_count, "image_fetch");
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
