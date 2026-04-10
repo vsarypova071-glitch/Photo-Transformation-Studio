@@ -229,6 +229,43 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+    // Helper: refund credits for a failed order
+    async function refundCredits(customerKey: string | null, orderId: string, amount: number, reason: string) {
+      if (!customerKey || amount <= 0) return;
+      try {
+        const { data: account } = await supabase
+          .from("credit_accounts")
+          .select("id, balance")
+          .eq("customer_key", customerKey)
+          .single();
+        if (!account) return;
+
+        const refundKey = `refund_${reason}_${orderId}`;
+        const { error: txErr } = await supabase
+          .from("credit_transactions")
+          .insert({
+            account_id: account.id,
+            order_id: orderId,
+            type: "refund",
+            amount,
+            idempotency_key: refundKey,
+            description: `Возврат (${reason}) за заказ ${orderId}: ${amount} кредитов`,
+          });
+
+        if (txErr && txErr.code === "23505") {
+          console.log(`[CREDITS] Already refunded (${reason}) for order ${orderId}`);
+        } else if (!txErr) {
+          await supabase
+            .from("credit_accounts")
+            .update({ balance: account.balance + amount })
+            .eq("id", account.id);
+          console.log(`[CREDITS] Refunded ${amount} to ${customerKey} (${reason}), new balance: ${account.balance + amount}`);
+        }
+      } catch (e: any) {
+        console.error(`[CREDITS] Refund error (${reason}):`, e.message);
+      }
+    }
+
     const body = await req.json();
     const event = body.event;
     const payment = body.object;
@@ -401,6 +438,7 @@ Deno.serve(async (req: Request) => {
       if (!order || !order.original_image) {
         console.error("Order not found or no image");
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        await refundCredits(existingOrder.customer_key || payment.metadata?.customer_key, orderId, existingOrder.photos_count, "no_image");
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
@@ -420,6 +458,7 @@ Deno.serve(async (req: Request) => {
       } catch (imgErr: any) {
         console.error("Failed to fetch image:", imgErr.message);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        await refundCredits(order?.customer_key || existingOrder.customer_key, orderId, existingOrder.photos_count, "image_fetch");
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
@@ -521,90 +560,12 @@ Deno.serve(async (req: Request) => {
             .update({ generation_status: "error", results: allImageUrls })
             .eq("id", orderId);
           console.error(`[GENERATION] Order ${orderId}: ERROR — only ${allImageUrls.length}/${totalPhotos} photos after ${MAX_RETRIES} retries. Marking as error, not done.`);
-
-          // === CREDIT REFUND on generation failure ===
-          const customerKeyForRefund = order.customer_key;
-          if (customerKeyForRefund) {
-            try {
-              const { data: refundAccount } = await supabase
-                .from("credit_accounts")
-                .select("id, balance")
-                .eq("customer_key", customerKeyForRefund)
-                .single();
-
-              if (refundAccount) {
-                const refundKey = `refund_${orderId}`;
-                const refundAmount = totalPhotos;
-                const { error: refundTxErr } = await supabase
-                  .from("credit_transactions")
-                  .insert({
-                    account_id: refundAccount.id,
-                    order_id: orderId,
-                    type: "refund",
-                    amount: refundAmount,
-                    idempotency_key: refundKey,
-                    description: `Возврат за невыполненный заказ ${orderId}: ${refundAmount} кредитов`,
-                  });
-
-                if (refundTxErr && refundTxErr.code === "23505") {
-                  console.log(`[CREDITS] Already refunded for order ${orderId}`);
-                } else if (!refundTxErr) {
-                  await supabase
-                    .from("credit_accounts")
-                    .update({ balance: refundAccount.balance + refundAmount })
-                    .eq("id", refundAccount.id);
-                  console.log(`[CREDITS] Refunded ${refundAmount} to ${customerKeyForRefund}`);
-                }
-              }
-            } catch (refundErr: any) {
-              console.error(`[CREDITS] Refund error:`, refundErr.message);
-            }
-          }
+          await refundCredits(order.customer_key, orderId, totalPhotos, "partial_generation");
         }
       } catch (genErr: any) {
         console.error(`[GENERATION] Order ${orderId}: ERROR — ${genErr.message}`);
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
-
-        // === CREDIT REFUND on generation exception ===
-        const customerKeyForRefund = order?.customer_key;
-        if (customerKeyForRefund) {
-          try {
-            const { data: refundAccount } = await supabase
-              .from("credit_accounts")
-              .select("id, balance")
-              .eq("customer_key", customerKeyForRefund)
-              .single();
-
-            if (refundAccount) {
-              const refundKey = `refund_exception_${orderId}`;
-              const refundAmount = order?.photos_count || 0;
-              if (refundAmount > 0) {
-                const { error: refundTxErr } = await supabase
-                  .from("credit_transactions")
-                  .insert({
-                    account_id: refundAccount.id,
-                    order_id: orderId,
-                    type: "refund",
-                    amount: refundAmount,
-                    idempotency_key: refundKey,
-                    description: `Возврат за ошибку генерации ${orderId}: ${refundAmount} кредитов`,
-                  });
-
-                if (!refundTxErr || refundTxErr.code !== "23505") {
-                  if (!refundTxErr) {
-                    await supabase
-                      .from("credit_accounts")
-                      .update({ balance: refundAccount.balance + refundAmount })
-                      .eq("id", refundAccount.id);
-                    console.log(`[CREDITS] Refunded ${refundAmount} to ${customerKeyForRefund} (exception)`);
-                  }
-                }
-              }
-            }
-          } catch (refundErr: any) {
-            console.error(`[CREDITS] Refund error (exception):`, refundErr.message);
-          }
-        }
+        await refundCredits(order?.customer_key, orderId, order?.photos_count || 0, "generation_exception");
       }
 
     } else if (event === "payment.canceled") {
