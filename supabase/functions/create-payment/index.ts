@@ -181,6 +181,7 @@ Deno.serve(async (req: Request) => {
         order_id: orderId,
         tariff_id: tariffId,
         photos_count: String(photosCount),
+        customer_key: customerKey || "",
       },
     };
 
