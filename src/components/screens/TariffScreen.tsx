@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Tariff {
   id: string;
@@ -27,12 +27,34 @@ interface TariffScreenProps {
   paymentError?: string | null;
 }
 
+function getCustomerKey(): string | null {
+  return localStorage.getItem('customer_key');
+}
+
 export default function TariffScreen({
   onSelectTariff,
   onBack,
   paymentError
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const key = getCustomerKey();
+    if (!key) return;
+    fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-balance?customer_key=${encodeURIComponent(key)}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      }
+    )
+      .then(r => r.json())
+      .then(d => setCreditBalance(d.balance ?? 0))
+      .catch(() => {});
+  }, []);
 
   const privacyUrl =
   "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
@@ -50,9 +72,14 @@ export default function TariffScreen({
       {/* Заголовок */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">Выберите тариф</h2>
-        <p className="text-sm text-slate-200">
+        <p className="text-sm text-muted-foreground">
           Выберите количество фотографий для генерации
         </p>
+        {creditBalance !== null && creditBalance > 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            💎 Баланс: {creditBalance} кредитов
+          </div>
+        )}
       </div>
 
       {/* Ошибка оплаты */}
