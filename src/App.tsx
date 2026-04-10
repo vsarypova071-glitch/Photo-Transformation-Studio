@@ -319,6 +319,7 @@ function App() {
             originalImageUrl: imageStoragePath,
             customPrompt: '',
             isFullBody,
+            customerKey: getCustomerKey(),
           }),
         }
       );
