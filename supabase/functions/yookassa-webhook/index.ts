@@ -251,7 +251,7 @@ Deno.serve(async (req: Request) => {
       // === IDEMPOTENCY: Only process if order is not already running/done ===
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("payment_status, generation_status, photos_count")
+        .select("payment_status, generation_status, photos_count, customer_key, tariff_id, price")
         .eq("id", orderId)
         .single();
 
@@ -271,6 +271,116 @@ Deno.serve(async (req: Request) => {
       if (existingOrder.payment_status !== "succeeded" && payment.status !== "succeeded") {
         console.error(`[WEBHOOK] Order ${orderId}: payment NOT succeeded (${existingOrder.payment_status}), refusing generation`);
         return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+
+      // === CREDIT SYSTEM: Credit account after successful payment ===
+      const customerKey = existingOrder.customer_key || payment.metadata?.customer_key;
+      const customerEmail = payment.receipt?.customer?.email || null;
+
+      if (customerKey) {
+        try {
+          // Upsert credit account
+          let { data: account } = await supabase
+            .from("credit_accounts")
+            .select("id, balance")
+            .eq("customer_key", customerKey)
+            .single();
+
+          if (!account) {
+            const { data: newAccount } = await supabase
+              .from("credit_accounts")
+              .insert({ customer_key: customerKey, email: customerEmail, balance: 0 })
+              .select("id, balance")
+              .single();
+            account = newAccount;
+          } else if (customerEmail && !account.email) {
+            await supabase
+              .from("credit_accounts")
+              .update({ email: customerEmail })
+              .eq("id", account.id);
+          }
+
+          if (account) {
+            const creditAmount = existingOrder.photos_count;
+            const idempotencyKey = `credit_${payment.id}_${orderId}`;
+
+            // Idempotent credit: skip if already credited
+            const { error: txError } = await supabase
+              .from("credit_transactions")
+              .insert({
+                account_id: account.id,
+                order_id: orderId,
+                type: "credit",
+                amount: creditAmount,
+                idempotency_key: idempotencyKey,
+                description: `Оплата тарифа ${existingOrder.tariff_id}: ${creditAmount} кредитов`,
+              });
+
+            if (txError && txError.code === "23505") {
+              console.log(`[CREDITS] Already credited for payment ${payment.id}, skipping`);
+            } else if (txError) {
+              console.error(`[CREDITS] Credit transaction error:`, txError);
+            } else {
+              // Update balance
+              await supabase
+                .from("credit_accounts")
+                .update({ balance: account.balance + creditAmount })
+                .eq("id", account.id);
+              console.log(`[CREDITS] Credited ${creditAmount} to ${customerKey}, new balance: ${account.balance + creditAmount}`);
+            }
+
+            // === DEBIT credits before generation ===
+            const debitKey = `debit_${orderId}`;
+            const { error: debitTxError } = await supabase
+              .from("credit_transactions")
+              .insert({
+                account_id: account.id,
+                order_id: orderId,
+                type: "debit",
+                amount: creditAmount,
+                idempotency_key: debitKey,
+                description: `Списание за заказ ${orderId}: ${creditAmount} кредитов`,
+              });
+
+            if (debitTxError && debitTxError.code === "23505") {
+              console.log(`[CREDITS] Already debited for order ${orderId}, skipping`);
+            } else if (debitTxError) {
+              console.error(`[CREDITS] Debit transaction error:`, debitTxError);
+            } else {
+              // Refresh balance after credit
+              const { data: refreshed } = await supabase
+                .from("credit_accounts")
+                .select("balance")
+                .eq("id", account.id)
+                .single();
+              const currentBalance = refreshed?.balance ?? (account.balance + creditAmount);
+              
+              if (currentBalance < creditAmount) {
+                console.error(`[CREDITS] Insufficient balance: ${currentBalance} < ${creditAmount}`);
+                // Rollback debit transaction — delete it
+                await supabase
+                  .from("credit_transactions")
+                  .delete()
+                  .eq("idempotency_key", debitKey);
+                
+                await supabase
+                  .from("orders")
+                  .update({ payment_status: "succeeded", generation_status: "error" })
+                  .eq("id", orderId);
+                return new Response("OK", { status: 200, headers: corsHeaders });
+              }
+
+              await supabase
+                .from("credit_accounts")
+                .update({ balance: currentBalance - creditAmount })
+                .eq("id", account.id);
+              console.log(`[CREDITS] Debited ${creditAmount} from ${customerKey}, new balance: ${currentBalance - creditAmount}`);
+            }
+          }
+        } catch (creditErr: any) {
+          console.error(`[CREDITS] Error processing credits:`, creditErr.message);
+          // Don't block generation if credit system fails — log and continue
+        }
       }
 
       // Update order payment status and start generation
