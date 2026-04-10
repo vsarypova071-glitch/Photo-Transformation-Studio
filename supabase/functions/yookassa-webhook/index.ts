@@ -438,6 +438,7 @@ Deno.serve(async (req: Request) => {
       if (!order || !order.original_image) {
         console.error("Order not found or no image");
         await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        await refundCredits(existingOrder.customer_key || payment.metadata?.customer_key, orderId, existingOrder.photos_count, "no_image");
         return new Response("OK", { status: 200, headers: corsHeaders });
       }
 
