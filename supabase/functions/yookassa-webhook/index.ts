@@ -229,6 +229,43 @@ Deno.serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+    // Helper: refund credits for a failed order
+    async function refundCredits(customerKey: string | null, orderId: string, amount: number, reason: string) {
+      if (!customerKey || amount <= 0) return;
+      try {
+        const { data: account } = await supabase
+          .from("credit_accounts")
+          .select("id, balance")
+          .eq("customer_key", customerKey)
+          .single();
+        if (!account) return;
+
+        const refundKey = `refund_${reason}_${orderId}`;
+        const { error: txErr } = await supabase
+          .from("credit_transactions")
+          .insert({
+            account_id: account.id,
+            order_id: orderId,
+            type: "refund",
+            amount,
+            idempotency_key: refundKey,
+            description: `Возврат (${reason}) за заказ ${orderId}: ${amount} кредитов`,
+          });
+
+        if (txErr && txErr.code === "23505") {
+          console.log(`[CREDITS] Already refunded (${reason}) for order ${orderId}`);
+        } else if (!txErr) {
+          await supabase
+            .from("credit_accounts")
+            .update({ balance: account.balance + amount })
+            .eq("id", account.id);
+          console.log(`[CREDITS] Refunded ${amount} to ${customerKey} (${reason}), new balance: ${account.balance + amount}`);
+        }
+      } catch (e: any) {
+        console.error(`[CREDITS] Refund error (${reason}):`, e.message);
+      }
+    }
+
     const body = await req.json();
     const event = body.event;
     const payment = body.object;
