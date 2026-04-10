@@ -33,6 +33,15 @@ function getSessionId(): string {
   return id;
 }
 
+function getCustomerKey(): string {
+  let key = localStorage.getItem('customer_key');
+  if (!key) {
+    key = 'cust_' + crypto.randomUUID();
+    localStorage.setItem('customer_key', key);
+  }
+  return key;
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [uploadedImage, setUploadedImage] = useState('');
@@ -310,6 +319,7 @@ function App() {
             originalImageUrl: imageStoragePath,
             customPrompt: '',
             isFullBody,
+            customerKey: getCustomerKey(),
           }),
         }
       );

@@ -76,10 +76,86 @@ export type Database = {
           },
         ]
       }
+      credit_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          customer_key: string
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          customer_key: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          customer_key?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          idempotency_key: string
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          idempotency_key: string
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          idempotency_key?: string
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "credit_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string
           custom_prompt: string | null
+          customer_key: string | null
           generation_status: string
           id: string
           is_full_body: boolean | null
@@ -97,6 +173,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_prompt?: string | null
+          customer_key?: string | null
           generation_status?: string
           id?: string
           is_full_body?: boolean | null
@@ -114,6 +191,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_prompt?: string | null
+          customer_key?: string | null
           generation_status?: string
           id?: string
           is_full_body?: boolean | null
