@@ -72,9 +72,14 @@ export default function TariffScreen({
       {/* Заголовок */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">Выберите тариф</h2>
-        <p className="text-sm text-slate-200">
+        <p className="text-sm text-muted-foreground">
           Выберите количество фотографий для генерации
         </p>
+        {creditBalance !== null && creditBalance > 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            💎 Баланс: {creditBalance} кредитов
+          </div>
+        )}
       </div>
 
       {/* Ошибка оплаты */}
