@@ -357,12 +357,10 @@ Deno.serve(async (req: Request) => {
             } else if (txError) {
               console.error(`[CREDITS] Credit transaction error:`, txError);
             } else {
-              // Update balance
-              await supabase
-                .from("credit_accounts")
-                .update({ balance: account.balance + creditAmount })
-                .eq("id", account.id);
-              console.log(`[CREDITS] Credited ${creditAmount} to ${customerKey}, new balance: ${account.balance + creditAmount}`);
+              // Atomic credit via refund_balance (same logic: balance + amount)
+              const { data: newBal } = await supabase
+                .rpc("refund_balance", { p_account_id: account.id, p_amount: creditAmount });
+              console.log(`[CREDITS] Credited ${creditAmount} to ${customerKey}, new balance: ${newBal}`);
             }
 
             // === DEBIT credits before generation ===
@@ -383,34 +381,19 @@ Deno.serve(async (req: Request) => {
             } else if (debitTxError) {
               console.error(`[CREDITS] Debit transaction error:`, debitTxError);
             } else {
-              // Refresh balance after credit
-              const { data: refreshed } = await supabase
-                .from("credit_accounts")
-                .select("balance")
-                .eq("id", account.id)
-                .single();
-              const currentBalance = refreshed?.balance ?? (account.balance + creditAmount);
-              
-              if (currentBalance < creditAmount) {
-                console.error(`[CREDITS] Insufficient balance: ${currentBalance} < ${creditAmount}`);
-                // Rollback debit transaction — delete it
-                await supabase
-                  .from("credit_transactions")
-                  .delete()
-                  .eq("idempotency_key", debitKey);
-                
-                await supabase
-                  .from("orders")
+              // Atomic debit with balance check
+              const { data: newBalance, error: debitErr } = await supabase
+                .rpc("debit_balance", { p_account_id: account.id, p_amount: creditAmount });
+
+              if (debitErr || newBalance === -1) {
+                console.error(`[CREDITS] Atomic debit failed for order ${orderId}`);
+                await supabase.from("credit_transactions").delete().eq("idempotency_key", debitKey);
+                await supabase.from("orders")
                   .update({ payment_status: "succeeded", generation_status: "error" })
                   .eq("id", orderId);
                 return new Response("OK", { status: 200, headers: corsHeaders });
               }
-
-              await supabase
-                .from("credit_accounts")
-                .update({ balance: currentBalance - creditAmount })
-                .eq("id", account.id);
-              console.log(`[CREDITS] Debited ${creditAmount} from ${customerKey}, new balance: ${currentBalance - creditAmount}`);
+              console.log(`[CREDITS] Debited ${creditAmount} from ${customerKey}, new balance: ${newBalance}`);
             }
           }
         } catch (creditErr: any) {
