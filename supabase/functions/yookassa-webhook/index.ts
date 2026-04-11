@@ -255,11 +255,10 @@ Deno.serve(async (req: Request) => {
         if (txErr && txErr.code === "23505") {
           console.log(`[CREDITS] Already refunded (${reason}) for order ${orderId}`);
         } else if (!txErr) {
-          await supabase
-            .from("credit_accounts")
-            .update({ balance: account.balance + amount })
-            .eq("id", account.id);
-          console.log(`[CREDITS] Refunded ${amount} to ${customerKey} (${reason}), new balance: ${account.balance + amount}`);
+          // Atomic refund
+          const { data: newBal } = await supabase
+            .rpc("refund_balance", { p_account_id: account.id, p_amount: amount });
+          console.log(`[CREDITS] Refunded ${amount} to ${customerKey} (${reason}), new balance: ${newBal}`);
         }
       } catch (e: any) {
         console.error(`[CREDITS] Refund error (${reason}):`, e.message);

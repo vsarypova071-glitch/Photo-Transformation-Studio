@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
 
     const orderId = order.id;
 
-    // 4. Debit credits (idempotent)
+    // 4. Debit credits (idempotent + atomic balance check)
     const debitKey = `debit_credits_${orderId}`;
     const { error: txErr } = await supabase
       .from("credit_transactions")
@@ -105,23 +105,34 @@ Deno.serve(async (req: Request) => {
       });
 
     if (txErr) {
-      // If idempotency conflict, order was already debited — that's fine
       if (txErr.code === "23505") {
         console.log("Debit already exists, skipping");
       } else {
         console.error("Debit error:", txErr);
-        // Rollback order
         await supabase.from("orders").delete().eq("id", orderId);
         return new Response(JSON.stringify({ error: "Ошибка списания кредитов" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     } else {
-      // Update balance
-      await supabase
-        .from("credit_accounts")
-        .update({ balance: account.balance - photosCount })
-        .eq("id", account.id);
+      // Atomic balance debit with check
+      const { data: newBalance, error: debitErr } = await supabase
+        .rpc("debit_balance", { p_account_id: account.id, p_amount: photosCount });
+
+      if (debitErr || newBalance === -1) {
+        console.error("Atomic debit failed — insufficient balance or error");
+        // Rollback: delete debit transaction and order
+        await supabase.from("credit_transactions").delete().eq("idempotency_key", debitKey);
+        await supabase.from("orders").delete().eq("id", orderId);
+        return new Response(JSON.stringify({
+          error: "Недостаточно кредитов",
+          balance: account.balance,
+          required: photosCount,
+        }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`Atomic debit OK, new balance: ${newBalance}`);
     }
 
     // 5. Trigger generation (call generate-photo internally)
