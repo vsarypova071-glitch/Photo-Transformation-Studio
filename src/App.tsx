@@ -268,6 +268,77 @@ function App() {
     }
   }, [pollOrderStatus]);
 
+  const handlePayWithCredits = async (tariff: SelectedTariff) => {
+    setSelectedTariff(tariff);
+    setPaymentError(null);
+    log.info('Paying with credits', { tariff: tariff.name, photos: tariff.photos });
+
+    try {
+      const sessionId = getSessionId();
+      const fileName = `${sessionId}/${Date.now()}.jpg`;
+
+      const base64Data = uploadedImage.replace(/^data:image\/\w+;base64,/, '');
+      const byteCharacters = atob(base64Data);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      const { error: uploadError } = await supabase.storage
+        .from('user-photos')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('user-photos')
+        .getPublicUrl(fileName);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pay-with-credits`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            tariffId: tariff.id,
+            price: tariff.price,
+            photosCount: tariff.photos,
+            userSessionId: sessionId,
+            styleIds: selectedStyles,
+            originalImageUrl: urlData.publicUrl,
+            customPrompt: '',
+            isFullBody,
+            customerKey: getCustomerKey(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error(`Недостаточно кредитов. Баланс: ${data.balance}, нужно: ${data.required}`);
+        }
+        throw new Error(data.error || 'Ошибка оплаты кредитами');
+      }
+
+      setCurrentOrderId(data.orderId);
+      localStorage.setItem('current_order_id', data.orderId);
+      navigateTo('processing');
+      pollOrderStatus(data.orderId);
+    } catch (e: any) {
+      log.error('Credit payment failed', e);
+      setPaymentError(e.message || 'Ошибка оплаты кредитами');
+    }
+  };
+
   const handleSelectTariff = async (tariff: SelectedTariff) => {
     setSelectedTariff(tariff);
     setPaymentError(null);
@@ -533,6 +604,7 @@ function App() {
         {screen === 'tariff' && (
           <TariffScreen
             onSelectTariff={handleSelectTariff}
+            onPayWithCredits={handlePayWithCredits}
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
           />
