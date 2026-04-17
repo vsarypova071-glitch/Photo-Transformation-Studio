@@ -73,32 +73,15 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     }
   }, [resultImage]);
 
-  const handleDownload = async (withWatermark = false) => {
+  const handleDownload = async (_withWatermark = false) => {
     if (!resultImage) return;
+    // Open the original image URL in a new tab so the user can long-press
+    // and use the native "Save image" option to save it to the gallery.
+    // No download attribute, no Blob, no canvas — just the raw image.
     try {
-      const src = withWatermark ? await addWatermark(resultImage) : resultImage;
-      // Convert (data: or http) URL into a Blob URL — works reliably on mobile
-      // and avoids issues with very long data URIs in the href attribute.
-      const response = await fetch(src);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `portrait_${Date.now()}.png`;
-      link.rel = 'noopener';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Revoke after a short delay so the download can start
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+      window.open(resultImage, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      console.error('Download failed', err);
-      // Fallback: open image in a new tab so user can save manually
-      try {
-        window.open(resultImage, '_blank', 'noopener,noreferrer');
-      } catch {}
+      console.error('Open image failed', err);
     }
   };
 
