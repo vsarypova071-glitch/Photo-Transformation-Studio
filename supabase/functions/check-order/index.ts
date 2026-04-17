@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const STUCK_TIMEOUT_MS = 10 * 60 * 1000;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,13 +32,35 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, generation_status, results, payment_id, photos_count")
+      .select("id, payment_status, generation_status, results, payment_id, photos_count, updated_at")
       .eq("id", orderId)
       .single();
 
     if (error || !order) {
       return new Response(JSON.stringify({ error: "Order not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isPaid = order.payment_status === "succeeded";
+    const isTerminal = order.generation_status === "done" || order.generation_status === "error" || order.generation_status === "canceled";
+    const isStuckActive = (order.generation_status === "running" || order.generation_status === "waiting")
+      && (Date.now() - new Date(order.updated_at).getTime() > STUCK_TIMEOUT_MS);
+
+    if (isPaid && !isTerminal && isStuckActive) {
+      await supabase
+        .from("orders")
+        .update({ generation_status: "error" })
+        .eq("id", orderId);
+
+      return new Response(JSON.stringify({
+        orderId: order.id,
+        paymentStatus: order.payment_status,
+        generationStatus: "error",
+        results: order.results || [],
+        photosCount: order.photos_count,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
