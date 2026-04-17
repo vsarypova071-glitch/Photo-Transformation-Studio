@@ -188,36 +188,56 @@ Then compare with source. Adjust until jaw width matches source exactly.
 ONLY render when ALL checks pass.`;
 }
 
+const PER_CALL_TIMEOUT_MS = 90_000; // 90s per AI call — never hang
+
 async function generateSingle(imageBase64: string, stylePrompt: string, customPrompt: string, garment: string): Promise<string | null> {
   const prompt = buildPrompt(stylePrompt, customPrompt, garment);
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-pro-image-preview",
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` } },
-        ],
-      }],
-      modalities: ["image", "text"],
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PER_CALL_TIMEOUT_MS);
 
-  if (!response.ok) {
-    console.error(`AI error ${response.status}`);
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-pro-image-preview",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` } },
+          ],
+        }],
+        modalities: ["image", "text"],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      console.error(`AI error ${response.status}: ${errText.substring(0, 200)}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
+  } catch (e: any) {
+    if (e?.name === "AbortError") {
+      console.error(`generateSingle timeout after ${PER_CALL_TIMEOUT_MS}ms`);
+    } else {
+      console.error("generateSingle exception:", e?.message);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await response.json();
-  return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
 }
+
+declare const EdgeRuntime: { waitUntil?: (p: Promise<unknown>) => void } | undefined;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
