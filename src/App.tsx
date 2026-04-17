@@ -196,6 +196,14 @@ function App() {
         return;
       }
 
+      // CRITICAL: paid + error → keep order, show processing with retry. Do NOT clear localStorage.
+      if (data.paymentStatus === 'succeeded' && data.generationStatus === 'error') {
+        setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+        setScreen('processing');
+        return;
+      }
+
+      // Unpaid generation error
       if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
         localStorage.removeItem('current_order_id');
         return;
