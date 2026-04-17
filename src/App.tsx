@@ -427,6 +427,21 @@ function App() {
 
       const data = await response.json();
 
+      // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
+      if (data.existingOrder && data.orderId) {
+        log.info('Existing paid order detected, redirecting to processing', { orderId: data.orderId });
+        setCurrentOrderId(data.orderId);
+        localStorage.setItem('current_order_id', data.orderId);
+        if (data.generationStatus === 'error') {
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+        }
+        navigateTo('processing');
+        if (data.generationStatus !== 'error') {
+          pollOrderStatus(data.orderId);
+        }
+        return;
+      }
+
       if (!response.ok || !data.paymentUrl) {
         if (response.status === 503) {
           throw new Error(data.error || 'Сервис временно перегружен. Попробуйте через несколько минут.');
