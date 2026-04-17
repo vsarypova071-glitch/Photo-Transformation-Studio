@@ -54,6 +54,8 @@ function App() {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [orderResults, setOrderResults] = useState<string[]>([]);
   // Store order-based job directly (not from sessionStorage)
   const [orderJob, setOrderJob] = useState<Job | null>(null);
@@ -86,14 +88,25 @@ function App() {
         // Handle canceled/expired payment
         if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
           clearInterval(interval);
+          localStorage.removeItem('current_order_id');
           setPaymentError('Оплата не прошла. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
 
-        // Handle generation error
+        // CRITICAL: paid order with generation error → DO NOT redirect to payment!
+        // Show processing screen with retry button instead.
+        if (data.generationStatus === 'error' && data.paymentStatus === 'succeeded') {
+          clearInterval(interval);
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+          // stay on processing screen
+          return;
+        }
+
+        // Non-paid generation error/canceled
         if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
           clearInterval(interval);
+          localStorage.removeItem('current_order_id');
           setPaymentError('Ошибка генерации. Попробуйте снова.');
           navigateTo('tariff');
           return;
@@ -183,6 +196,14 @@ function App() {
         return;
       }
 
+      // CRITICAL: paid + error → keep order, show processing with retry. Do NOT clear localStorage.
+      if (data.paymentStatus === 'succeeded' && data.generationStatus === 'error') {
+        setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+        setScreen('processing');
+        return;
+      }
+
+      // Unpaid generation error
       if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
         localStorage.removeItem('current_order_id');
         return;
@@ -244,13 +265,22 @@ function App() {
 
           // Canceled or expired — back to tariff
           if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
+            localStorage.removeItem('current_order_id');
             setPaymentError('Оплата не прошла. Попробуйте снова.');
             setScreen('tariff');
             return;
           }
 
-          // Error — back to tariff
+          // CRITICAL: paid + error → keep order, show processing + retry. NEVER redirect to payment.
+          if (data.paymentStatus === 'succeeded' && data.generationStatus === 'error') {
+            setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+            setScreen('processing');
+            return;
+          }
+
+          // Unpaid generation error
           if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+            localStorage.removeItem('current_order_id');
             setPaymentError('Ошибка генерации. Попробуйте снова.');
             setScreen('tariff');
             return;
@@ -397,6 +427,21 @@ function App() {
 
       const data = await response.json();
 
+      // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
+      if (data.existingOrder && data.orderId) {
+        log.info('Existing paid order detected, redirecting to processing', { orderId: data.orderId });
+        setCurrentOrderId(data.orderId);
+        localStorage.setItem('current_order_id', data.orderId);
+        if (data.generationStatus === 'error') {
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+        }
+        navigateTo('processing');
+        if (data.generationStatus !== 'error') {
+          pollOrderStatus(data.orderId);
+        }
+        return;
+      }
+
       if (!response.ok || !data.paymentUrl) {
         if (response.status === 503) {
           throw new Error(data.error || 'Сервис временно перегружен. Попробуйте через несколько минут.');
@@ -493,7 +538,58 @@ function App() {
     }
   };
 
+  const handleRetryGeneration = async () => {
+    if (!currentOrderId) return;
+    setRetrying(true);
+    setProcessingError(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ orderId: currentOrderId, customerKey: getCustomerKey() }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось перезапустить генерацию');
+      }
+      if (data.alreadyDone && data.results?.length) {
+        setOrderResults(data.results);
+        const job: Job = {
+          id: 'order_' + currentOrderId, userId: getSessionId(), status: 'done',
+          styleIds: selectedStyles, isFullBody, originalImage: uploadedImage,
+          results: data.results, createdAt: Date.now(),
+        };
+        setOrderJob(job);
+        setCurrentJobId(job.id);
+        navigateTo('results');
+      } else {
+        // Resume polling
+        pollOrderStatus(currentOrderId);
+      }
+    } catch (e: any) {
+      log.error('Retry generation failed', e);
+      setProcessingError('Не удалось перезапустить: ' + (e?.message || ''));
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleAbandonOrder = () => {
+    setCurrentOrderId(null);
+    setProcessingError(null);
+    localStorage.removeItem('current_order_id');
+    navigateTo('tariff');
+  };
+
   const handleNewPhoto = () => {
+    setProcessingError(null);
     setUploadedImage('');
     setSelectedStyles([]);
     setSelectedTariff(null);
@@ -610,7 +706,14 @@ function App() {
           />
         )}
         
-        {screen === 'processing' && <ProcessingScreen />}
+        {screen === 'processing' && (
+          <ProcessingScreen
+            errorMessage={processingError}
+            retrying={retrying}
+            onRetry={handleRetryGeneration}
+            onAbandon={handleAbandonOrder}
+          />
+        )}
         
         {screen === 'results' && currentJob && (
           <ResultsScreen
