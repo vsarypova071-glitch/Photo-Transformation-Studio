@@ -33,31 +33,41 @@ Deno.serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // === CHECK 0: SAFEGUARD — block new payment if customer has paid unfinished order ===
+    // === CHECK 0: SAFEGUARD — reuse last paid order (any status) within 24h instead of charging again ===
     if (customerKey) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: existingPaidOrder } = await supabaseAdmin
         .from("orders")
-        .select("id, payment_status, generation_status, results, photos_count, tariff_id")
+        .select("id, payment_status, generation_status, results, photos_count, tariff_id, created_at")
         .eq("customer_key", customerKey)
         .eq("payment_status", "succeeded")
-        .in("generation_status", ["waiting", "running", "error"])
+        .in("generation_status", ["waiting", "running", "error", "done"])
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (existingPaidOrder) {
-        console.log(`[SAFEGUARD] Customer ${customerKey} already has paid order ${existingPaidOrder.id} (gen=${existingPaidOrder.generation_status}). Blocking new payment.`);
-        return new Response(JSON.stringify({
-          existingOrder: true,
-          orderId: existingPaidOrder.id,
-          generationStatus: existingPaidOrder.generation_status,
-          paymentStatus: existingPaidOrder.payment_status,
-          photosCount: existingPaidOrder.photos_count,
-          results: existingPaidOrder.results || [],
-          message: "У вас уже есть оплаченный заказ. Возвращаем к нему.",
-        }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // For 'done' orders: only reuse if results actually exist (otherwise fall through and let user pay again)
+        const hasResults = Array.isArray(existingPaidOrder.results) && existingPaidOrder.results.length > 0;
+        const shouldReuse = existingPaidOrder.generation_status !== "done" || hasResults;
+
+        if (shouldReuse) {
+          console.log(`[SAFEGUARD] Customer ${customerKey} has paid order ${existingPaidOrder.id} (gen=${existingPaidOrder.generation_status}, results=${existingPaidOrder.results?.length ?? 0}). Returning existingOrder.`);
+          return new Response(JSON.stringify({
+            existingOrder: true,
+            orderId: existingPaidOrder.id,
+            generationStatus: existingPaidOrder.generation_status,
+            paymentStatus: existingPaidOrder.payment_status,
+            photosCount: existingPaidOrder.photos_count,
+            results: existingPaidOrder.results || [],
+            message: "У вас уже есть оплаченный заказ. Возвращаем к нему.",
+          }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } else {
+          console.log(`[SAFEGUARD] Order ${existingPaidOrder.id} is 'done' but has no results — allowing new payment.`);
+        }
       }
     }
 
