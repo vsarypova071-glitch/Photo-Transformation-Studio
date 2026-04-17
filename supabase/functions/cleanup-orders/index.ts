@@ -6,15 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Timeout per photos_count: ~2 min per batch of 3, plus buffer
-// basic(5) = 2 batches × 2min = 4min + 2min buffer = 6min
-// standard(15) = 5 batches × 2min = 10min + 5min buffer = 15min
-// premium(50) = 17 batches × 2min = 34min + 6min buffer = 40min
-function getTimeoutMinutes(photosCount: number): number {
-  const batches = Math.ceil(photosCount / 3);
-  const estimatedMinutes = batches * 2;
-  const buffer = Math.max(2, Math.ceil(estimatedMinutes * 0.3));
-  return estimatedMinutes + buffer;
+// Safety net only — generation should always finalize itself (done/error)
+// via in-function logic. This catches isolate kills / catastrophic crashes.
+// Uniform 10-minute window after last DB update is enough because results
+// are now persisted incrementally (every batch updates updated_at).
+function getTimeoutMinutes(_photosCount: number): number {
+  return 10;
 }
 
 Deno.serve(async (req: Request) => {

@@ -26,11 +26,16 @@ function getRandomGarment(exclude: string[] = []): string {
   return available[Math.floor(Math.random() * available.length)] || WARDROBE[0];
 }
 
+const PER_CALL_TIMEOUT_MS = 90_000; // 90s per AI call — never hang
+
 async function generateSingle(imageBase64: string, stylePrompt: string, customPrompt: string, garment: string): Promise<string | null> {
   const prompt = `Luxury fashion portrait. Place THIS EXACT FACE into a new scene. Preserve identity, geometry, jaw width strictly.
 OUTFIT: ${garment}
 ${stylePrompt ? `Style: ${stylePrompt}` : ""}
 ${customPrompt ? `Note: ${customPrompt}` : ""}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PER_CALL_TIMEOUT_MS);
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -50,6 +55,7 @@ ${customPrompt ? `Note: ${customPrompt}` : ""}`;
         }],
         modalities: ["image", "text"],
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -61,8 +67,14 @@ ${customPrompt ? `Note: ${customPrompt}` : ""}`;
     const data = await response.json();
     return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
   } catch (e: any) {
-    console.error("generateSingle exception:", e.message);
+    if (e.name === "AbortError") {
+      console.error(`generateSingle timeout after ${PER_CALL_TIMEOUT_MS}ms`);
+    } else {
+      console.error("generateSingle exception:", e.message);
+    }
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -168,65 +180,78 @@ Deno.serve(async (req: Request) => {
       : "Luxury fashion portrait photography";
 
     const runGeneration = async () => {
-      try {
-        const allImageUrls: string[] = [...(order.results || [])];
-        const usedGarments: string[] = [];
+      const allImageUrls: string[] = [...(order.results || [])];
+      const usedGarments: string[] = [];
 
-        for (let batchStart = allImageUrls.length; batchStart < totalPhotos; batchStart += BATCH_SIZE) {
-          const batchCount = Math.min(BATCH_SIZE, totalPhotos - batchStart);
-          const garments: string[] = [];
-          for (let i = 0; i < batchCount; i++) {
-            garments.push(getRandomGarment(usedGarments));
-            usedGarments.push(garments[garments.length - 1]);
-            if (usedGarments.length >= WARDROBE.length) usedGarments.length = 0;
-          }
-          const results = await Promise.all(
-            garments.map(g => generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g))
-          );
-          allImageUrls.push(...(results.filter(Boolean) as string[]));
+      // Helper: persist current state — best effort, never throws
+      const persistResults = async () => {
+        try {
           await supabase.from("orders").update({ results: allImageUrls }).eq("id", orderId);
-          console.log(`[RETRY] Order ${orderId}: ${allImageUrls.length}/${totalPhotos}`);
+        } catch (e: any) {
+          console.error(`[RETRY] persistResults error: ${e?.message}`);
         }
+      };
 
-        // Retry rounds for missing photos
-        let retryRound = 0;
-        while (allImageUrls.length < totalPhotos && retryRound < MAX_RETRIES) {
-          retryRound++;
-          const missing = totalPhotos - allImageUrls.length;
-          for (let i = 0; i < missing; i += BATCH_SIZE) {
-            const batchCount = Math.min(BATCH_SIZE, missing - i);
-            const garments: string[] = [];
-            for (let j = 0; j < batchCount; j++) {
-              garments.push(getRandomGarment(usedGarments));
-              usedGarments.push(garments[garments.length - 1]);
-              if (usedGarments.length >= WARDROBE.length) usedGarments.length = 0;
-            }
-            const r = await Promise.all(
+      // Helper: pick next garment
+      const nextGarment = () => {
+        const g = getRandomGarment(usedGarments);
+        usedGarments.push(g);
+        if (usedGarments.length >= WARDROBE.length) usedGarments.length = 0;
+        return g;
+      };
+
+      // Helper: finalize — ALWAYS sets terminal status, never leaves running
+      const finalize = async (label: string) => {
+        try {
+          if (allImageUrls.length >= totalPhotos) {
+            allImageUrls.length = totalPhotos;
+            await supabase.from("orders")
+              .update({ generation_status: "done", results: allImageUrls })
+              .eq("id", orderId);
+            console.log(`[RETRY] Order ${orderId}: DONE (${label}) — ${allImageUrls.length}/${totalPhotos}`);
+          } else {
+            await supabase.from("orders")
+              .update({ generation_status: "error", results: allImageUrls })
+              .eq("id", orderId);
+            console.error(`[RETRY] Order ${orderId}: ERROR (${label}) — ${allImageUrls.length}/${totalPhotos}`);
+          }
+        } catch (e: any) {
+          console.error(`[RETRY] finalize fatal: ${e?.message}`);
+        }
+      };
+
+      try {
+        // Main pass + retry rounds, sequential batches with incremental save
+        const totalRounds = 1 + MAX_RETRIES;
+        for (let round = 0; round < totalRounds && allImageUrls.length < totalPhotos; round++) {
+          const remaining = totalPhotos - allImageUrls.length;
+          console.log(`[RETRY] Order ${orderId}: round ${round + 1}/${totalRounds}, need ${remaining} more`);
+
+          for (let i = 0; i < remaining && allImageUrls.length < totalPhotos; i += BATCH_SIZE) {
+            const batchCount = Math.min(BATCH_SIZE, totalPhotos - allImageUrls.length);
+            const garments = Array.from({ length: batchCount }, () => nextGarment());
+
+            // Each photo independently — failures don't abort the batch
+            const settled = await Promise.allSettled(
               garments.map(g => generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g))
             );
-            allImageUrls.push(...(r.filter(Boolean) as string[]));
-            if (allImageUrls.length >= totalPhotos) {
-              allImageUrls.length = totalPhotos;
-              break;
+            for (const s of settled) {
+              if (s.status === "fulfilled" && s.value) {
+                allImageUrls.push(s.value);
+                if (allImageUrls.length >= totalPhotos) break;
+              }
             }
-            await supabase.from("orders").update({ results: allImageUrls }).eq("id", orderId);
+
+            // Persist after EVERY batch so progress survives isolate kill
+            await persistResults();
+            console.log(`[RETRY] Order ${orderId}: ${allImageUrls.length}/${totalPhotos}`);
           }
         }
 
-        if (allImageUrls.length === totalPhotos) {
-          await supabase.from("orders")
-            .update({ generation_status: "done", results: allImageUrls })
-            .eq("id", orderId);
-          console.log(`[RETRY] Order ${orderId}: DONE — ${allImageUrls.length}/${totalPhotos}`);
-        } else {
-          await supabase.from("orders")
-            .update({ generation_status: "error", results: allImageUrls })
-            .eq("id", orderId);
-          console.error(`[RETRY] Order ${orderId}: still ERROR — ${allImageUrls.length}/${totalPhotos}`);
-        }
+        await finalize("complete");
       } catch (e: any) {
-        console.error(`[RETRY] Order ${orderId}: exception — ${e.message}`);
-        await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        console.error(`[RETRY] Order ${orderId}: exception — ${e?.message}`);
+        await finalize("exception");
       }
     };
 
