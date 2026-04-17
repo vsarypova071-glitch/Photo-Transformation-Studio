@@ -706,7 +706,14 @@ function App() {
           />
         )}
         
-        {screen === 'processing' && <ProcessingScreen />}
+        {screen === 'processing' && (
+          <ProcessingScreen
+            errorMessage={processingError}
+            retrying={retrying}
+            onRetry={handleRetryGeneration}
+            onAbandon={handleAbandonOrder}
+          />
+        )}
         
         {screen === 'results' && currentJob && (
           <ResultsScreen
