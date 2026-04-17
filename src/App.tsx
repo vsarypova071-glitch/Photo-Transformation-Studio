@@ -538,7 +538,58 @@ function App() {
     }
   };
 
+  const handleRetryGeneration = async () => {
+    if (!currentOrderId) return;
+    setRetrying(true);
+    setProcessingError(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ orderId: currentOrderId, customerKey: getCustomerKey() }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось перезапустить генерацию');
+      }
+      if (data.alreadyDone && data.results?.length) {
+        setOrderResults(data.results);
+        const job: Job = {
+          id: 'order_' + currentOrderId, userId: getSessionId(), status: 'done',
+          styleIds: selectedStyles, isFullBody, originalImage: uploadedImage,
+          results: data.results, createdAt: Date.now(),
+        };
+        setOrderJob(job);
+        setCurrentJobId(job.id);
+        navigateTo('results');
+      } else {
+        // Resume polling
+        pollOrderStatus(currentOrderId);
+      }
+    } catch (e: any) {
+      log.error('Retry generation failed', e);
+      setProcessingError('Не удалось перезапустить: ' + (e?.message || ''));
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleAbandonOrder = () => {
+    setCurrentOrderId(null);
+    setProcessingError(null);
+    localStorage.removeItem('current_order_id');
+    navigateTo('tariff');
+  };
+
   const handleNewPhoto = () => {
+    setProcessingError(null);
     setUploadedImage('');
     setSelectedStyles([]);
     setSelectedTariff(null);
