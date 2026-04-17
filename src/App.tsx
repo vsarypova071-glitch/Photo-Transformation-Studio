@@ -429,16 +429,40 @@ function App() {
 
       // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
       if (data.existingOrder && data.orderId) {
-        log.info('Existing paid order detected, redirecting to processing', { orderId: data.orderId });
+        log.info('Existing paid order detected', { orderId: data.orderId, generationStatus: data.generationStatus, results: data.results?.length });
         setCurrentOrderId(data.orderId);
         localStorage.setItem('current_order_id', data.orderId);
+        setPaymentError(null);
+
+        // Already finished — go straight to results
+        if (data.generationStatus === 'done' && data.results?.length > 0) {
+          setOrderResults(data.results);
+          const job: Job = {
+            id: 'order_' + data.orderId,
+            userId: getSessionId(),
+            status: 'done',
+            styleIds: selectedStyles,
+            isFullBody,
+            originalImage: uploadedImage,
+            results: data.results,
+            createdAt: Date.now(),
+          };
+          setOrderJob(job);
+          setCurrentJobId(job.id);
+          navigateTo('results');
+          return;
+        }
+
+        // Failed generation — show retry UI on processing screen
         if (data.generationStatus === 'error') {
           setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+          navigateTo('processing');
+          return;
         }
+
+        // Still running/waiting — show processing and poll
         navigateTo('processing');
-        if (data.generationStatus !== 'error') {
-          pollOrderStatus(data.orderId);
-        }
+        pollOrderStatus(data.orderId);
         return;
       }
 
