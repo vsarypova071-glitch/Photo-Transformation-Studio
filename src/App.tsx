@@ -54,6 +54,8 @@ function App() {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [orderResults, setOrderResults] = useState<string[]>([]);
   // Store order-based job directly (not from sessionStorage)
   const [orderJob, setOrderJob] = useState<Job | null>(null);
