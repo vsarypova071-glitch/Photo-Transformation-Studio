@@ -86,14 +86,25 @@ function App() {
         // Handle canceled/expired payment
         if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
           clearInterval(interval);
+          localStorage.removeItem('current_order_id');
           setPaymentError('Оплата не прошла. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
 
-        // Handle generation error
+        // CRITICAL: paid order with generation error → DO NOT redirect to payment!
+        // Show processing screen with retry button instead.
+        if (data.generationStatus === 'error' && data.paymentStatus === 'succeeded') {
+          clearInterval(interval);
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+          // stay on processing screen
+          return;
+        }
+
+        // Non-paid generation error/canceled
         if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
           clearInterval(interval);
+          localStorage.removeItem('current_order_id');
           setPaymentError('Ошибка генерации. Попробуйте снова.');
           navigateTo('tariff');
           return;
