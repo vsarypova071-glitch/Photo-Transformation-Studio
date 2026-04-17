@@ -33,6 +33,34 @@ Deno.serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+    // === CHECK 0: SAFEGUARD — block new payment if customer has paid unfinished order ===
+    if (customerKey) {
+      const { data: existingPaidOrder } = await supabaseAdmin
+        .from("orders")
+        .select("id, payment_status, generation_status, results, photos_count, tariff_id")
+        .eq("customer_key", customerKey)
+        .eq("payment_status", "succeeded")
+        .in("generation_status", ["waiting", "running", "error"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPaidOrder) {
+        console.log(`[SAFEGUARD] Customer ${customerKey} already has paid order ${existingPaidOrder.id} (gen=${existingPaidOrder.generation_status}). Blocking new payment.`);
+        return new Response(JSON.stringify({
+          existingOrder: true,
+          orderId: existingPaidOrder.id,
+          generationStatus: existingPaidOrder.generation_status,
+          paymentStatus: existingPaidOrder.payment_status,
+          photosCount: existingPaidOrder.photos_count,
+          results: existingPaidOrder.results || [],
+          message: "У вас уже есть оплаченный заказ. Возвращаем к нему.",
+        }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // === CHECK 1: Load check — count active orders (waiting/processing) ===
     const LOAD_LIMITS: Record<string, number> = {
       basic: 50,
