@@ -75,13 +75,31 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
   const handleDownload = async (withWatermark = false) => {
     if (!resultImage) return;
-    const src = withWatermark ? await addWatermark(resultImage) : resultImage;
-    const link = document.createElement('a');
-    link.href = src;
-    link.download = `portrait_${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const src = withWatermark ? await addWatermark(resultImage) : resultImage;
+      // Convert (data: or http) URL into a Blob URL — works reliably on mobile
+      // and avoids issues with very long data URIs in the href attribute.
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `portrait_${Date.now()}.png`;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Revoke after a short delay so the download can start
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+    } catch (err) {
+      console.error('Download failed', err);
+      // Fallback: open image in a new tab so user can save manually
+      try {
+        window.open(resultImage, '_blank', 'noopener,noreferrer');
+      } catch {}
+    }
   };
 
   const grantShareBonus = () => {
