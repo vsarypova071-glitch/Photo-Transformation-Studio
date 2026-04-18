@@ -19,6 +19,7 @@ interface TariffScreenProps {
   onPayWithCredits: (tariff: Tariff) => void;
   onBack: () => void;
   paymentError?: string | null;
+  isProcessing?: boolean;
 }
 
 function getCustomerKey(): string | null {
@@ -30,6 +31,7 @@ export default function TariffScreen({
   onPayWithCredits,
   onBack,
   paymentError,
+  isProcessing = false,
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
@@ -121,7 +123,7 @@ export default function TariffScreen({
 
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
-          const disabled = !acceptedPrivacy;
+          const disabled = !acceptedPrivacy || isProcessing;
           const canPayWithCredits = creditBalance !== null && creditBalance >= tariff.photos;
 
           return (
@@ -178,12 +180,19 @@ export default function TariffScreen({
                 <button
                   onClick={() => onSelectTariff(tariff)}
                   disabled={disabled}
-                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
+                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
                     ${disabled
                       ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
                       : "bg-primary hover:bg-primary/90 text-primary-foreground"}
                   `}>
-                  💳 Оплатить {tariff.price.toLocaleString("ru-RU")} ₽
+                  {isProcessing ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Открываем ЮKassa…
+                    </>
+                  ) : (
+                    <>💳 Оплатить {tariff.price.toLocaleString("ru-RU")} ₽</>
+                  )}
                 </button>
               </div>
             </div>
