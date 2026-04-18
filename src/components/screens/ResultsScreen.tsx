@@ -47,6 +47,10 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   return new File([blob], filename, { type: 'image/png' });
 }
 
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, onBackToStyles }: ResultsScreenProps) {
   const [showMagick, setShowMagick] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
@@ -60,11 +64,9 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
   const [activeIndex, setActiveIndex] = useState(0);
   const popupShownRef = useRef(false);
 
-  // All variants — job.results may have 1 or 3 images
   const allResults = job.results.filter(Boolean);
   const resultImage = allResults[activeIndex] || allResults[0];
 
-  // Show share popup once after result is ready
   useEffect(() => {
     if (resultImage && !popupShownRef.current) {
       popupShownRef.current = true;
@@ -79,7 +81,7 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     try {
       const fileName = `ai-photo-${Date.now()}.png`;
 
-      // Если это base64/data:image — сразу скачиваем
+      // Если картинка уже в data:image формате
       if (resultImage.startsWith('data:')) {
         const a = document.createElement('a');
         a.href = resultImage;
@@ -90,9 +92,15 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
         return;
       }
 
-      // Если это обычный URL — скачиваем через blob
-      const response = await fetch(resultImage);
+      // На телефоне надежнее открыть саму картинку,
+      // чтобы можно было сохранить через меню браузера / долгое нажатие
+      if (isMobileDevice()) {
+        window.location.href = resultImage;
+        return;
+      }
 
+      // На компьютере пробуем скачать через blob
+      const response = await fetch(resultImage);
       if (!response.ok) {
         throw new Error(`Не удалось загрузить изображение: ${response.status}`);
       }
@@ -113,9 +121,12 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
     } catch (err) {
       console.error('Download failed:', err);
 
-      // fallback: если fetch не дал скачать, открываем саму картинку
-      // но уже не через noopener,noreferrer, чтобы не ловить белый экран в некоторых браузерах
-      window.open(resultImage, '_blank');
+      // Запасной вариант — открыть само изображение
+      try {
+        window.location.href = resultImage;
+      } catch (e) {
+        console.error('Fallback open failed:', e);
+      }
     }
   };
 
@@ -174,7 +185,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
   return (
     <>
-      {/* Bonus Toast */}
       <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${showBonusToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
         <div className="flex items-center gap-3 bg-primary text-primary-foreground px-6 py-4 rounded-2xl shadow-2xl font-black text-sm whitespace-nowrap">
           <span className="text-xl">🎁</span>
@@ -185,7 +195,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
         </div>
       </div>
 
-      {/* Share Popup */}
       {showSharePopup && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-10 px-6">
           <div
@@ -222,7 +231,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
       <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
         <h2 className="text-3xl font-black uppercase mb-4 text-foreground">Результат</h2>
 
-        {/* Variant selector */}
         {allResults.length > 1 && (
           <div className="flex gap-2 mb-5">
             {allResults.map((_, i) => (
@@ -241,7 +249,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
           </div>
         )}
 
-        {/* Main image */}
         <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 mb-4 shadow-2xl group">
           <img
             key={activeIndex}
@@ -259,7 +266,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
           </button>
         </div>
 
-        {/* Thumbnail strip */}
         {allResults.length > 1 && (
           <div className="flex gap-2 mb-5">
             {allResults.map((img, i) => (
@@ -276,7 +282,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
           </div>
         )}
 
-        {/* AI Disclaimer */}
         <div className="flex items-start gap-2.5 bg-muted/40 border border-border/50 rounded-2xl px-4 py-3 mb-5">
           <span className="text-base mt-0.5">🤖</span>
           <p className="text-[10px] text-muted-foreground leading-relaxed">
@@ -285,7 +290,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
           </p>
         </div>
 
-        {/* Share Block */}
         <div className="glass rounded-[2rem] p-6 border border-white/5 mb-6">
           <div className="flex items-center justify-between mb-5">
             <p className="text-[10px] font-black text-primary uppercase tracking-widest">Поделиться результатом</p>
@@ -300,7 +304,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
             Поделитесь результатом — получите <span className="text-primary font-black">+1 бесплатную генерацию</span>
           </p>
           <div className="flex items-center justify-around">
-            {/* Instagram */}
             <button
               onClick={() => handleShare('instagram')}
               disabled={sharingPlatform !== null}
@@ -319,7 +322,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Instagram</span>
             </button>
 
-            {/* Telegram */}
             <button
               onClick={() => handleShare('telegram')}
               disabled={sharingPlatform !== null}
@@ -338,7 +340,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Telegram</span>
             </button>
 
-            {/* Twitter / X */}
             <button
               onClick={() => handleShare('twitter')}
               disabled={sharingPlatform !== null}
