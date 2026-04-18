@@ -441,6 +441,8 @@ function App() {
         setCurrentOrderId(data.orderId);
         localStorage.setItem('current_order_id', data.orderId);
         setPaymentError(null);
+        // STAGE 1.2 — release lock since we're navigating away
+        setIsCreatingPayment(false);
 
         // Already finished — go straight to results
         if (data.generationStatus === 'done' && data.results?.length > 0) {
@@ -737,6 +739,7 @@ function App() {
             onPayWithCredits={handlePayWithCredits}
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
+            isProcessing={isCreatingPayment}
           />
         )}
         
