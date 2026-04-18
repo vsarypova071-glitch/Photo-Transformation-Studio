@@ -164,6 +164,22 @@ Deno.serve(async (req: Request) => {
           })
           .eq("id", orderId)
           .not("generation_status", "in", '("done","error")');
+
+        // STAGE 3.2: trigger auto-refund if generation failed with no results
+        if (status === "error" && results.length === 0) {
+          const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+          const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          fetch(`${SUPABASE_URL}/functions/v1/auto-refund-order`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ orderId }),
+          })
+            .then(r => r.text().then(t => console.log(`[WEBHOOK→REFUND] ${r.status}: ${t}`)))
+            .catch(e => console.error("[WEBHOOK→REFUND] trigger failed:", e));
+        }
       };
 
       try {

@@ -53,6 +53,18 @@ Deno.serve(async (req: Request) => {
         .update({ generation_status: "error" })
         .eq("id", orderId);
 
+      // STAGE 3.2: trigger auto-refund (fire-and-forget). Refund function self-validates eligibility.
+      fetch(`${SUPABASE_URL}/functions/v1/auto-refund-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({ orderId }),
+      })
+        .then(r => r.text().then(t => console.log(`[CHECK→REFUND ${orderId}] ${r.status}: ${t.slice(0, 200)}`)))
+        .catch(e => console.error(`[CHECK→REFUND ${orderId}] trigger failed:`, e));
+
       return new Response(JSON.stringify({
         orderId: order.id,
         paymentStatus: order.payment_status,
