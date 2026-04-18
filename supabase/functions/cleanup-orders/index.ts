@@ -66,6 +66,19 @@ Deno.serve(async (req: Request) => {
             .eq("id", order.id);
           stuckCount++;
           console.log(`Order ${order.id} stuck (photos=${order.photos_count}, timeout=${timeoutMin}min) → error`);
+
+          // STAGE 3.2: trigger auto-refund (fire-and-forget). The refund function
+          // re-checks eligibility (succeeded + error + 0 results) so safe to always call.
+          fetch(`${SUPABASE_URL}/functions/v1/auto-refund-order`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ orderId: order.id }),
+          })
+            .then(r => r.text().then(t => console.log(`[CLEANUP→REFUND ${order.id}] ${r.status}: ${t.slice(0, 200)}`)))
+            .catch(e => console.error(`[CLEANUP→REFUND ${order.id}] trigger failed:`, e));
         }
       }
     }
