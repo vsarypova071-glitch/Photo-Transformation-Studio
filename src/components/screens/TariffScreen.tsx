@@ -33,6 +33,20 @@ export default function TariffScreen({
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [highlightPrivacy, setHighlightPrivacy] = useState(false);
+
+  const ensurePrivacy = (): boolean => {
+    if (!acceptedPrivacy) {
+      setHighlightPrivacy(true);
+      const el = document.getElementById('privacy-consent-block');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setTimeout(() => setHighlightPrivacy(false), 1800);
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     const key = getCustomerKey();
