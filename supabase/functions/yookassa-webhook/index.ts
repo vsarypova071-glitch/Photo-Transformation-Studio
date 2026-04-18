@@ -60,7 +60,11 @@ async function generateSingle(
 }
 
 Deno.serve(async (req: Request) => {
+  // 🟢 STAGE 1.1 — самая первая строка: подтверждаем что webhook вообще вызвали
+  console.log(`[WEBHOOK] ▶ Incoming ${req.method} request from ${req.headers.get("x-forwarded-for") ?? "unknown"} at ${new Date().toISOString()}`);
+
   if (req.method === "OPTIONS") {
+    console.log("[WEBHOOK] OPTIONS preflight — returning CORS headers");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -70,11 +74,27 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const body = await req.json();
+    const rawBody = await req.text();
+    console.log(`[WEBHOOK] Raw body (${rawBody.length} bytes): ${rawBody.slice(0, 500)}`);
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (parseErr) {
+      console.error("[WEBHOOK] ❌ JSON parse failed:", parseErr);
+      return new Response("OK", { status: 200 });
+    }
+
+    const event = body?.event ?? "unknown";
     const payment = body.object;
     const orderId = payment?.metadata?.order_id;
+    const paymentId = payment?.id;
+    const paymentStatus = payment?.status;
+
+    console.log(`[WEBHOOK] event=${event} payment_id=${paymentId} status=${paymentStatus} order_id=${orderId}`);
 
     if (!orderId) {
+      console.warn("[WEBHOOK] ⚠ No order_id in metadata — ignoring");
       return new Response("OK", { status: 200 });
     }
 
