@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
     const customerKey = (url.searchParams.get("customer_key") || "").trim().toLowerCase();
 
     if (!customerKey) {
-      return new Response(JSON.stringify({ balance: 0 }), {
+      return new Response(JSON.stringify({ balance: 0, exists: false, accountId: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -28,16 +28,20 @@ Deno.serve(async (req: Request) => {
 
     const { data: account } = await supabase
       .from("credit_accounts")
-      .select("balance")
+      .select("id, balance")
       .eq("customer_key", customerKey)
-      .single();
+      .maybeSingle();
 
-    return new Response(JSON.stringify({ balance: account?.balance ?? 0 }), {
+    return new Response(JSON.stringify({
+      balance: account?.balance ?? 0,
+      exists: !!account,
+      accountId: account?.id ?? null,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
     console.error("get-balance error:", err.message);
-    return new Response(JSON.stringify({ balance: 0 }), {
+    return new Response(JSON.stringify({ balance: 0, exists: false, accountId: null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
