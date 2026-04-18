@@ -71,6 +71,8 @@ Deno.serve(async (req: Request) => {
         generationStatus: "error",
         results: order.results || [],
         photosCount: order.photos_count,
+        price: order.price,
+        paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -84,6 +86,8 @@ Deno.serve(async (req: Request) => {
         generationStatus: order.generation_status,
         results: order.results,
         photosCount: order.photos_count,
+        price: order.price,
+        paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -125,6 +129,8 @@ Deno.serve(async (req: Request) => {
             generationStatus: order.generation_status === "waiting" ? "running" : order.generation_status,
             results: order.results || [],
             photosCount: order.photos_count,
+            price: order.price,
+            paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (yooData.status === "canceled") {
@@ -151,6 +157,8 @@ Deno.serve(async (req: Request) => {
       generationStatus: order.generation_status,
       results: order.results || [],
       photosCount: order.photos_count,
+      price: order.price,
+      paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
