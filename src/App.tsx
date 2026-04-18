@@ -12,10 +12,12 @@ import StylesScreen from './components/screens/StylesScreen';
 import TariffScreen from './components/screens/TariffScreen';
 import ProcessingScreen from './components/screens/ProcessingScreen';
 import ResultsScreen from './components/screens/ResultsScreen';
+import StudioScreen from './components/screens/StudioScreen';
+import { studio } from './services/studio';
 
 const log = createLogger('App');
 
-export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
+export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results' | 'studio';
 
 interface SelectedTariff {
   id: string;
