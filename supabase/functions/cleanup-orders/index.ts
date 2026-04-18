@@ -25,16 +25,18 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+    // STAGE 1.3: pending orders now live 30 minutes (was 10) — gives user time to return from YooKassa
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
+    // Storage cleanup window: 20 min after expiry (so total ~50 min from creation)
     const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000).toISOString();
 
-    // 1. Expire pending orders older than 10 minutes
+    // 1. Expire pending orders older than 30 minutes
     const { data: expiredOrders, error: expireError } = await supabase
       .from("orders")
       .update({ payment_status: "expired", generation_status: "canceled" })
       .eq("payment_status", "pending")
       .eq("generation_status", "waiting")
-      .lt("created_at", tenMinutesAgo)
+      .lt("created_at", thirtyMinutesAgo)
       .select("id");
 
     const expiredCount = expiredOrders?.length ?? 0;
