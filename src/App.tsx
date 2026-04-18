@@ -121,6 +121,13 @@ function App() {
         const data = await response.json();
         log.info('Order status', data);
 
+        // 🟢 STAGE WALLET: оплачен пакет → кредиты начислены → ведём в Studio
+        if (data.generationStatus === 'credits_credited') {
+          clearInterval(interval);
+          await handleCreditsCredited(orderId);
+          return;
+        }
+
         // STAGE 3.2: refunded — money/credits returned, gentle message
         if (data.paymentStatus === 'refunded') {
           clearInterval(interval);
