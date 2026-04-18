@@ -284,7 +284,23 @@ export default function ResultsScreen({
         </div>
       </div>
 
-      {showSharePopup && (
+      {/* STAGE 2.1: iOS save-to-Photos hint */}
+      <div
+        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${
+          iosHint
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-3 bg-foreground text-background px-5 py-3 rounded-2xl shadow-2xl font-semibold text-xs max-w-[90vw]">
+          <span className="text-lg">📲</span>
+          <div className="leading-tight">
+            <p className="font-black mb-0.5">Сохраните фото</p>
+            <p className="opacity-80">Удерживайте картинку → «Сохранить в Фото»</p>
+          </div>
+        </div>
+      </div>
+
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-10 px-6">
           <div
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
