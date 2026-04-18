@@ -61,6 +61,13 @@ function App() {
   const [orderJob, setOrderJob] = useState<Job | null>(null);
   // STAGE 1.2 — block double clicks on payment button
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  // STAGE 2.2 — soft prompt to resume found paid order on different device / cleared cache
+  const [recentOrderPrompt, setRecentOrderPrompt] = useState<{
+    orderId: string;
+    generationStatus: string;
+    photosCount: number;
+    results: string[];
+  } | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
