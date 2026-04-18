@@ -117,6 +117,16 @@ export default function ResultsScreen({
   const allResults = (job.results || []).filter(Boolean);
   const resultImage = allResults[activeIndex] || allResults[0] || '';
 
+  // STAGE 3.1: detect partial result — fewer photos than ordered
+  const expected = job.expectedCount ?? allResults.length;
+  const missingCount = Math.max(0, expected - allResults.length);
+  const isPartial = missingCount > 0 && allResults.length > 0;
+  const refundedRub =
+    isPartial && job.paymentMethod === 'rub' && typeof job.priceRub === 'number' && job.priceRub > 0
+      ? Math.round((job.priceRub / expected) * missingCount)
+      : 0;
+  const refundedCredits = isPartial && job.paymentMethod === 'credits' ? missingCount : 0;
+
   useEffect(() => {
     if (resultImage && !popupShownRef.current) {
       popupShownRef.current = true;
