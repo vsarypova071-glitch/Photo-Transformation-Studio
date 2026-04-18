@@ -488,6 +488,8 @@ function App() {
     } catch (e: any) {
       log.error('Payment creation failed', e);
       setPaymentError(e.message || 'Ошибка создания платежа. Попробуйте снова.');
+      // STAGE 1.2 — release lock on error so user can retry
+      setIsCreatingPayment(false);
     }
   };
 
