@@ -55,33 +55,25 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   return new File([blob], filename, { type: blob.type || 'image/png' });
 }
 
-async function tryFetchFile(url: string, filename: string): Promise<File> {
-  const response = await fetch(url, { mode: 'cors' });
-  if (!response.ok) {
-    throw new Error(`Не удалось загрузить изображение: ${response.status}`);
+async function getBlobFromImageSource(src: string): Promise<Blob> {
+  const res = await fetch(src);
+  if (!res.ok) {
+    throw new Error(`Не удалось получить изображение: ${res.status}`);
   }
-
-  const blob = await response.blob();
-  return new File([blob], filename, { type: blob.type || 'image/jpeg' });
+  return await res.blob();
 }
 
-async function tryBrowserDownload(url: string, filename: string): Promise<void> {
-  const response = await fetch(url, { mode: 'cors' });
-  if (!response.ok) {
-    throw new Error(`Download failed with status ${response.status}`);
-  }
+function forceDownloadBlob(blob: Blob, filename: string) {
+  const blobUrl = URL.createObjectURL(blob);
 
-  const blob = await response.blob();
-  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 
-  const link = document.createElement('a');
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  window.URL.revokeObjectURL(blobUrl);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
 
 export default function ResultsScreen({
@@ -121,20 +113,26 @@ export default function ResultsScreen({
     setIsDownloading(true);
 
     try {
-      const finalImageUrl = withWatermark
-        ? await addWatermark(resultImage)
-        : resultImage;
-
       const fileName = withWatermark
         ? `ai-photo-${Date.now()}-watermarked.png`
         : `ai-photo-${Date.now()}.jpg`;
 
-      // 1) Телефон: пытаемся открыть системное меню "Поделиться / Сохранить"
+      let blob: Blob;
+
+      if (withWatermark) {
+        const watermarkedDataUrl = await addWatermark(resultImage);
+        const res = await fetch(watermarkedDataUrl);
+        blob = await res.blob();
+      } else {
+        blob = await getBlobFromImageSource(resultImage);
+      }
+
+      // На телефоне сначала пробуем нативное меню "Поделиться / Сохранить"
       if (navigator.share) {
         try {
-          const file = finalImageUrl.startsWith('data:')
-            ? await dataUrlToFile(finalImageUrl, fileName)
-            : await tryFetchFile(finalImageUrl, fileName);
+          const file = new File([blob], fileName, {
+            type: blob.type || (withWatermark ? 'image/png' : 'image/jpeg'),
+          });
 
           const shareData: ShareData = {
             files: [file],
@@ -144,35 +142,16 @@ export default function ResultsScreen({
 
           if (!navigator.canShare || navigator.canShare({ files: [file] })) {
             await navigator.share(shareData);
+            setIsDownloading(false);
             return;
           }
         } catch (err) {
-          console.log('Share save fallback', err);
+          console.log('Share fallback to direct download', err);
         }
       }
 
-      // 2) Компьютер: обычное скачивание файла
-      try {
-        if (finalImageUrl.startsWith('data:')) {
-          const link = document.createElement('a');
-          link.href = finalImageUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          return;
-        }
-
-        await tryBrowserDownload(finalImageUrl, fileName);
-        return;
-      } catch (err) {
-        console.log('Direct download fallback', err);
-      }
-
-      // 3) Последний запасной вариант:
-      // открыть саму картинку в новой вкладке, чтобы на телефоне можно было
-      // удержать палец и выбрать "Сохранить изображение"
-      window.open(finalImageUrl, '_blank', 'noopener,noreferrer');
+      // Обычное скачивание файла с нормальным именем
+      forceDownloadBlob(blob, fileName);
     } catch (err) {
       console.error('Download failed', err);
       alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
