@@ -351,8 +351,6 @@ function App() {
         return;
       }
 
-      const data = await response.json();
-
       if (data.generationStatus === 'done' && data.results?.length > 0) {
         const job: Job = {
           id: 'order_' + orderId,
