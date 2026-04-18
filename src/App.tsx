@@ -94,6 +94,15 @@ function App() {
         const data = await response.json();
         log.info('Order status', data);
 
+        // STAGE 3.2: refunded — money/credits returned, gentle message
+        if (data.paymentStatus === 'refunded') {
+          clearInterval(interval);
+          localStorage.removeItem('current_order_id');
+          setPaymentError('Генерация не удалась — деньги/кредиты вернули вам автоматически. Попробуйте снова.');
+          navigateTo('tariff');
+          return;
+        }
+
         // Handle canceled/expired payment
         if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
           clearInterval(interval);
@@ -273,6 +282,14 @@ function App() {
         return;
       }
 
+      // STAGE 3.2: refunded — show on tariff with friendly message
+      if (data.paymentStatus === 'refunded') {
+        localStorage.removeItem('current_order_id');
+        setPaymentError('Прошлый заказ не сгенерировался — деньги/кредиты вернули вам автоматически. Можете попробовать снова.');
+        setScreen('tariff');
+        return;
+      }
+
       if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
         localStorage.removeItem('current_order_id');
         return;
@@ -342,6 +359,14 @@ function App() {
             setCurrentJobId(job.id);
             setOrderResults(data.results);
             setScreen('results');
+            return;
+          }
+
+          // STAGE 3.2: refunded — friendly message + back to tariff
+          if (data.paymentStatus === 'refunded') {
+            localStorage.removeItem('current_order_id');
+            setPaymentError('Генерация не удалась — деньги/кредиты вернули вам автоматически. Попробуйте снова.');
+            setScreen('tariff');
             return;
           }
 
