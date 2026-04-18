@@ -55,22 +55,18 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   return new File([blob], filename, { type: blob.type || 'image/png' });
 }
 
-async function urlToFile(url: string, filename: string): Promise<File> {
+async function tryFetchFile(url: string, filename: string): Promise<File> {
   const response = await fetch(url, { mode: 'cors' });
-
   if (!response.ok) {
     throw new Error(`Не удалось загрузить изображение: ${response.status}`);
   }
 
   const blob = await response.blob();
-  const finalType = blob.type || 'image/jpeg';
-
-  return new File([blob], filename, { type: finalType });
+  return new File([blob], filename, { type: blob.type || 'image/jpeg' });
 }
 
-async function downloadBlobUrl(url: string, filename?: string): Promise<void> {
+async function tryBrowserDownload(url: string, filename: string): Promise<void> {
   const response = await fetch(url, { mode: 'cors' });
-
   if (!response.ok) {
     throw new Error(`Download failed with status ${response.status}`);
   }
@@ -80,7 +76,7 @@ async function downloadBlobUrl(url: string, filename?: string): Promise<void> {
 
   const link = document.createElement('a');
   link.href = blobUrl;
-  link.download = filename || `ai-photo-${Date.now()}.jpg`;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -133,11 +129,12 @@ export default function ResultsScreen({
         ? `ai-photo-${Date.now()}-watermarked.png`
         : `ai-photo-${Date.now()}.jpg`;
 
+      // 1) Телефон: пытаемся открыть системное меню "Поделиться / Сохранить"
       if (navigator.share) {
         try {
           const file = finalImageUrl.startsWith('data:')
             ? await dataUrlToFile(finalImageUrl, fileName)
-            : await urlToFile(finalImageUrl, fileName);
+            : await tryFetchFile(finalImageUrl, fileName);
 
           const shareData: ShareData = {
             files: [file],
@@ -149,12 +146,33 @@ export default function ResultsScreen({
             await navigator.share(shareData);
             return;
           }
-        } catch (shareErr) {
-          console.log('Share fallback to download', shareErr);
+        } catch (err) {
+          console.log('Share save fallback', err);
         }
       }
 
-      await downloadBlobUrl(finalImageUrl, fileName);
+      // 2) Компьютер: обычное скачивание файла
+      try {
+        if (finalImageUrl.startsWith('data:')) {
+          const link = document.createElement('a');
+          link.href = finalImageUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+
+        await tryBrowserDownload(finalImageUrl, fileName);
+        return;
+      } catch (err) {
+        console.log('Direct download fallback', err);
+      }
+
+      // 3) Последний запасной вариант:
+      // открыть саму картинку в новой вкладке, чтобы на телефоне можно было
+      // удержать палец и выбрать "Сохранить изображение"
+      window.open(finalImageUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
       console.error('Download failed', err);
       alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
