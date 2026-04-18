@@ -67,6 +67,8 @@ function App() {
     generationStatus: string;
     photosCount: number;
     results: string[];
+    price?: number;
+    paymentMethod?: 'rub' | 'credits';
   } | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
@@ -210,6 +212,8 @@ function App() {
             generationStatus: data.generationStatus,
             photosCount: data.photosCount,
             results: data.results || [],
+            price: data.price,
+            paymentMethod: data.paymentMethod,
           });
         }
       } catch (e) {
@@ -238,8 +242,8 @@ function App() {
         createdAt: Date.now(),
         // STAGE 3.1
         expectedCount: recentOrderPrompt.photosCount,
-        priceRub: (recentOrderPrompt as any).price,
-        paymentMethod: (recentOrderPrompt as any).paymentMethod,
+        priceRub: recentOrderPrompt.price,
+        paymentMethod: recentOrderPrompt.paymentMethod,
       };
       setOrderJob(job);
       setCurrentJobId(job.id);
