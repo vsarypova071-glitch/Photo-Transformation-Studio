@@ -75,13 +75,47 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
 
   const handleDownload = async (_withWatermark = false) => {
     if (!resultImage) return;
-    // Open the original image URL in a new tab so the user can long-press
-    // and use the native "Save image" option to save it to the gallery.
-    // No download attribute, no Blob, no canvas — just the raw image.
+
     try {
-      window.open(resultImage, '_blank', 'noopener,noreferrer');
+      const fileName = `ai-photo-${Date.now()}.png`;
+
+      // Если это base64/data:image — сразу скачиваем
+      if (resultImage.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = resultImage;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+
+      // Если это обычный URL — скачиваем через blob
+      const response = await fetch(resultImage);
+
+      if (!response.ok) {
+        throw new Error(`Не удалось загрузить изображение: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
     } catch (err) {
-      console.error('Open image failed', err);
+      console.error('Download failed:', err);
+
+      // fallback: если fetch не дал скачать, открываем саму картинку
+      // но уже не через noopener,noreferrer, чтобы не ловить белый экран в некоторых браузерах
+      window.open(resultImage, '_blank');
     }
   };
 
