@@ -86,7 +86,14 @@ Deno.serve(async (req: Request) => {
     // === IDEMPOTENCY GUARD ===
     // For credit-paid orders we use credit_transactions.idempotency_key.
     // For YooKassa we set payment_status='refunded' atomically AFTER refund.
-    const refundKey = `refund_${orderId}`;
+    // Partial refunds use a different key so they don't collide with full refunds.
+    const refundKey = isPartial ? `refund_${orderId}_partial` : `refund_${orderId}`;
+
+    // Refund amount: partial = pro-rata, full = whole price/photos_count
+    const creditAmount = isPartial ? missingCount : order.photos_count;
+    const moneyAmount = isPartial
+      ? Math.round((Number(order.price) / order.photos_count) * missingCount * 100) / 100
+      : Number(order.price);
 
     // === PATH A: CREDIT REFUND ===
     if (order.payment_id && order.payment_id.startsWith("credits_")) {
@@ -118,7 +125,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (existingTx) {
-        console.log(`[REFUND] Credit refund ${refundKey} already exists — only flipping status`);
+        console.log(`[REFUND${isPartial ? " PARTIAL" : ""}] Credit refund ${refundKey} already exists — skipping`);
       } else {
         // Insert refund transaction
         const { error: txErr } = await supabase
@@ -126,10 +133,12 @@ Deno.serve(async (req: Request) => {
           .insert({
             account_id: account.id,
             order_id: orderId,
-            type: "refund",
-            amount: order.photos_count,
+            type: isPartial ? "refund_partial" : "refund",
+            amount: creditAmount,
             idempotency_key: refundKey,
-            description: `Возврат кредитов за неуспешную генерацию заказа ${orderId}`,
+            description: isPartial
+              ? `Частичный возврат ${creditAmount} кредитов за недостающие фото в заказе ${orderId}`
+              : `Возврат кредитов за неуспешную генерацию заказа ${orderId}`,
           });
 
         if (txErr) {
@@ -143,7 +152,7 @@ Deno.serve(async (req: Request) => {
         } else {
           // Atomic balance refund
           const { data: newBal, error: refErr } = await supabase
-            .rpc("refund_balance", { p_account_id: account.id, p_amount: order.photos_count });
+            .rpc("refund_balance", { p_account_id: account.id, p_amount: creditAmount });
 
           if (refErr || newBal === -1) {
             console.error(`[REFUND] refund_balance RPC failed:`, refErr);
@@ -153,20 +162,24 @@ Deno.serve(async (req: Request) => {
               status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
-          console.log(`[REFUND] Credits refunded for ${orderId}: +${order.photos_count}, new balance=${newBal}`);
+          console.log(`[REFUND${isPartial ? " PARTIAL" : ""}] Credits refunded for ${orderId}: +${creditAmount}, new balance=${newBal}`);
         }
       }
 
-      await supabase
-        .from("orders")
-        .update({ payment_status: "refunded" })
-        .eq("id", orderId)
-        .neq("payment_status", "refunded");
+      // Only mark as 'refunded' on FULL refund. Partial keeps 'succeeded' since order delivered something.
+      if (!isPartial) {
+        await supabase
+          .from("orders")
+          .update({ payment_status: "refunded" })
+          .eq("id", orderId)
+          .neq("payment_status", "refunded");
+      }
 
       return new Response(JSON.stringify({
         ok: true,
         method: "credits",
-        amountRefunded: order.photos_count,
+        partial: isPartial,
+        amountRefunded: creditAmount,
       }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -188,15 +201,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // YooKassa Refund API
-    // Idempotence-Key — same per order so retries don't duplicate refunds.
+    // Idempotence-Key — unique per (order, partial-or-full) so retries don't duplicate refunds.
     const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
     const refundBody = {
       payment_id: order.payment_id,
       amount: {
-        value: Number(order.price).toFixed(2),
+        value: moneyAmount.toFixed(2),
         currency: "RUB",
       },
-      description: `Автовозврат за неуспешную генерацию заказа ${orderId}`,
+      description: isPartial
+        ? `Частичный возврат за ${missingCount} недостающих фото в заказе ${orderId}`
+        : `Автовозврат за неуспешную генерацию заказа ${orderId}`,
     };
 
     const yooRes = await fetch("https://api.yookassa.ru/v3/refunds", {
@@ -223,21 +238,25 @@ Deno.serve(async (req: Request) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.log(`[REFUND] YooKassa says already refunded — flipping status`);
+      console.log(`[REFUND] YooKassa says already refunded — continuing`);
     } else {
-      console.log(`[REFUND] YooKassa refund OK for ${orderId}: refund_id=${yooData.id} status=${yooData.status}`);
+      console.log(`[REFUND${isPartial ? " PARTIAL" : ""}] YooKassa refund OK for ${orderId}: refund_id=${yooData.id} status=${yooData.status} amount=${moneyAmount}`);
     }
 
-    await supabase
-      .from("orders")
-      .update({ payment_status: "refunded" })
-      .eq("id", orderId)
-      .neq("payment_status", "refunded");
+    // Only flip to 'refunded' on FULL refund. Partial keeps 'succeeded'.
+    if (!isPartial) {
+      await supabase
+        .from("orders")
+        .update({ payment_status: "refunded" })
+        .eq("id", orderId)
+        .neq("payment_status", "refunded");
+    }
 
     return new Response(JSON.stringify({
       ok: true,
       method: "yookassa",
-      amountRefunded: order.price,
+      partial: isPartial,
+      amountRefunded: moneyAmount,
       refundId: yooData?.id ?? null,
     }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
