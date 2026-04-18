@@ -204,7 +204,7 @@ function App() {
 
     // Stop polling after 10 minutes
     setTimeout(() => clearInterval(interval), 600000);
-  }, [selectedStyles, isFullBody, uploadedImage]);
+  }, [selectedStyles, isFullBody, uploadedImage, handleCreditsCredited]);
 
   // Restore order from localStorage on mount
   useEffect(() => {
@@ -343,6 +343,14 @@ function App() {
           },
         }
       );
+      const data = await response.json();
+
+      // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
+      if (data.generationStatus === 'credits_credited') {
+        await handleCreditsCredited(orderId);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.generationStatus === 'done' && data.results?.length > 0) {
