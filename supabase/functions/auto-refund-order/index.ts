@@ -8,11 +8,14 @@ const corsHeaders = {
 
 // STAGE 3.2: Idempotent auto-refund for failed generations.
 // Triggered when an order ends in: payment_status='succeeded'
-// + generation_status='error' + results.length === 0.
+// + generation_status='error' + results.length === 0 (full refund).
+// STAGE 3.1: also called for partial success (done + results < photos_count)
+// with { partial: true, missingCount } — refunds only for missing photos.
 // Two refund paths:
 //   - Credit-paid orders (payment_id starts with 'credits_'): refund_balance RPC
 //   - YooKassa-paid orders: YooKassa Refund API
-// On success the order's payment_status becomes 'refunded'.
+// On full refund the order's payment_status becomes 'refunded'.
+// On partial refund payment_status stays 'succeeded' (order is partially fulfilled).
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
