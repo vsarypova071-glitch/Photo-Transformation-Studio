@@ -23,7 +23,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody } = await req.json();
+    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey } = await req.json();
 
     if (!tariffId || !price || !photosCount || !userSessionId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -31,17 +31,83 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Credits required per tariff
-    const CREDITS_REQUIRED: Record<string, number> = {
-      basic: 5,
-      standard: 15,
-      premium: 50,
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // === CHECK 0: SAFEGUARD — reuse last paid order (any status) within 24h instead of charging again ===
+    if (customerKey) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: existingPaidOrder } = await supabaseAdmin
+        .from("orders")
+        .select("id, payment_status, generation_status, results, photos_count, tariff_id, created_at")
+        .eq("customer_key", customerKey)
+        .eq("payment_status", "succeeded")
+        .in("generation_status", ["waiting", "running", "error", "done"])
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPaidOrder) {
+        // For 'done' orders: only reuse if results actually exist (otherwise fall through and let user pay again)
+        const hasResults = Array.isArray(existingPaidOrder.results) && existingPaidOrder.results.length > 0;
+        const shouldReuse = existingPaidOrder.generation_status !== "done" || hasResults;
+
+        if (shouldReuse) {
+          console.log(`[SAFEGUARD] Customer ${customerKey} has paid order ${existingPaidOrder.id} (gen=${existingPaidOrder.generation_status}, results=${existingPaidOrder.results?.length ?? 0}). Returning existingOrder.`);
+          return new Response(JSON.stringify({
+            existingOrder: true,
+            orderId: existingPaidOrder.id,
+            generationStatus: existingPaidOrder.generation_status,
+            paymentStatus: existingPaidOrder.payment_status,
+            photosCount: existingPaidOrder.photos_count,
+            results: existingPaidOrder.results || [],
+            message: "У вас уже есть оплаченный заказ. Возвращаем к нему.",
+          }), {
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } else {
+          console.log(`[SAFEGUARD] Order ${existingPaidOrder.id} is 'done' but has no results — allowing new payment.`);
+        }
+      }
+    }
+
+    // === CHECK 1: Load check — count active orders (waiting/processing) ===
+    const LOAD_LIMITS: Record<string, number> = {
+      basic: 50,
+      standard: 25,
+      premium: 10,
     };
+    const maxActive = LOAD_LIMITS[tariffId] ?? 10;
 
-    const requiredCredits = CREDITS_REQUIRED[tariffId] ?? 5;
+    const { count: activeCount, error: countError } = await supabaseAdmin
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("generation_status", "running")
+      .eq("payment_status", "succeeded");
 
-    // Check AI balance with a lightweight test request
+    if (countError) {
+      console.error("Load check query error:", countError);
+      return new Response(JSON.stringify({ error: "Сервис временно недоступен" }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const currentLoad = activeCount ?? 0;
+    console.log(`Load check: ${currentLoad} active orders, limit for ${tariffId}: ${maxActive}`);
+
+    if (currentLoad >= maxActive) {
+      console.log(`Load limit exceeded for ${tariffId}: ${currentLoad}/${maxActive}`);
+      return new Response(JSON.stringify({
+        error: "Сервис временно перегружен, попробуйте через несколько минут"
+      }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // === CHECK 2: AI balance check ===
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    let aiCheckPassed = false;
+
     if (LOVABLE_API_KEY) {
       try {
         const testResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -58,22 +124,35 @@ Deno.serve(async (req: Request) => {
         });
 
         if (testResponse.status === 402) {
-          console.log(`AI balance insufficient for tariff ${tariffId} (needs ${requiredCredits} credits)`);
-          return new Response(JSON.stringify({ 
-            error: "Временно нет доступных ресурсов, попробуйте позже" 
+          console.log(`AI balance insufficient for tariff ${tariffId}`);
+          return new Response(JSON.stringify({
+            error: "Временно нет доступных ресурсов, попробуйте позже"
           }), {
             status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+
+        aiCheckPassed = testResponse.ok;
       } catch (aiErr: any) {
-        console.error("AI balance check failed:", aiErr.message);
-        // Allow payment to proceed if check itself fails
+        console.error("AI balance check network error:", aiErr.message);
+        aiCheckPassed = false;
       }
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    // If AI check failed (network/timeout) — block premium, allow basic
+    if (!aiCheckPassed) {
+      if (tariffId === "premium") {
+        console.log("AI check failed, blocking premium tariff");
+        return new Response(JSON.stringify({
+          error: "Временно нет доступных ресурсов, попробуйте позже"
+        }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.warn(`AI check did not pass for ${tariffId}, allowing with caution`);
+    }
 
-    // Create order in DB
+    // === CREATE ORDER ===
     const supabase = supabaseAdmin;
     
     const { data: order, error: orderError } = await supabase
@@ -89,6 +168,7 @@ Deno.serve(async (req: Request) => {
         is_full_body: isFullBody || false,
         payment_status: "pending",
         generation_status: "waiting",
+        customer_key: customerKey || null,
       })
       .select("id")
       .single();
@@ -139,6 +219,7 @@ Deno.serve(async (req: Request) => {
         order_id: orderId,
         tariff_id: tariffId,
         photos_count: String(photosCount),
+        customer_key: customerKey || "",
       },
     };
 

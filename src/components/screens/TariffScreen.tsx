@@ -1,76 +1,93 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Tariff {
   id: string;
   name: string;
-
   photos: number;
   price: number;
   popular?: boolean;
 }
 
-const PAYMENT_LINKS: Record<string, string> = {
-  basic: "https://yookassa.ru/my/i/adR9U0ePx7nf/l",
-  standard: "https://yookassa.ru/my/i/adR-45UFhkQJ/l",
-  premium: "https://yookassa.ru/my/i/adR_aYlPs-Gd/l",
-};
-
 const TARIFFS: Tariff[] = [
-{ id: "basic", name: "Базовый", photos: 5, price: 479 },
-{ id: "standard", name: "Стандарт", photos: 15, price: 1299, popular: true },
-{ id: "premium", name: "Премиум", photos: 50, price: 2999 }];
-
+  { id: "basic", name: "Базовый", photos: 5, price: 479 },
+  { id: "standard", name: "Стандарт", photos: 15, price: 1299, popular: true },
+  { id: "premium", name: "Премиум", photos: 50, price: 2999 },
+];
 
 interface TariffScreenProps {
   onSelectTariff: (tariff: Tariff) => void;
+  onPayWithCredits: (tariff: Tariff) => void;
   onBack: () => void;
   paymentError?: string | null;
 }
 
+function getCustomerKey(): string | null {
+  return localStorage.getItem('customer_key');
+}
+
 export default function TariffScreen({
   onSelectTariff,
+  onPayWithCredits,
   onBack,
-  paymentError
+  paymentError,
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const key = getCustomerKey();
+    if (!key) return;
+    fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-balance?customer_key=${encodeURIComponent(key)}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      }
+    )
+      .then(r => r.json())
+      .then(d => setCreditBalance(d.balance ?? 0))
+      .catch(() => {});
+  }, []);
 
   const privacyUrl =
-  "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
+    "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
 
   return (
     <section className="min-h-screen px-4 py-6 pt-20">
-      {/* Назад */}
       <button
         onClick={onBack}
         className="flex items-center gap-2 transition-colors mb-6 text-slate-200">
-        
         ← Назад
       </button>
 
-      {/* Заголовок */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">Выберите тариф</h2>
-        <p className="text-sm text-slate-200">
+        <p className="text-sm text-muted-foreground">
           Выберите количество фотографий для генерации
         </p>
+        {creditBalance !== null && creditBalance > 0 && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            💎 Баланс: {creditBalance} кредитов
+          </div>
+        )}
       </div>
 
-      {/* Ошибка оплаты */}
       {paymentError && (
         <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 text-center">
           {paymentError}
         </div>
       )}
 
-      {/* Галочка согласия */}
       <div className="mb-6 rounded-2xl border border-border bg-card p-4">
         <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4"
             checked={acceptedPrivacy}
-            onChange={(e) => setAcceptedPrivacy(e.target.checked)} />
-          
+            onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+          />
           <span className="text-muted-foreground">
             Я соглашаюсь с{" "}
             <a
@@ -94,7 +111,6 @@ export default function TariffScreen({
         </label>
       </div>
 
-      {/* Стоимость услуг */}
       <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
         <p className="font-semibold text-foreground mb-2">Стоимость услуг:</p>
         <p>Базовый пакет — 479 ₽ (5 фотографий)</p>
@@ -103,47 +119,30 @@ export default function TariffScreen({
         <p className="mt-2">Оплата производится онлайн на сайте.</p>
       </div>
 
-      {/* Карточки тарифов */}
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
           const disabled = !acceptedPrivacy;
+          const canPayWithCredits = creditBalance !== null && creditBalance >= tariff.photos;
 
           return (
-            <button
+            <div
               key={tariff.id}
-              onClick={() => {
-                onSelectTariff(tariff);
-              }}
-              disabled={disabled}
               className={`w-full p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden
-                ${
-              tariff.popular ?
-              "border-primary bg-primary/5 shadow-lg shadow-primary/20" :
-              "border-border bg-card"}
-                ${
-
-              disabled ?
-              "opacity-50 cursor-not-allowed" :
-              "hover:border-primary/50"}
-              `
-              }>
-              
-              {tariff.popular &&
-              <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300">
+                ${tariff.popular
+                  ? "border-primary bg-primary/5 shadow-lg shadow-primary/20"
+                  : "border-border bg-card"}
+              `}>
+              {tariff.popular && (
+                <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300">
                   Популярный
                 </div>
-              }
+              )}
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-lg mb-1">
-                    {tariff.name}
-                  </h3>
-                  <p className="text-sm text-slate-50">
-                    {tariff.photos} фото
-                  </p>
+                  <h3 className="font-bold text-lg mb-1">{tariff.name}</h3>
+                  <p className="text-sm text-slate-50">{tariff.photos} фото</p>
                 </div>
-
                 <div className="text-right">
                   <div className="text-2xl font-black text-slate-50">
                     {tariff.price.toLocaleString("ru-RU")} ₽
@@ -162,8 +161,33 @@ export default function TariffScreen({
                   {tariff.photos >= 50 && <span>✔ Приоритет</span>}
                 </div>
               </div>
-            </button>);
 
+              <div className="mt-4 flex gap-2">
+                {canPayWithCredits && (
+                  <button
+                    onClick={() => onPayWithCredits(tariff)}
+                    disabled={disabled}
+                    className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
+                      ${disabled
+                        ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+                        : "bg-emerald-600 hover:bg-emerald-500 text-white"}
+                    `}>
+                    💎 Оплатить кредитами ({tariff.photos})
+                  </button>
+                )}
+                <button
+                  onClick={() => onSelectTariff(tariff)}
+                  disabled={disabled}
+                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
+                    ${disabled
+                      ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"}
+                  `}>
+                  💳 Оплатить {tariff.price.toLocaleString("ru-RU")} ₽
+                </button>
+              </div>
+            </div>
+          );
         })}
       </div>
 
@@ -175,6 +199,6 @@ export default function TariffScreen({
         на основе загруженного изображения и выбранного стиля.<br />
         Результаты предоставляются в цифровом виде.
       </p>
-    </section>);
-
+    </section>
+  );
 }

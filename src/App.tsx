@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
-import { StyleCategory } from './types';
+import { StyleCategory, Job } from './types';
 import { createLogger } from './utils/logger';
 import { supabase } from './integrations/supabase/client';
 
@@ -33,6 +33,15 @@ function getSessionId(): string {
   return id;
 }
 
+function getCustomerKey(): string {
+  let key = localStorage.getItem('customer_key');
+  if (!key) {
+    key = 'cust_' + crypto.randomUUID();
+    localStorage.setItem('customer_key', key);
+  }
+  return key;
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
   const [uploadedImage, setUploadedImage] = useState('');
@@ -45,7 +54,11 @@ function App() {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [orderResults, setOrderResults] = useState<string[]>([]);
+  // Store order-based job directly (not from sessionStorage)
+  const [orderJob, setOrderJob] = useState<Job | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -56,7 +69,9 @@ function App() {
   // Poll order status after payment
   const pollOrderStatus = useCallback((orderId: string) => {
     log.info('Polling order', { orderId });
+    let pollCount = 0;
     const interval = setInterval(async () => {
+      pollCount++;
       try {
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
@@ -70,38 +85,59 @@ function App() {
         const data = await response.json();
         log.info('Order status', data);
 
-        if (data.paymentStatus === 'canceled') {
+        // Handle canceled/expired payment
+        if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
           clearInterval(interval);
-          setPaymentError('Оплата не подтверждена. Попробуйте снова.');
+          localStorage.removeItem('current_order_id');
+          setPaymentError('Оплата не прошла. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
 
+        // CRITICAL: paid order with generation error → DO NOT redirect to payment!
+        // Show processing screen with retry button instead.
+        if (data.generationStatus === 'error' && data.paymentStatus === 'succeeded') {
+          clearInterval(interval);
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+          // stay on processing screen
+          return;
+        }
+
+        // Non-paid generation error/canceled
+        if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+          clearInterval(interval);
+          localStorage.removeItem('current_order_id');
+          setPaymentError('Ошибка генерации. Попробуйте снова.');
+          navigateTo('tariff');
+          return;
+        }
+
+        // Handle done with results
         if (data.generationStatus === 'done' && data.results?.length > 0) {
           clearInterval(interval);
           setOrderResults(data.results);
 
-          // Save as job for ResultsScreen compatibility
-          const jobId = 'order_' + orderId;
-          const job = {
-            id: jobId,
+          // Create job object directly — no sessionStorage
+          const job: Job = {
+            id: 'order_' + orderId,
             userId: getSessionId(),
-            status: 'done' as const,
+            status: 'done',
             styleIds: selectedStyles,
             isFullBody,
             originalImage: uploadedImage,
             results: data.results,
             createdAt: Date.now(),
           };
-          sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([job]));
-          setCurrentJobId(jobId);
+          setOrderJob(job);
+          setCurrentJobId(job.id);
           navigateTo('results');
           return;
         }
 
-        if (data.generationStatus === 'error') {
+        // If still pending after 60 polls (3 min), something is wrong
+        if (data.paymentStatus === 'pending' && pollCount > 60) {
           clearInterval(interval);
-          setPaymentError('Ошибка генерации. Попробуйте снова.');
+          setPaymentError('Оплата не подтверждена. Попробуйте снова.');
           navigateTo('tariff');
           return;
         }
@@ -114,18 +150,224 @@ function App() {
     setTimeout(() => clearInterval(interval), 600000);
   }, [selectedStyles, isFullBody, uploadedImage]);
 
+  // Restore order from localStorage on mount
+  useEffect(() => {
+    const savedOrderId = localStorage.getItem('current_order_id');
+    if (savedOrderId && !currentOrderId) {
+      log.info('Restoring order from localStorage', { orderId: savedOrderId });
+      setCurrentOrderId(savedOrderId);
+      restoreOrder(savedOrderId);
+    }
+  }, []);
+
+  const restoreOrder = async (orderId: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (data.generationStatus === 'done' && data.results?.length > 0) {
+        const job: Job = {
+          id: 'order_' + orderId,
+          userId: getSessionId(),
+          status: 'done',
+          styleIds: [],
+          isFullBody: false,
+          originalImage: '',
+          results: data.results,
+          createdAt: Date.now(),
+        };
+        setOrderJob(job);
+        setCurrentJobId(job.id);
+        setOrderResults(data.results);
+        setScreen('results');
+        return;
+      }
+
+      if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
+        localStorage.removeItem('current_order_id');
+        return;
+      }
+
+      // CRITICAL: paid + error → keep order, show processing with retry. Do NOT clear localStorage.
+      if (data.paymentStatus === 'succeeded' && data.generationStatus === 'error') {
+        setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+        setScreen('processing');
+        return;
+      }
+
+      // Unpaid generation error
+      if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+        localStorage.removeItem('current_order_id');
+        return;
+      }
+
+      // Still running — show processing
+      if (data.paymentStatus === 'succeeded' && (data.generationStatus === 'running' || data.generationStatus === 'waiting')) {
+        setScreen('processing');
+        pollOrderStatus(orderId);
+      }
+    } catch (e) {
+      log.error('Restore order failed', e);
+    }
+  };
+
   // Check URL for returning from payment
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('order_id');
     if (orderId) {
-      setCurrentOrderId(orderId);
-      setScreen('processing');
-      pollOrderStatus(orderId);
-      // Clean URL
+      // Clean URL immediately
       window.history.replaceState({}, '', window.location.pathname);
+      setCurrentOrderId(orderId);
+      // Save to localStorage for persistence
+      localStorage.setItem('current_order_id', orderId);
+
+      // First check order status before showing processing
+      (async () => {
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+            }
+          );
+          const data = await response.json();
+
+          // Already done — show results directly
+          if (data.generationStatus === 'done' && data.results?.length > 0) {
+            const job: Job = {
+              id: 'order_' + orderId,
+              userId: getSessionId(),
+              status: 'done',
+              styleIds: [],
+              isFullBody: false,
+              originalImage: '',
+              results: data.results,
+              createdAt: Date.now(),
+            };
+            setOrderJob(job);
+            setCurrentJobId(job.id);
+            setOrderResults(data.results);
+            setScreen('results');
+            return;
+          }
+
+          // Canceled or expired — back to tariff
+          if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
+            localStorage.removeItem('current_order_id');
+            setPaymentError('Оплата не прошла. Попробуйте снова.');
+            setScreen('tariff');
+            return;
+          }
+
+          // CRITICAL: paid + error → keep order, show processing + retry. NEVER redirect to payment.
+          if (data.paymentStatus === 'succeeded' && data.generationStatus === 'error') {
+            setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+            setScreen('processing');
+            return;
+          }
+
+          // Unpaid generation error
+          if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
+            localStorage.removeItem('current_order_id');
+            setPaymentError('Ошибка генерации. Попробуйте снова.');
+            setScreen('tariff');
+            return;
+          }
+
+          // Still processing or pending — show processing and poll
+          setScreen('processing');
+          pollOrderStatus(orderId);
+        } catch (e) {
+          log.error('Initial order check failed', e);
+          setScreen('processing');
+          pollOrderStatus(orderId);
+        }
+      })();
     }
   }, [pollOrderStatus]);
+
+  const handlePayWithCredits = async (tariff: SelectedTariff) => {
+    setSelectedTariff(tariff);
+    setPaymentError(null);
+    log.info('Paying with credits', { tariff: tariff.name, photos: tariff.photos });
+
+    try {
+      const sessionId = getSessionId();
+      const fileName = `${sessionId}/${Date.now()}.jpg`;
+
+      const base64Data = uploadedImage.replace(/^data:image\/\w+;base64,/, '');
+      const byteCharacters = atob(base64Data);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+      const { error: uploadError } = await supabase.storage
+        .from('user-photos')
+        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('user-photos')
+        .getPublicUrl(fileName);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pay-with-credits`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            tariffId: tariff.id,
+            price: tariff.price,
+            photosCount: tariff.photos,
+            userSessionId: sessionId,
+            styleIds: selectedStyles,
+            originalImageUrl: urlData.publicUrl,
+            customPrompt: '',
+            isFullBody,
+            customerKey: getCustomerKey(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error(`Недостаточно кредитов. Баланс: ${data.balance}, нужно: ${data.required}`);
+        }
+        throw new Error(data.error || 'Ошибка оплаты кредитами');
+      }
+
+      setCurrentOrderId(data.orderId);
+      localStorage.setItem('current_order_id', data.orderId);
+      navigateTo('processing');
+      pollOrderStatus(data.orderId);
+    } catch (e: any) {
+      log.error('Credit payment failed', e);
+      setPaymentError(e.message || 'Ошибка оплаты кредитами');
+    }
+  };
 
   const handleSelectTariff = async (tariff: SelectedTariff) => {
     setSelectedTariff(tariff);
@@ -133,7 +375,6 @@ function App() {
     log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
 
     try {
-      // 1. Upload image to storage instead of sending base64
       const sessionId = getSessionId();
       const fileName = `${sessionId}/${Date.now()}.jpg`;
       
@@ -161,7 +402,6 @@ function App() {
       const imageStoragePath = urlData.publicUrl;
       log.info('Image uploaded to storage', { path: fileName });
 
-      // 2. Create payment with storage path instead of base64
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
         {
@@ -180,20 +420,62 @@ function App() {
             originalImageUrl: imageStoragePath,
             customPrompt: '',
             isFullBody,
+            customerKey: getCustomerKey(),
           }),
         }
       );
 
       const data = await response.json();
 
+      // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
+      if (data.existingOrder && data.orderId) {
+        log.info('Existing paid order detected', { orderId: data.orderId, generationStatus: data.generationStatus, results: data.results?.length });
+        setCurrentOrderId(data.orderId);
+        localStorage.setItem('current_order_id', data.orderId);
+        setPaymentError(null);
+
+        // Already finished — go straight to results
+        if (data.generationStatus === 'done' && data.results?.length > 0) {
+          setOrderResults(data.results);
+          const job: Job = {
+            id: 'order_' + data.orderId,
+            userId: getSessionId(),
+            status: 'done',
+            styleIds: selectedStyles,
+            isFullBody,
+            originalImage: uploadedImage,
+            results: data.results,
+            createdAt: Date.now(),
+          };
+          setOrderJob(job);
+          setCurrentJobId(job.id);
+          navigateTo('results');
+          return;
+        }
+
+        // Failed generation — show retry UI on processing screen
+        if (data.generationStatus === 'error') {
+          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+          navigateTo('processing');
+          return;
+        }
+
+        // Still running/waiting — show processing and poll
+        navigateTo('processing');
+        pollOrderStatus(data.orderId);
+        return;
+      }
+
       if (!response.ok || !data.paymentUrl) {
         if (response.status === 503) {
-          throw new Error('Сервис временно перегружен. Попробуйте через несколько минут.');
+          throw new Error(data.error || 'Сервис временно перегружен. Попробуйте через несколько минут.');
         }
         throw new Error(data.error || 'Ошибка создания платежа');
       }
 
       setCurrentOrderId(data.orderId);
+      // Save order_id to localStorage before redirect
+      localStorage.setItem('current_order_id', data.orderId);
       window.location.href = data.paymentUrl;
     } catch (e: any) {
       log.error('Payment creation failed', e);
@@ -242,12 +524,13 @@ function App() {
   };
 
   const handleRefine = async (prompt: string) => {
-    const job = backend.getJobs().find(j => j.id === currentJobId);
+    const job = currentJob;
     if (job && job.results[0]) {
       navigateTo('processing');
       try {
         const newJob = await backend.refineJob(job.results[0], prompt);
         setCurrentJobId(newJob.id);
+        setOrderJob(null); // Clear order job, now using backend job
         pollJob(newJob.id);
       } catch (e: any) {
         log.error('Refine failed', e);
@@ -258,7 +541,7 @@ function App() {
   };
 
   const handleFullBody = async () => {
-    const job = backend.getJobs().find(j => j.id === currentJobId);
+    const job = currentJob;
     if (!job || !job.results[0]) {
       alert("Нет исходного изображения для генерации.");
       return;
@@ -270,6 +553,7 @@ function App() {
         "Extend this specific portrait to a full-length standing shot, showing the person from head to toe including matching high-end shoes, maintaining exactly the same style and face."
       );
       setCurrentJobId(newJob.id);
+      setOrderJob(null);
       pollJob(newJob.id);
     } catch (e: any) {
       log.error('Full body failed', e);
@@ -278,16 +562,70 @@ function App() {
     }
   };
 
+  const handleRetryGeneration = async () => {
+    if (!currentOrderId) return;
+    setRetrying(true);
+    setProcessingError(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ orderId: currentOrderId, customerKey: getCustomerKey() }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось перезапустить генерацию');
+      }
+      if (data.alreadyDone && data.results?.length) {
+        setOrderResults(data.results);
+        const job: Job = {
+          id: 'order_' + currentOrderId, userId: getSessionId(), status: 'done',
+          styleIds: selectedStyles, isFullBody, originalImage: uploadedImage,
+          results: data.results, createdAt: Date.now(),
+        };
+        setOrderJob(job);
+        setCurrentJobId(job.id);
+        navigateTo('results');
+      } else {
+        // Resume polling
+        pollOrderStatus(currentOrderId);
+      }
+    } catch (e: any) {
+      log.error('Retry generation failed', e);
+      setProcessingError('Не удалось перезапустить: ' + (e?.message || ''));
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleAbandonOrder = () => {
+    setCurrentOrderId(null);
+    setProcessingError(null);
+    localStorage.removeItem('current_order_id');
+    navigateTo('tariff');
+  };
+
   const handleNewPhoto = () => {
+    setProcessingError(null);
     setUploadedImage('');
     setSelectedStyles([]);
     setSelectedTariff(null);
     setCurrentOrderId(null);
     setOrderResults([]);
+    setOrderJob(null);
+    localStorage.removeItem('current_order_id');
     navigateTo('upload');
   };
 
-  const currentJob = backend.getJobs().find(j => j.id === currentJobId);
+  // Resolve current job: prefer orderJob (from DB), fallback to backend sessionStorage jobs
+  const currentJob: Job | undefined = orderJob || backend.getJobs().find(j => j.id === currentJobId);
 
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
@@ -361,19 +699,18 @@ function App() {
                   throw new Error(data?.error || 'Ошибка генерации');
                 }
 
-                const testJobId = 'test_' + Date.now();
-                const testJob = {
-                  id: testJobId,
+                const testJob: Job = {
+                  id: 'test_' + Date.now(),
                   userId: 'test',
-                  status: 'done' as const,
+                  status: 'done',
                   styleIds: selectedStyles,
                   isFullBody,
                   originalImage: uploadedImage,
                   results: [data.imageUrl],
                   createdAt: Date.now(),
                 };
-                sessionStorage.setItem('ai_studio_jobs_data', JSON.stringify([testJob]));
-                setCurrentJobId(testJobId);
+                setOrderJob(testJob);
+                setCurrentJobId(testJob.id);
                 navigateTo('results');
               } catch (e: any) {
                 log.error('Test generation failed', e);
@@ -387,12 +724,20 @@ function App() {
         {screen === 'tariff' && (
           <TariffScreen
             onSelectTariff={handleSelectTariff}
+            onPayWithCredits={handlePayWithCredits}
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
           />
         )}
         
-        {screen === 'processing' && <ProcessingScreen />}
+        {screen === 'processing' && (
+          <ProcessingScreen
+            errorMessage={processingError}
+            retrying={retrying}
+            onRetry={handleRetryGeneration}
+            onAbandon={handleAbandonOrder}
+          />
+        )}
         
         {screen === 'results' && currentJob && (
           <ResultsScreen
