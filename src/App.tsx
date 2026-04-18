@@ -434,6 +434,12 @@ function App() {
           );
           const data = await response.json();
 
+          // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
+          if (data.generationStatus === 'credits_credited') {
+            await handleCreditsCredited(orderId);
+            return;
+          }
+
           // Already done — show results directly
           if (data.generationStatus === 'done' && data.results?.length > 0) {
             const job: Job = {
