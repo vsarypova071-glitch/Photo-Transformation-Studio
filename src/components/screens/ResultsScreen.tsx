@@ -52,10 +52,23 @@ async function addWatermark(imageSrc: string): Promise<string> {
 async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   const res = await fetch(dataUrl);
   const blob = await res.blob();
-  return new File([blob], filename, { type: 'image/png' });
+  return new File([blob], filename, { type: blob.type || 'image/png' });
 }
 
-async function downloadImage(url: string, filename?: string): Promise<void> {
+async function urlToFile(url: string, filename: string): Promise<File> {
+  const response = await fetch(url, { mode: 'cors' });
+
+  if (!response.ok) {
+    throw new Error(`Не удалось загрузить изображение: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const finalType = blob.type || 'image/jpeg';
+
+  return new File([blob], filename, { type: finalType });
+}
+
+async function downloadBlobUrl(url: string, filename?: string): Promise<void> {
   const response = await fetch(url, { mode: 'cors' });
 
   if (!response.ok) {
@@ -95,8 +108,8 @@ export default function ResultsScreen({
   const [activeIndex, setActiveIndex] = useState(0);
   const popupShownRef = useRef(false);
 
-  const allResults = job.results.filter(Boolean);
-  const resultImage = allResults[activeIndex] || allResults[0];
+  const allResults = (job.results || []).filter(Boolean);
+  const resultImage = allResults[activeIndex] || allResults[0] || '';
 
   useEffect(() => {
     if (resultImage && !popupShownRef.current) {
@@ -112,15 +125,39 @@ export default function ResultsScreen({
     setIsDownloading(true);
 
     try {
-      if (withWatermark) {
-        const watermarked = await addWatermark(resultImage);
-        await downloadImage(watermarked, `ai-photo-watermarked-${Date.now()}.png`);
-      } else {
-        await downloadImage(resultImage, `ai-photo-${Date.now()}.jpg`);
+      const finalImageUrl = withWatermark
+        ? await addWatermark(resultImage)
+        : resultImage;
+
+      const fileName = withWatermark
+        ? `ai-photo-${Date.now()}-watermarked.png`
+        : `ai-photo-${Date.now()}.jpg`;
+
+      if (navigator.share) {
+        try {
+          const file = finalImageUrl.startsWith('data:')
+            ? await dataUrlToFile(finalImageUrl, fileName)
+            : await urlToFile(finalImageUrl, fileName);
+
+          const shareData: ShareData = {
+            files: [file],
+            title: 'AI Photo Studio',
+            text: 'Сохранить фото',
+          };
+
+          if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+            await navigator.share(shareData);
+            return;
+          }
+        } catch (shareErr) {
+          console.log('Share fallback to download', shareErr);
+        }
       }
+
+      await downloadBlobUrl(finalImageUrl, fileName);
     } catch (err) {
       console.error('Download failed', err);
-      alert('Не удалось скачать изображение. Попробуйте ещё раз.');
+      alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
     } finally {
       setIsDownloading(false);
     }
@@ -343,7 +380,7 @@ export default function ResultsScreen({
               Это художественная интерпретация AI.
             </span>{' '}
             Черты лица могут незначительно отличаться от оригинала — выберите
-            лучший вариант из {allResults.length > 1 ? allResults.length + ' ' : ''}
+            лучший вариант из {allResults.length > 1 ? `${allResults.length} ` : ''}
             результата{allResults.length > 1 ? 'ов' : 'а'}.
           </p>
         </div>
