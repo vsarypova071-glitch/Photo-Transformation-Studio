@@ -56,15 +56,31 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
 }
 
 async function getBlobFromImageSource(src: string): Promise<Blob> {
-  const res = await fetch(src);
+  const res = await fetch(src, { mode: 'cors', cache: 'no-cache' });
   if (!res.ok) {
     throw new Error(`Не удалось получить изображение: ${res.status}`);
   }
   return await res.blob();
 }
 
-function forceDownloadBlob(blob: Blob, filename: string) {
+// STAGE 2.1: iOS Safari ignores <a download>. We must use blob URL + new tab + hint.
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) ||
+    (ua.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document);
+}
+
+function forceDownloadBlob(blob: Blob, filename: string): { iosHint: boolean } {
   const blobUrl = URL.createObjectURL(blob);
+
+  if (isIOS()) {
+    // На iOS <a download> не работает — открываем в новой вкладке,
+    // пользователь долгим тапом сохраняет в Фото.
+    window.open(blobUrl, '_blank');
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    return { iosHint: true };
+  }
 
   const a = document.createElement('a');
   a.href = blobUrl;
@@ -74,6 +90,7 @@ function forceDownloadBlob(blob: Blob, filename: string) {
   document.body.removeChild(a);
 
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  return { iosHint: false };
 }
 
 export default function ResultsScreen({
