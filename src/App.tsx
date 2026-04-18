@@ -166,8 +166,81 @@ function App() {
       log.info('Restoring order from localStorage', { orderId: savedOrderId });
       setCurrentOrderId(savedOrderId);
       restoreOrder(savedOrderId);
+      return;
     }
+
+    // STAGE 2.2: no local order — try to find a recent paid one by customer_key.
+    // Covers: cleared cache, new browser, second device with same localStorage cust_ key.
+    // Skip if we're returning from payment (?order_id= in URL) — that's handled separately.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order_id')) return;
+
+    const customerKey = localStorage.getItem('customer_key');
+    if (!customerKey) return;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.found && data.orderId) {
+          log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
+          setRecentOrderPrompt({
+            orderId: data.orderId,
+            generationStatus: data.generationStatus,
+            photosCount: data.photosCount,
+            results: data.results || [],
+          });
+        }
+      } catch (e) {
+        log.warn('find-recent-order failed', e);
+      }
+    })();
   }, []);
+
+  // STAGE 2.2: user accepted "Resume your order" prompt
+  const acceptRecentOrder = () => {
+    if (!recentOrderPrompt) return;
+    const { orderId, generationStatus, results } = recentOrderPrompt;
+    setRecentOrderPrompt(null);
+    setCurrentOrderId(orderId);
+    localStorage.setItem('current_order_id', orderId);
+
+    if (generationStatus === 'done' && results.length > 0) {
+      const job: Job = {
+        id: 'order_' + orderId,
+        userId: getSessionId(),
+        status: 'done',
+        styleIds: [],
+        isFullBody: false,
+        originalImage: '',
+        results,
+        createdAt: Date.now(),
+      };
+      setOrderJob(job);
+      setCurrentJobId(job.id);
+      setOrderResults(results);
+      setScreen('results');
+    } else if (generationStatus === 'error') {
+      setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+      setScreen('processing');
+    } else {
+      // running / waiting
+      setScreen('processing');
+      pollOrderStatus(orderId);
+    }
+  };
+
+  const dismissRecentOrder = () => {
+    setRecentOrderPrompt(null);
+  };
 
   const restoreOrder = async (orderId: string) => {
     try {
