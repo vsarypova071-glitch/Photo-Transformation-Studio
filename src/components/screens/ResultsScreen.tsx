@@ -13,10 +13,6 @@ interface ResultsScreenProps {
 
 const SHARE_TEXT = `Создал свою AI фотосессию ✨\n\n#AIphoto #AIportrait #AIStudio`;
 
-function isMobileDevice() {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
 async function addWatermark(imageSrc: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -59,43 +55,25 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   return new File([blob], filename, { type: blob.type || 'image/png' });
 }
 
-async function getBlobFromUrl(url: string): Promise<Blob> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'image/*',
-    },
-    mode: 'cors',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Не удалось загрузить изображение: ${response.status}`);
+async function getBlobFromImageSource(src: string): Promise<Blob> {
+  const res = await fetch(src);
+  if (!res.ok) {
+    throw new Error(`Не удалось получить изображение: ${res.status}`);
   }
-
-  const blob = await response.blob();
-
-  if (!blob.type.startsWith('image/')) {
-    throw new Error('Получен не image-файл');
-  }
-
-  return blob;
+  return await res.blob();
 }
 
-function downloadBlob(blob: Blob, filename: string) {
+function forceDownloadBlob(blob: Blob, filename: string) {
   const blobUrl = URL.createObjectURL(blob);
 
   const a = document.createElement('a');
   a.href = blobUrl;
   a.download = filename;
-  a.style.display = 'none';
-
   document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
-  }, 150);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
 
 export default function ResultsScreen({
@@ -139,71 +117,44 @@ export default function ResultsScreen({
         ? `ai-photo-${Date.now()}-watermarked.png`
         : `ai-photo-${Date.now()}.jpg`;
 
-      let finalSrc = resultImage;
-      let blob: Blob | null = null;
+      let blob: Blob;
 
       if (withWatermark) {
-        finalSrc = await addWatermark(resultImage);
-      }
-
-      if (finalSrc.startsWith('data:')) {
-        const res = await fetch(finalSrc);
+        const watermarkedDataUrl = await addWatermark(resultImage);
+        const res = await fetch(watermarkedDataUrl);
         blob = await res.blob();
       } else {
+        blob = await getBlobFromImageSource(resultImage);
+      }
+
+      // На телефоне сначала пробуем нативное меню "Поделиться / Сохранить"
+      if (navigator.share) {
         try {
-          blob = await getBlobFromUrl(finalSrc);
-        } catch (err) {
-          console.error('Blob fetch failed:', err);
-        }
-      }
+          const file = new File([blob], fileName, {
+            type: blob.type || (withWatermark ? 'image/png' : 'image/jpeg'),
+          });
 
-      // Мобильный сценарий
-      if (isMobileDevice()) {
-        if (blob && navigator.share) {
-          try {
-            const file = new File([blob], fileName, {
-              type: blob.type || (withWatermark ? 'image/png' : 'image/jpeg'),
-            });
+          const shareData: ShareData = {
+            files: [file],
+            title: 'AI Photo Studio',
+            text: 'Сохранить фото',
+          };
 
-            const shareData: ShareData = {
-              files: [file],
-              title: 'AI Photo Studio',
-              text: 'Сохранить фото',
-            };
-
-            if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-              await navigator.share(shareData);
-              return;
-            }
-          } catch (err) {
-            console.log('Mobile share fallback:', err);
+          if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+            await navigator.share(shareData);
+            setIsDownloading(false);
+            return;
           }
+        } catch (err) {
+          console.log('Share fallback to direct download', err);
         }
-
-        window.open(finalSrc, '_blank');
-        return;
       }
 
-      // Десктоп
-      if (blob) {
-        downloadBlob(blob, fileName);
-        return;
-      }
-
-      if (finalSrc.startsWith('data:')) {
-        const a = document.createElement('a');
-        a.href = finalSrc;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        return;
-      }
-
-      window.open(finalSrc, '_blank');
+      // Обычное скачивание файла с нормальным именем
+      forceDownloadBlob(blob, fileName);
     } catch (err) {
       console.error('Download failed', err);
-      alert('Не удалось открыть или скачать изображение. Попробуйте ещё раз.');
+      alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
     } finally {
       setIsDownloading(false);
     }
