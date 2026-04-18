@@ -31,45 +31,17 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-
-    // === CHECK 1: Load check — count active orders (waiting/processing) ===
-    const LOAD_LIMITS: Record<string, number> = {
-      basic: 10,
-      standard: 25,
-      premium: 60,
+    // Credits required per tariff
+    const CREDITS_REQUIRED: Record<string, number> = {
+      basic: 5,
+      standard: 15,
+      premium: 50,
     };
-    const maxActive = LOAD_LIMITS[tariffId] ?? 10;
 
-    const { count: activeCount, error: countError } = await supabaseAdmin
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .in("generation_status", ["waiting", "processing"])
-      .in("payment_status", ["paid", "pending"]);
+    const requiredCredits = CREDITS_REQUIRED[tariffId] ?? 5;
 
-    if (countError) {
-      console.error("Load check query error:", countError);
-      return new Response(JSON.stringify({ error: "Сервис временно недоступен" }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const currentLoad = activeCount ?? 0;
-    console.log(`Load check: ${currentLoad} active orders, limit for ${tariffId}: ${maxActive}`);
-
-    if (currentLoad >= maxActive) {
-      console.log(`Load limit exceeded for ${tariffId}: ${currentLoad}/${maxActive}`);
-      return new Response(JSON.stringify({
-        error: "Сервис временно перегружен, попробуйте через несколько минут"
-      }), {
-        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // === CHECK 2: AI balance check ===
+    // Check AI balance with a lightweight test request
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    let aiCheckPassed = false;
-
     if (LOVABLE_API_KEY) {
       try {
         const testResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -86,35 +58,22 @@ Deno.serve(async (req: Request) => {
         });
 
         if (testResponse.status === 402) {
-          console.log(`AI balance insufficient for tariff ${tariffId}`);
-          return new Response(JSON.stringify({
-            error: "Временно нет доступных ресурсов, попробуйте позже"
+          console.log(`AI balance insufficient for tariff ${tariffId} (needs ${requiredCredits} credits)`);
+          return new Response(JSON.stringify({ 
+            error: "Временно нет доступных ресурсов, попробуйте позже" 
           }), {
             status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-
-        aiCheckPassed = testResponse.ok;
       } catch (aiErr: any) {
-        console.error("AI balance check network error:", aiErr.message);
-        aiCheckPassed = false;
+        console.error("AI balance check failed:", aiErr.message);
+        // Allow payment to proceed if check itself fails
       }
     }
 
-    // If AI check failed (network/timeout) — block premium, allow basic
-    if (!aiCheckPassed) {
-      if (tariffId === "premium") {
-        console.log("AI check failed, blocking premium tariff");
-        return new Response(JSON.stringify({
-          error: "Временно нет доступных ресурсов, попробуйте позже"
-        }), {
-          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.warn(`AI check did not pass for ${tariffId}, allowing with caution`);
-    }
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // === CREATE ORDER ===
+    // Create order in DB
     const supabase = supabaseAdmin;
     
     const { data: order, error: orderError } = await supabase
