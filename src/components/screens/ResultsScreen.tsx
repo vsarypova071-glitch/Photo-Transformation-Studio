@@ -56,15 +56,31 @@ async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
 }
 
 async function getBlobFromImageSource(src: string): Promise<Blob> {
-  const res = await fetch(src);
+  const res = await fetch(src, { mode: 'cors', cache: 'no-cache' });
   if (!res.ok) {
     throw new Error(`Не удалось получить изображение: ${res.status}`);
   }
   return await res.blob();
 }
 
-function forceDownloadBlob(blob: Blob, filename: string) {
+// STAGE 2.1: iOS Safari ignores <a download>. We must use blob URL + new tab + hint.
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) ||
+    (ua.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document);
+}
+
+function forceDownloadBlob(blob: Blob, filename: string): { iosHint: boolean } {
   const blobUrl = URL.createObjectURL(blob);
+
+  if (isIOS()) {
+    // На iOS <a download> не работает — открываем в новой вкладке,
+    // пользователь долгим тапом сохраняет в Фото.
+    window.open(blobUrl, '_blank');
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    return { iosHint: true };
+  }
 
   const a = document.createElement('a');
   a.href = blobUrl;
@@ -74,6 +90,7 @@ function forceDownloadBlob(blob: Blob, filename: string) {
   document.body.removeChild(a);
 
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  return { iosHint: false };
 }
 
 export default function ResultsScreen({
@@ -89,6 +106,7 @@ export default function ResultsScreen({
   const [sharingPlatform, setSharingPlatform] = useState<string | null>(null);
   const [showBonusToast, setShowBonusToast] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
   const [bonusCredits, setBonusCredits] = useState(() => {
     const saved = sessionStorage.getItem(BONUS_KEY);
     return saved ? parseInt(saved, 10) : 0;
@@ -124,7 +142,20 @@ export default function ResultsScreen({
         const res = await fetch(watermarkedDataUrl);
         blob = await res.blob();
       } else {
-        blob = await getBlobFromImageSource(resultImage);
+        try {
+          blob = await getBlobFromImageSource(resultImage);
+        } catch (corsErr) {
+          // STAGE 2.1: CORS-fallback — если fetch упал (например, CORS),
+          // открываем картинку в новой вкладке. Пользователь сохранит вручную.
+          console.warn('CORS fetch failed, fallback to direct open', corsErr);
+          window.open(resultImage, '_blank');
+          if (isIOS()) {
+            setIosHint(true);
+            setTimeout(() => setIosHint(false), 6000);
+          }
+          setIsDownloading(false);
+          return;
+        }
       }
 
       // На телефоне сначала пробуем нативное меню "Поделиться / Сохранить"
@@ -151,7 +182,11 @@ export default function ResultsScreen({
       }
 
       // Обычное скачивание файла с нормальным именем
-      forceDownloadBlob(blob, fileName);
+      const result = forceDownloadBlob(blob, fileName);
+      if (result.iosHint) {
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 6000);
+      }
     } catch (err) {
       console.error('Download failed', err);
       alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
@@ -245,6 +280,23 @@ export default function ResultsScreen({
               Бонус получен!
             </p>
             <p>+1 бесплатная генерация</p>
+          </div>
+        </div>
+      </div>
+
+      {/* STAGE 2.1: iOS save-to-Photos hint */}
+      <div
+        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${
+          iosHint
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-3 bg-foreground text-background px-5 py-3 rounded-2xl shadow-2xl font-semibold text-xs max-w-[90vw]">
+          <span className="text-lg">📲</span>
+          <div className="leading-tight">
+            <p className="font-black mb-0.5">Сохраните фото</p>
+            <p className="opacity-80">Удерживайте картинку → «Сохранить в Фото»</p>
           </div>
         </div>
       </div>
