@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Tariff {
   id: string;
@@ -33,20 +33,6 @@ export default function TariffScreen({
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  const [highlightPrivacy, setHighlightPrivacy] = useState(false);
-
-  const ensurePrivacy = (): boolean => {
-    if (!acceptedPrivacy) {
-      setHighlightPrivacy(true);
-      const el = document.getElementById('privacy-consent-block');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      setTimeout(() => setHighlightPrivacy(false), 1800);
-      return false;
-    }
-    return true;
-  };
 
   useEffect(() => {
     const key = getCustomerKey();
@@ -94,13 +80,7 @@ export default function TariffScreen({
         </div>
       )}
 
-      <div
-        id="privacy-consent-block"
-        className={`mb-6 rounded-2xl border bg-card p-4 transition-all ${
-          highlightPrivacy
-            ? "border-red-500 ring-2 ring-red-500/40 animate-pulse"
-            : "border-border"
-        }`}>
+      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
         <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -129,11 +109,6 @@ export default function TariffScreen({
             </a>
           </span>
         </label>
-        {highlightPrivacy && (
-          <p className="mt-2 text-xs text-red-400 font-medium">
-            ⚠ Поставьте галочку, чтобы продолжить
-          </p>
-        )}
       </div>
 
       <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
@@ -146,6 +121,7 @@ export default function TariffScreen({
 
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
+          const disabled = !acceptedPrivacy;
           const canPayWithCredits = creditBalance !== null && creditBalance >= tariff.photos;
 
           return (
@@ -157,7 +133,7 @@ export default function TariffScreen({
                   : "border-border bg-card"}
               `}>
               {tariff.popular && (
-                <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300 pointer-events-none">
+                <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300">
                   Популярный
                 </div>
               )}
@@ -186,25 +162,27 @@ export default function TariffScreen({
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-2 relative z-10">
+              <div className="mt-4 flex gap-2">
                 {canPayWithCredits && (
                   <button
-                    type="button"
-                    onClick={() => {
-                      if (!ensurePrivacy()) return;
-                      onPayWithCredits(tariff);
-                    }}
-                    className="flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer">
+                    onClick={() => onPayWithCredits(tariff)}
+                    disabled={disabled}
+                    className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
+                      ${disabled
+                        ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+                        : "bg-emerald-600 hover:bg-emerald-500 text-white"}
+                    `}>
                     💎 Оплатить кредитами ({tariff.photos})
                   </button>
                 )}
                 <button
-                  type="button"
-                  onClick={() => {
-                    if (!ensurePrivacy()) return;
-                    onSelectTariff(tariff);
-                  }}
-                  className="flex-1 py-3 rounded-xl font-semibold text-sm transition-all active:scale-95 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer">
+                  onClick={() => onSelectTariff(tariff)}
+                  disabled={disabled}
+                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
+                    ${disabled
+                      ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground"}
+                  `}>
                   💳 Оплатить {tariff.price.toLocaleString("ru-RU")} ₽
                 </button>
               </div>
