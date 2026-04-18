@@ -94,7 +94,13 @@ export default function TariffScreen({
         </div>
       )}
 
-      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
+      <div
+        id="privacy-consent-block"
+        className={`mb-6 rounded-2xl border bg-card p-4 transition-all ${
+          highlightPrivacy
+            ? "border-red-500 ring-2 ring-red-500/40 animate-pulse"
+            : "border-border"
+        }`}>
         <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -123,6 +129,11 @@ export default function TariffScreen({
             </a>
           </span>
         </label>
+        {highlightPrivacy && (
+          <p className="mt-2 text-xs text-red-400 font-medium">
+            ⚠ Поставьте галочку, чтобы продолжить
+          </p>
+        )}
       </div>
 
       <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
