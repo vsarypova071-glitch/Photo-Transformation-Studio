@@ -59,6 +59,8 @@ function App() {
   const [orderResults, setOrderResults] = useState<string[]>([]);
   // Store order-based job directly (not from sessionStorage)
   const [orderJob, setOrderJob] = useState<Job | null>(null);
+  // STAGE 1.2 — block double clicks on payment button
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -370,6 +372,12 @@ function App() {
   };
 
   const handleSelectTariff = async (tariff: SelectedTariff) => {
+    // STAGE 1.2 — prevent double payment creation
+    if (isCreatingPayment) {
+      log.info('Payment creation already in progress — ignoring duplicate click');
+      return;
+    }
+    setIsCreatingPayment(true);
     setSelectedTariff(tariff);
     setPaymentError(null);
     log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
@@ -433,6 +441,8 @@ function App() {
         setCurrentOrderId(data.orderId);
         localStorage.setItem('current_order_id', data.orderId);
         setPaymentError(null);
+        // STAGE 1.2 — release lock since we're navigating away
+        setIsCreatingPayment(false);
 
         // Already finished — go straight to results
         if (data.generationStatus === 'done' && data.results?.length > 0) {
@@ -480,6 +490,8 @@ function App() {
     } catch (e: any) {
       log.error('Payment creation failed', e);
       setPaymentError(e.message || 'Ошибка создания платежа. Попробуйте снова.');
+      // STAGE 1.2 — release lock on error so user can retry
+      setIsCreatingPayment(false);
     }
   };
 
@@ -727,6 +739,7 @@ function App() {
             onPayWithCredits={handlePayWithCredits}
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
+            isProcessing={isCreatingPayment}
           />
         )}
         
