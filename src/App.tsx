@@ -82,6 +82,26 @@ function App() {
     window.scrollTo(0, 0);
   };
 
+  // 🟢 STAGE WALLET: после оплаты пакета webhook начисляет кредиты и ставит
+  // generation_status='credits_credited'. Здесь — общий хэндлер: подтянуть
+  // баланс, очистить orderId и переключить юзера в Studio.
+  const handleCreditsCredited = useCallback(async (orderId: string) => {
+    log.info('Order credited as wallet topup', { orderId });
+    localStorage.removeItem('current_order_id');
+    setCurrentOrderId(null);
+    setPaymentError(null);
+    setProcessingError(null);
+    try {
+      const customerKey = getCustomerKey();
+      const info = await studio.getBalance(customerKey);
+      setWalletBalance(info.balance);
+    } catch (e) {
+      log.warn('Balance refresh after topup failed', e);
+    }
+    setScreen('studio');
+    window.scrollTo(0, 0);
+  }, []);
+
   // Poll order status after payment
   const pollOrderStatus = useCallback((orderId: string) => {
     log.info('Polling order', { orderId });
@@ -100,6 +120,13 @@ function App() {
         );
         const data = await response.json();
         log.info('Order status', data);
+
+        // 🟢 STAGE WALLET: оплачен пакет → кредиты начислены → ведём в Studio
+        if (data.generationStatus === 'credits_credited') {
+          clearInterval(interval);
+          await handleCreditsCredited(orderId);
+          return;
+        }
 
         // STAGE 3.2: refunded — money/credits returned, gentle message
         if (data.paymentStatus === 'refunded') {
@@ -177,7 +204,7 @@ function App() {
 
     // Stop polling after 10 minutes
     setTimeout(() => clearInterval(interval), 600000);
-  }, [selectedStyles, isFullBody, uploadedImage]);
+  }, [selectedStyles, isFullBody, uploadedImage, handleCreditsCredited]);
 
   // Restore order from localStorage on mount
   useEffect(() => {
@@ -318,6 +345,12 @@ function App() {
       );
       const data = await response.json();
 
+      // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
+      if (data.generationStatus === 'credits_credited') {
+        await handleCreditsCredited(orderId);
+        return;
+      }
+
       if (data.generationStatus === 'done' && data.results?.length > 0) {
         const job: Job = {
           id: 'order_' + orderId,
@@ -400,6 +433,12 @@ function App() {
             }
           );
           const data = await response.json();
+
+          // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
+          if (data.generationStatus === 'credits_credited') {
+            await handleCreditsCredited(orderId);
+            return;
+          }
 
           // Already done — show results directly
           if (data.generationStatus === 'done' && data.results?.length > 0) {
