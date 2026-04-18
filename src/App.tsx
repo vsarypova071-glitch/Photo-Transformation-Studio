@@ -145,6 +145,10 @@ function App() {
             originalImage: uploadedImage,
             results: data.results,
             createdAt: Date.now(),
+            // STAGE 3.1: enable partial-result UI
+            expectedCount: data.photosCount,
+            priceRub: data.price,
+            paymentMethod: data.paymentMethod,
           };
           setOrderJob(job);
           setCurrentJobId(job.id);
@@ -232,6 +236,10 @@ function App() {
         originalImage: '',
         results,
         createdAt: Date.now(),
+        // STAGE 3.1
+        expectedCount: recentOrderPrompt.photosCount,
+        priceRub: (recentOrderPrompt as any).price,
+        paymentMethod: (recentOrderPrompt as any).paymentMethod,
       };
       setOrderJob(job);
       setCurrentJobId(job.id);
@@ -274,6 +282,10 @@ function App() {
           originalImage: '',
           results: data.results,
           createdAt: Date.now(),
+          // STAGE 3.1
+          expectedCount: data.photosCount,
+          priceRub: data.price,
+          paymentMethod: data.paymentMethod,
         };
         setOrderJob(job);
         setCurrentJobId(job.id);
@@ -354,6 +366,10 @@ function App() {
               originalImage: '',
               results: data.results,
               createdAt: Date.now(),
+              // STAGE 3.1
+              expectedCount: data.photosCount,
+              priceRub: data.price,
+              paymentMethod: data.paymentMethod,
             };
             setOrderJob(job);
             setCurrentJobId(job.id);
