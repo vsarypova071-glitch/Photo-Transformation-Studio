@@ -809,6 +809,15 @@ function App() {
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
       <main className="relative min-h-screen">
+        {screen === 'studio' && (
+          <StudioScreen
+            customerKey={getCustomerKey()}
+            initialBalance={walletBalance}
+            onBalanceChange={setWalletBalance}
+            onBuyMore={() => navigateTo('tariff')}
+          />
+        )}
+
         {screen === 'welcome' && (
           <WelcomeScreen onStart={() => navigateTo('goal')} />
         )}
