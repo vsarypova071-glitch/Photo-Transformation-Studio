@@ -61,6 +61,13 @@ function App() {
   const [orderJob, setOrderJob] = useState<Job | null>(null);
   // STAGE 1.2 — block double clicks on payment button
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  // STAGE 2.2 — soft prompt to resume found paid order on different device / cleared cache
+  const [recentOrderPrompt, setRecentOrderPrompt] = useState<{
+    orderId: string;
+    generationStatus: string;
+    photosCount: number;
+    results: string[];
+  } | null>(null);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -159,8 +166,81 @@ function App() {
       log.info('Restoring order from localStorage', { orderId: savedOrderId });
       setCurrentOrderId(savedOrderId);
       restoreOrder(savedOrderId);
+      return;
     }
+
+    // STAGE 2.2: no local order — try to find a recent paid one by customer_key.
+    // Covers: cleared cache, new browser, second device with same localStorage cust_ key.
+    // Skip if we're returning from payment (?order_id= in URL) — that's handled separately.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order_id')) return;
+
+    const customerKey = localStorage.getItem('customer_key');
+    if (!customerKey) return;
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.found && data.orderId) {
+          log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
+          setRecentOrderPrompt({
+            orderId: data.orderId,
+            generationStatus: data.generationStatus,
+            photosCount: data.photosCount,
+            results: data.results || [],
+          });
+        }
+      } catch (e) {
+        log.warn('find-recent-order failed', e);
+      }
+    })();
   }, []);
+
+  // STAGE 2.2: user accepted "Resume your order" prompt
+  const acceptRecentOrder = () => {
+    if (!recentOrderPrompt) return;
+    const { orderId, generationStatus, results } = recentOrderPrompt;
+    setRecentOrderPrompt(null);
+    setCurrentOrderId(orderId);
+    localStorage.setItem('current_order_id', orderId);
+
+    if (generationStatus === 'done' && results.length > 0) {
+      const job: Job = {
+        id: 'order_' + orderId,
+        userId: getSessionId(),
+        status: 'done',
+        styleIds: [],
+        isFullBody: false,
+        originalImage: '',
+        results,
+        createdAt: Date.now(),
+      };
+      setOrderJob(job);
+      setCurrentJobId(job.id);
+      setOrderResults(results);
+      setScreen('results');
+    } else if (generationStatus === 'error') {
+      setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
+      setScreen('processing');
+    } else {
+      // running / waiting
+      setScreen('processing');
+      pollOrderStatus(orderId);
+    }
+  };
+
+  const dismissRecentOrder = () => {
+    setRecentOrderPrompt(null);
+  };
 
   const restoreOrder = async (orderId: string) => {
     try {
@@ -762,6 +842,45 @@ function App() {
           />
         )}
       </main>
+
+      {/* STAGE 2.2: soft prompt to resume found paid order */}
+      {recentOrderPrompt && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={dismissRecentOrder}
+          />
+          <div className="relative w-full max-w-md glass rounded-[2rem] p-7 border border-primary/30 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="text-center mb-5">
+              <div className="text-3xl mb-3">✨</div>
+              <h3 className="text-lg font-black text-foreground mb-2 leading-tight">
+                У вас есть оплаченный заказ
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {recentOrderPrompt.generationStatus === 'done'
+                  ? `Готовы ${recentOrderPrompt.results.length} фото из вашей фотосессии. Открыть результаты?`
+                  : recentOrderPrompt.generationStatus === 'error'
+                    ? 'Генерация не завершилась, но оплата сохранена. Попробуйте снова — без повторной оплаты.'
+                    : 'Ваша фотосессия ещё генерируется. Открыть статус?'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={acceptRecentOrder}
+                className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider shadow-lg active:scale-95 transition"
+              >
+                {recentOrderPrompt.generationStatus === 'done' ? 'Открыть фото' : 'Открыть заказ'}
+              </button>
+              <button
+                onClick={dismissRecentOrder}
+                className="w-full py-3 rounded-2xl text-muted-foreground text-xs font-semibold uppercase tracking-wider hover:text-foreground transition"
+              >
+                Не сейчас
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Background Decor */}
       <div className="fixed top-[-10%] left-[-20%] w-[120%] h-[60%] bg-primary/10 rounded-full blur-[150px] pointer-events-none z-0" />
