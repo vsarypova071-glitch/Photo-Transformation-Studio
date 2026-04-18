@@ -35,17 +35,17 @@ Deno.serve(async (req: Request) => {
 
     // === CHECK 1: Load check — count active orders (waiting/processing) ===
     const LOAD_LIMITS: Record<string, number> = {
-      basic: 50,
+      basic: 10,
       standard: 25,
-      premium: 10,
+      premium: 60,
     };
     const maxActive = LOAD_LIMITS[tariffId] ?? 10;
 
     const { count: activeCount, error: countError } = await supabaseAdmin
       .from("orders")
       .select("id", { count: "exact", head: true })
-      .in("generation_status", ["waiting", "running"])
-      .in("payment_status", ["succeeded", "pending"]);
+      .in("generation_status", ["waiting", "processing"])
+      .in("payment_status", ["paid", "pending"]);
 
     if (countError) {
       console.error("Load check query error:", countError);
