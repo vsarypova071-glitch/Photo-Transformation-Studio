@@ -301,6 +301,7 @@ export default function ResultsScreen({
         </div>
       </div>
 
+      {showSharePopup && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-10 px-6">
           <div
             className="absolute inset-0 bg-background/70 backdrop-blur-sm"
