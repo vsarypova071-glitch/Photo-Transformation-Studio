@@ -358,6 +358,28 @@ export default function ResultsScreen({
           Результат
         </h2>
 
+        {/* STAGE 3.1: partial-result notice with pro-rata refund info */}
+        {isPartial && (
+          <div className="glass border border-primary/30 rounded-2xl px-4 py-3 mb-5 flex items-start gap-3">
+            <span className="text-xl mt-0.5">💛</span>
+            <div className="flex-1">
+              <p className="text-xs font-black text-foreground mb-1">
+                Готово {allResults.length} из {expected} фото
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {refundedRub > 0 && (
+                  <>За недостающие {missingCount} мы автоматически вернули <span className="text-primary font-black">{refundedRub} ₽</span> на вашу карту. Возврат может занять до 5 рабочих дней.</>
+                )}
+                {refundedCredits > 0 && (
+                  <>За недостающие {missingCount} мы вернули <span className="text-primary font-black">{refundedCredits}</span> {refundedCredits === 1 ? 'кредит' : 'кредита'} на ваш баланс.</>
+                )}
+                {refundedRub === 0 && refundedCredits === 0 && (
+                  <>За недостающие {missingCount} фото мы автоматически оформили возврат.</>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
         {allResults.length > 1 && (
           <div className="flex gap-2 mb-5">
             {allResults.map((_, i) => (
