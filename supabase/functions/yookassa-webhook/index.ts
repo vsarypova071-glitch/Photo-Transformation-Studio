@@ -155,7 +155,7 @@ Deno.serve(async (req: Request) => {
       const startTime = Date.now();
       const results: string[] = [];
 
-      const finalize = async (status: "done" | "error") => {
+      const finalize = async (status: "done" | "error", missingCount = 0) => {
         await supabase
           .from("orders")
           .update({
@@ -165,19 +165,29 @@ Deno.serve(async (req: Request) => {
           .eq("id", orderId)
           .not("generation_status", "in", '("done","error")');
 
-        // STAGE 3.2: trigger auto-refund if generation failed with no results
-        if (status === "error" && results.length === 0) {
+        // STAGE 3.2: full refund — generation completely failed (0 results)
+        // STAGE 3.1: partial refund — some results delivered, refund only for missing photos
+        const needsRefund =
+          (status === "error" && results.length === 0) ||
+          (status === "done" && missingCount > 0);
+
+        if (needsRefund) {
           const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
           const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const isPartial = status === "done" && missingCount > 0;
           fetch(`${SUPABASE_URL}/functions/v1/auto-refund-order`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
             },
-            body: JSON.stringify({ orderId }),
+            body: JSON.stringify(
+              isPartial
+                ? { orderId, partial: true, missingCount }
+                : { orderId }
+            ),
           })
-            .then(r => r.text().then(t => console.log(`[WEBHOOK→REFUND] ${r.status}: ${t}`)))
+            .then(r => r.text().then(t => console.log(`[WEBHOOK→REFUND${isPartial ? " PARTIAL" : ""}] ${r.status}: ${t}`)))
             .catch(e => console.error("[WEBHOOK→REFUND] trigger failed:", e));
         }
       };
@@ -207,8 +217,11 @@ Deno.serve(async (req: Request) => {
             .eq("id", orderId);
         }
 
-        if (results.length !== total) {
+        // STAGE 3.1: deliver whatever we have — partial success is still success
+        if (results.length === 0) {
           await finalize("error");
+        } else if (results.length < total) {
+          await finalize("done", total - results.length);
         } else {
           await finalize("done");
         }

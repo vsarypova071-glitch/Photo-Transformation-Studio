@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, generation_status, results, photos_count, tariff_id, created_at, updated_at")
+      .select("id, payment_status, generation_status, results, photos_count, tariff_id, payment_id, price, created_at, updated_at")
       .eq("customer_key", customerKey)
       .eq("payment_status", "succeeded")
       .in("generation_status", ["done", "running", "waiting", "error"])
@@ -77,6 +77,8 @@ Deno.serve(async (req: Request) => {
       results: order.results || [],
       photosCount: order.photos_count,
       tariffId: order.tariff_id,
+      price: order.price,
+      paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
       createdAt: order.created_at,
     }), {
       status: 200,
