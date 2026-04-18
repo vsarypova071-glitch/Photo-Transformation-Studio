@@ -256,7 +256,11 @@ Deno.serve(async (req: Request) => {
     };
 
     // Fire-and-forget so HTTP response returns fast
-    EdgeRuntime.waitUntil ? EdgeRuntime.waitUntil(runGeneration()) : runGeneration();
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      EdgeRuntime.waitUntil(runGeneration());
+    } else {
+      runGeneration();
+    }
 
     return new Response(JSON.stringify({ ok: true, orderId, status: "running" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
