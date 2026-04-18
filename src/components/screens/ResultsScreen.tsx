@@ -106,6 +106,7 @@ export default function ResultsScreen({
   const [sharingPlatform, setSharingPlatform] = useState<string | null>(null);
   const [showBonusToast, setShowBonusToast] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
   const [bonusCredits, setBonusCredits] = useState(() => {
     const saved = sessionStorage.getItem(BONUS_KEY);
     return saved ? parseInt(saved, 10) : 0;
@@ -141,7 +142,20 @@ export default function ResultsScreen({
         const res = await fetch(watermarkedDataUrl);
         blob = await res.blob();
       } else {
-        blob = await getBlobFromImageSource(resultImage);
+        try {
+          blob = await getBlobFromImageSource(resultImage);
+        } catch (corsErr) {
+          // STAGE 2.1: CORS-fallback — если fetch упал (например, CORS),
+          // открываем картинку в новой вкладке. Пользователь сохранит вручную.
+          console.warn('CORS fetch failed, fallback to direct open', corsErr);
+          window.open(resultImage, '_blank');
+          if (isIOS()) {
+            setIosHint(true);
+            setTimeout(() => setIosHint(false), 6000);
+          }
+          setIsDownloading(false);
+          return;
+        }
       }
 
       // На телефоне сначала пробуем нативное меню "Поделиться / Сохранить"
@@ -168,7 +182,11 @@ export default function ResultsScreen({
       }
 
       // Обычное скачивание файла с нормальным именем
-      forceDownloadBlob(blob, fileName);
+      const result = forceDownloadBlob(blob, fileName);
+      if (result.iosHint) {
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 6000);
+      }
     } catch (err) {
       console.error('Download failed', err);
       alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
