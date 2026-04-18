@@ -151,9 +151,49 @@ export type Database = {
           },
         ]
       }
+      generations: {
+        Row: {
+          created_at: string
+          custom_prompt: string | null
+          customer_key: string
+          debit_tx_id: string | null
+          error_message: string | null
+          id: string
+          is_full_body: boolean | null
+          status: string
+          style_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_prompt?: string | null
+          customer_key: string
+          debit_tx_id?: string | null
+          error_message?: string | null
+          id?: string
+          is_full_body?: boolean | null
+          status?: string
+          style_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_prompt?: string | null
+          customer_key?: string
+          debit_tx_id?: string | null
+          error_message?: string | null
+          id?: string
+          is_full_body?: boolean | null
+          status?: string
+          style_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
+          credits_purchased: number
           custom_prompt: string | null
           customer_key: string | null
           generation_status: string
@@ -172,6 +212,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credits_purchased?: number
           custom_prompt?: string | null
           customer_key?: string | null
           generation_status?: string
@@ -190,6 +231,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credits_purchased?: number
           custom_prompt?: string | null
           customer_key?: string | null
           generation_status?: string
