@@ -69,6 +69,46 @@ Deno.serve(async (req: Request) => {
           console.log(`[SAFEGUARD] Order ${existingPaidOrder.id} is 'done' but has no results — allowing new payment.`);
         }
       }
+
+      // === STAGE 1.2 — DUPLICATE PROTECTION: reuse existing pending order < 10 min ===
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: existingPending } = await supabaseAdmin
+        .from("orders")
+        .select("id, payment_id, payment_status, created_at")
+        .eq("customer_key", customerKey)
+        .eq("payment_status", "pending")
+        .gte("created_at", tenMinAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPending && existingPending.payment_id) {
+        // Re-fetch payment URL from YooKassa for the existing pending payment
+        try {
+          const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
+          const yooRes = await fetch(`https://api.yookassa.ru/v3/payments/${existingPending.payment_id}`, {
+            headers: { "Authorization": `Basic ${credentials}` },
+          });
+          const yooData = await yooRes.json();
+
+          if (yooRes.ok && yooData.status === "pending" && yooData.confirmation?.confirmation_url) {
+            console.log(`[DUPLICATE-GUARD] Reusing existing pending order ${existingPending.id} for customer ${customerKey}`);
+            return new Response(JSON.stringify({
+              orderId: existingPending.id,
+              paymentUrl: yooData.confirmation.confirmation_url,
+              paymentId: existingPending.payment_id,
+              reused: true,
+            }), {
+              status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          } else {
+            console.log(`[DUPLICATE-GUARD] Existing pending order ${existingPending.id} is no longer pending in YooKassa (status=${yooData.status}). Allowing new payment.`);
+          }
+        } catch (e) {
+          console.warn(`[DUPLICATE-GUARD] Failed to re-fetch YooKassa payment ${existingPending.payment_id}:`, e);
+          // Fall through: create new payment if we cannot verify
+        }
+      }
     }
 
     // === CHECK 1: Load check — count active orders (waiting/processing) ===
