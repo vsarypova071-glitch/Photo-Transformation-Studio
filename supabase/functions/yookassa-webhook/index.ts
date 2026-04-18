@@ -3,95 +3,71 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-const PER_CALL_TIMEOUT_MS = 60000;
-const MAX_TOTAL_TIME = 180000;
-const GENERATED_BUCKET = "user-photos"; // используем уже существующий bucket
+const WARDROBE: string[] = [
+  "custom tailored minimalist wool suit in deep navy",
+  "bespoke structured blazer in forest green premium cashmere",
+  "silk blouse in ivory with high-waist charcoal trousers",
+  "architectural couture coat in camel",
+  "luxury power suit in slate gray, precision tailoring",
+];
 
-async function generateSingle(
-  imageBase64: string,
-  prompt: string
-): Promise<string | null> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PER_CALL_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-pro-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                {
-                  type: "image_url",
-                  image_url: { url: imageBase64 },
-                },
-              ],
-            },
-          ],
-          modalities: ["image", "text"],
-        }),
-        signal: controller.signal,
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+function getRandomGarment(exclude: string[] = []): string {
+  const available = WARDROBE.filter(g => !exclude.includes(g));
+  return available[Math.floor(Math.random() * available.length)];
 }
 
-async function saveGeneratedImageToStorage(
-  supabase: any,
-  externalImageUrl: string,
-  orderId: string,
-  index: number
-): Promise<string | null> {
-  try {
-    const response = await fetch(externalImageUrl);
-    if (!response.ok) return null;
+function buildPrompt(stylePrompt: string, customPrompt: string, garment: string): string {
+  return `You are a forensic portrait compositor. Place THIS EXACT FACE into a new fashion scene.
 
-    const blob = await response.blob();
-    const ext = blob.type.includes("png") ? "png" : "jpg";
-    const path = `generated/${orderId}/${Date.now()}-${index}.${ext}`;
+PRIORITY: 1) Face geometry lock 2) Identity lock 3) Style creative freedom
 
-    const { error: uploadError } = await supabase.storage
-      .from(GENERATED_BUCKET)
-      .upload(path, blob, {
-        contentType: blob.type || `image/${ext}`,
-        upsert: true,
-      });
+OUTFIT: ${garment}
+BACKGROUND: Luxury studio — warm gray / ivory
+LIGHTING: Large octabox 45°, rim/hair light, catchlights in eyes
+POSE: Confident editorial, magnetic soft gaze
+CAMERA: 85mm f/2.0, eye-level, zero distortion
+FILM: Kodak Portra 800
 
-    if (uploadError) {
-      console.error("UPLOAD ERROR:", uploadError.message);
-      return null;
-    }
+${stylePrompt ? `Style: ${stylePrompt}` : ""}
+${customPrompt ? `Note: ${customPrompt}` : ""}
 
-    const { data } = supabase.storage.from(GENERATED_BUCKET).getPublicUrl(path);
-    return data.publicUrl;
-  } catch (e) {
-    console.error("SAVE TO STORAGE ERROR:", e);
+CRITICAL: Preserve exact face geometry — jaw width, chin shape, cheek volume. No slimming.`;
+}
+
+async function generateSingle(imageBase64: string, stylePrompt: string, customPrompt: string, garment: string): Promise<string | null> {
+  const prompt = buildPrompt(stylePrompt, customPrompt, garment);
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-pro-image-preview",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` } },
+        ],
+      }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!response.ok) {
+    console.error(`AI error ${response.status}`);
     return null;
   }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -100,128 +76,128 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     const body = await req.json();
+    
+    // YooKassa sends { type: "notification", event: "payment.succeeded", object: {...} }
+    const event = body.event;
     const payment = body.object;
-    const orderId = payment?.metadata?.order_id;
 
+    if (!payment || !payment.id) {
+      return new Response(JSON.stringify({ error: "Invalid webhook payload" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`Webhook received: ${event}, payment ${payment.id}, status ${payment.status}`);
+
+    const orderId = payment.metadata?.order_id;
     if (!orderId) {
-      return new Response("OK", { status: 200 });
+      console.error("No order_id in payment metadata");
+      return new Response("OK", { status: 200, headers: corsHeaders });
     }
 
-    const { data: order } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single();
+    if (event === "payment.succeeded" && payment.status === "succeeded") {
+      // Check if order was expired before payment came through
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("payment_status")
+        .eq("id", orderId)
+        .single();
 
-    if (!order) {
-      return new Response("OK", { status: 200 });
-    }
+      if (existingOrder?.payment_status === "expired") {
+        console.log(`Order ${orderId} already expired, but payment succeeded — restoring`);
+      }
 
-    if (["running", "done", "error"].includes(order.generation_status)) {
-      return new Response("OK", { status: 200 });
-    }
-
-    await supabase
-      .from("orders")
-      .update({
-        payment_status: "succeeded",
-        generation_status: "running",
-      })
-      .eq("id", orderId)
-      .not("generation_status", "in", '("done","error")');
-
-    let imageBase64: string;
-    try {
-      const resp = await fetch(order.original_image);
-      const buf = await resp.arrayBuffer();
-      imageBase64 = `data:image/jpeg;base64,${btoa(
-        String.fromCharCode(...new Uint8Array(buf))
-      )}`;
-    } catch {
+      // Update order payment status (works for both pending and expired)
       await supabase
         .from("orders")
-        .update({ generation_status: "error" })
+        .update({ payment_status: "succeeded", generation_status: "running" })
+        .eq("id", orderId);
+
+      console.log(`Order ${orderId} marked as paid, starting generation...`);
+
+      // Fetch order details
+      const { data: order } = await supabase
+        .from("orders")
+        .select("*")
         .eq("id", orderId)
-        .not("generation_status", "in", '("done","error")');
+        .single();
 
-      return new Response("OK", { status: 200 });
-    }
+      if (!order || !order.original_image) {
+        console.error("Order not found or no image");
+        await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
 
-    const runGeneration = async () => {
-      const startTime = Date.now();
-      const results: string[] = [];
-
-      const finalize = async (status: "done" | "error") => {
-        await supabase
-          .from("orders")
-          .update({
-            generation_status: status,
-            results,
-          })
-          .eq("id", orderId)
-          .not("generation_status", "in", '("done","error")');
-      };
-
+      // Fetch image from storage URL and convert to base64
+      let imageBase64: string;
       try {
-        const total = order.photos_count || 3;
-        const basePrompt =
-          order.custom_prompt ||
-          "Luxury portrait photography, premium studio quality";
+        const imgResp = await fetch(order.original_image);
+        if (!imgResp.ok) throw new Error(`Image fetch failed: ${imgResp.status}`);
+        const imgBuf = await imgResp.arrayBuffer();
+        const uint8 = new Uint8Array(imgBuf);
+        let binary = '';
+        for (let i = 0; i < uint8.length; i++) {
+          binary += String.fromCharCode(uint8[i]);
+        }
+        imageBase64 = `data:image/jpeg;base64,${btoa(binary)}`;
+        console.log(`Image fetched from storage, size: ${uint8.length} bytes`);
+      } catch (imgErr: any) {
+        console.error("Failed to fetch image from storage:", imgErr.message);
+        await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
 
-        for (let i = 0; i < total; i++) {
-          if (Date.now() - startTime > MAX_TOTAL_TIME) {
-            console.error("GLOBAL TIMEOUT");
-            await finalize("error");
-            return;
-          }
+      // Generate photos
+      try {
+        const count = Math.min(order.photos_count, 3);
+        const garments: string[] = [];
+        for (let i = 0; i < count; i++) {
+          garments.push(getRandomGarment(garments));
+        }
 
-          const variedPrompt = `${basePrompt}. Create variant ${i + 1} of ${total}. Make it visually distinct from the others: different pose, framing, mood, styling details, and composition.`;
+        const stylePrompt = order.style_ids?.length > 0
+          ? order.style_ids.join(", ")
+          : "Luxury fashion portrait photography";
 
-          const externalUrl = await generateSingle(imageBase64, variedPrompt);
+        const promises = garments.map(g =>
+          generateSingle(imageBase64, stylePrompt, order.custom_prompt || "", g)
+        );
 
-          if (!externalUrl) continue;
+        const results = await Promise.all(promises);
+        const imageUrls = results.filter(Boolean) as string[];
 
-          // Сохраняем картинку в НАШ storage и только потом пишем в results
-          const stableUrl = await saveGeneratedImageToStorage(
-            supabase,
-            externalUrl,
-            orderId,
-            i + 1
-          );
-
-          if (!stableUrl) continue;
-
-          results.push(stableUrl);
-
+        if (imageUrls.length === 0) {
+          await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
+          console.error("No images generated");
+        } else {
           await supabase
             .from("orders")
-            .update({ results })
-            .eq("id", orderId)
-            .not("generation_status", "in", '("done","error")');
+            .update({ generation_status: "done", results: imageUrls })
+            .eq("id", orderId);
+          console.log(`Order ${orderId}: ${imageUrls.length} photos generated`);
         }
-
-        if (results.length !== total) {
-          await finalize("error");
-        } else {
-          await finalize("done");
-        }
-      } catch (e) {
-        console.error("GEN ERROR", e);
-        await finalize("error");
+      } catch (genErr: any) {
+        console.error("Generation error:", genErr.message);
+        await supabase.from("orders").update({ generation_status: "error" }).eq("id", orderId);
       }
-    };
 
-    runGeneration();
+    } else if (event === "payment.canceled") {
+      await supabase
+        .from("orders")
+        .update({ payment_status: "canceled" })
+        .eq("id", orderId);
+      console.log(`Order ${orderId} payment canceled`);
+    }
 
-    return new Response("OK", { status: 200 });
-  } catch (err) {
-    console.error("WEBHOOK ERROR", err);
-    return new Response("OK", { status: 200 });
+    return new Response("OK", { status: 200, headers: corsHeaders });
+
+  } catch (err: any) {
+    console.error("Webhook error:", err.message);
+    return new Response("OK", { status: 200, headers: corsHeaders });
   }
 });

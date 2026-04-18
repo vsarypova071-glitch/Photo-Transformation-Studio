@@ -23,7 +23,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey } = await req.json();
+    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody } = await req.json();
 
     if (!tariffId || !price || !photosCount || !userSessionId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -32,44 +32,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-
-    // === CHECK 0: SAFEGUARD — reuse last paid order (any status) within 24h instead of charging again ===
-    if (customerKey) {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: existingPaidOrder } = await supabaseAdmin
-        .from("orders")
-        .select("id, payment_status, generation_status, results, photos_count, tariff_id, created_at")
-        .eq("customer_key", customerKey)
-        .eq("payment_status", "succeeded")
-        .in("generation_status", ["waiting", "running", "error", "done"])
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (existingPaidOrder) {
-        // For 'done' orders: only reuse if results actually exist (otherwise fall through and let user pay again)
-        const hasResults = Array.isArray(existingPaidOrder.results) && existingPaidOrder.results.length > 0;
-        const shouldReuse = existingPaidOrder.generation_status !== "done" || hasResults;
-
-        if (shouldReuse) {
-          console.log(`[SAFEGUARD] Customer ${customerKey} has paid order ${existingPaidOrder.id} (gen=${existingPaidOrder.generation_status}, results=${existingPaidOrder.results?.length ?? 0}). Returning existingOrder.`);
-          return new Response(JSON.stringify({
-            existingOrder: true,
-            orderId: existingPaidOrder.id,
-            generationStatus: existingPaidOrder.generation_status,
-            paymentStatus: existingPaidOrder.payment_status,
-            photosCount: existingPaidOrder.photos_count,
-            results: existingPaidOrder.results || [],
-            message: "У вас уже есть оплаченный заказ. Возвращаем к нему.",
-          }), {
-            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        } else {
-          console.log(`[SAFEGUARD] Order ${existingPaidOrder.id} is 'done' but has no results — allowing new payment.`);
-        }
-      }
-    }
 
     // === CHECK 1: Load check — count active orders (waiting/processing) ===
     const LOAD_LIMITS: Record<string, number> = {
@@ -82,8 +44,8 @@ Deno.serve(async (req: Request) => {
     const { count: activeCount, error: countError } = await supabaseAdmin
       .from("orders")
       .select("id", { count: "exact", head: true })
-      .eq("generation_status", "running")
-      .eq("payment_status", "succeeded");
+      .in("generation_status", ["waiting", "running"])
+      .in("payment_status", ["succeeded", "pending"]);
 
     if (countError) {
       console.error("Load check query error:", countError);
@@ -168,7 +130,6 @@ Deno.serve(async (req: Request) => {
         is_full_body: isFullBody || false,
         payment_status: "pending",
         generation_status: "waiting",
-        customer_key: customerKey || null,
       })
       .select("id")
       .single();
@@ -219,7 +180,6 @@ Deno.serve(async (req: Request) => {
         order_id: orderId,
         tariff_id: tariffId,
         photos_count: String(photosCount),
-        customer_key: customerKey || "",
       },
     };
 

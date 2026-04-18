@@ -6,14 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Safety net only — generation should always finalize itself (done/error)
-// via in-function logic. This catches isolate kills / catastrophic crashes.
-// Uniform 10-minute window after last DB update is enough because results
-// are now persisted incrementally (every batch updates updated_at).
-function getTimeoutMinutes(_photosCount: number): number {
-  return 10;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -41,35 +33,7 @@ Deno.serve(async (req: Request) => {
     if (expireError) console.error("Expire error:", expireError.message);
     else if (expiredCount > 0) console.log(`Expired ${expiredCount} stale orders`);
 
-    // 2. Unstick running orders — timeout depends on photos_count
-    const { data: runningOrders, error: runningError } = await supabase
-      .from("orders")
-      .select("id, photos_count, updated_at")
-      .eq("generation_status", "running")
-      .eq("payment_status", "succeeded");
-
-    let stuckCount = 0;
-    if (runningError) {
-      console.error("Running orders fetch error:", runningError.message);
-    } else if (runningOrders && runningOrders.length > 0) {
-      for (const order of runningOrders) {
-        const timeoutMin = getTimeoutMinutes(order.photos_count);
-        const deadline = new Date(now.getTime() - timeoutMin * 60 * 1000);
-        const updatedAt = new Date(order.updated_at);
-
-        if (updatedAt < deadline) {
-          await supabase
-            .from("orders")
-            .update({ generation_status: "error" })
-            .eq("id", order.id);
-          stuckCount++;
-          console.log(`Order ${order.id} stuck (photos=${order.photos_count}, timeout=${timeoutMin}min) → error`);
-        }
-      }
-    }
-    if (stuckCount > 0) console.log(`Marked ${stuckCount} stuck orders as error`);
-
-    // 3. Delete storage photos for orders expired > 20 minutes ago
+    // 2. Delete storage photos for orders expired > 20 minutes ago
     const { data: oldExpired, error: fetchError } = await supabase
       .from("orders")
       .select("id, original_image, updated_at")
@@ -85,6 +49,7 @@ Deno.serve(async (req: Request) => {
     if (oldExpired && oldExpired.length > 0) {
       for (const order of oldExpired) {
         const imageUrl = order.original_image as string;
+        // Extract path from storage URL: .../user-photos/filename
         const match = imageUrl.match(/\/user-photos\/(.+)$/);
         if (match) {
           const filePath = match[1];
@@ -99,6 +64,7 @@ Deno.serve(async (req: Request) => {
           }
         }
 
+        // Clear the image reference
         await supabase
           .from("orders")
           .update({ original_image: null })
@@ -108,7 +74,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ expired: expiredCount, stuck: stuckCount, photosDeleted: deletedPhotos }),
+      JSON.stringify({ expired: expiredCount, photosDeleted: deletedPhotos }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
