@@ -98,22 +98,31 @@ Deno.serve(async (req: Request) => {
       return new Response("OK", { status: 200 });
     }
 
-    const { data: order } = await supabase
+    const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select("*")
       .eq("id", orderId)
       .single();
 
+    if (orderErr) {
+      console.error(`[WEBHOOK] ❌ Failed to load order ${orderId}:`, orderErr.message);
+    }
+
     if (!order) {
+      console.warn(`[WEBHOOK] ⚠ Order ${orderId} not found in DB — ignoring`);
       return new Response("OK", { status: 200 });
     }
 
+    console.log(`[WEBHOOK] Loaded order ${orderId}: payment=${order.payment_status} gen=${order.generation_status} photos=${order.photos_count}`);
+
     // 🔒 защита от повторного запуска
     if (["running", "done", "error"].includes(order.generation_status)) {
+      console.log(`[WEBHOOK] 🔒 Order already in terminal/active status (${order.generation_status}) — skipping`);
       return new Response("OK", { status: 200 });
     }
 
     // старт
+    console.log(`[WEBHOOK] ▶ Starting generation for order ${orderId}`);
     await supabase
       .from("orders")
       .update({
