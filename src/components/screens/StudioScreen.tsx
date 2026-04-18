@@ -340,7 +340,7 @@ export default function StudioScreen({
           </div>
 
           {/* Предупреждение 152-ФЗ */}
-          <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200/90 leading-relaxed">
+          <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
             ⚠️ <strong>Скачайте сейчас.</strong> Фото нигде не сохраняется — после закрытия страницы оно будет недоступно.
           </div>
 
