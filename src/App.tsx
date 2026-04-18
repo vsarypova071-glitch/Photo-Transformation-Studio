@@ -843,6 +843,45 @@ function App() {
         )}
       </main>
 
+      {/* STAGE 2.2: soft prompt to resume found paid order */}
+      {recentOrderPrompt && (
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={dismissRecentOrder}
+          />
+          <div className="relative w-full max-w-md glass rounded-[2rem] p-7 border border-primary/30 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="text-center mb-5">
+              <div className="text-3xl mb-3">✨</div>
+              <h3 className="text-lg font-black text-foreground mb-2 leading-tight">
+                У вас есть оплаченный заказ
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {recentOrderPrompt.generationStatus === 'done'
+                  ? `Готовы ${recentOrderPrompt.results.length} фото из вашей фотосессии. Открыть результаты?`
+                  : recentOrderPrompt.generationStatus === 'error'
+                    ? 'Генерация не завершилась, но оплата сохранена. Попробуйте снова — без повторной оплаты.'
+                    : 'Ваша фотосессия ещё генерируется. Открыть статус?'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={acceptRecentOrder}
+                className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider shadow-lg active:scale-95 transition"
+              >
+                {recentOrderPrompt.generationStatus === 'done' ? 'Открыть фото' : 'Открыть заказ'}
+              </button>
+              <button
+                onClick={dismissRecentOrder}
+                className="w-full py-3 rounded-2xl text-muted-foreground text-xs font-semibold uppercase tracking-wider hover:text-foreground transition"
+              >
+                Не сейчас
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Background Decor */}
       <div className="fixed top-[-10%] left-[-20%] w-[120%] h-[60%] bg-primary/10 rounded-full blur-[150px] pointer-events-none z-0" />
     </div>
