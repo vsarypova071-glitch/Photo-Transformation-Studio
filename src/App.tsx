@@ -82,6 +82,26 @@ function App() {
     window.scrollTo(0, 0);
   };
 
+  // 🟢 STAGE WALLET: после оплаты пакета webhook начисляет кредиты и ставит
+  // generation_status='credits_credited'. Здесь — общий хэндлер: подтянуть
+  // баланс, очистить orderId и переключить юзера в Studio.
+  const handleCreditsCredited = useCallback(async (orderId: string) => {
+    log.info('Order credited as wallet topup', { orderId });
+    localStorage.removeItem('current_order_id');
+    setCurrentOrderId(null);
+    setPaymentError(null);
+    setProcessingError(null);
+    try {
+      const customerKey = getCustomerKey();
+      const info = await studio.getBalance(customerKey);
+      setWalletBalance(info.balance);
+    } catch (e) {
+      log.warn('Balance refresh after topup failed', e);
+    }
+    setScreen('studio');
+    window.scrollTo(0, 0);
+  }, []);
+
   // Poll order status after payment
   const pollOrderStatus = useCallback((orderId: string) => {
     log.info('Polling order', { orderId });
