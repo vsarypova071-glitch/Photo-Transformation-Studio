@@ -12,10 +12,12 @@ import StylesScreen from './components/screens/StylesScreen';
 import TariffScreen from './components/screens/TariffScreen';
 import ProcessingScreen from './components/screens/ProcessingScreen';
 import ResultsScreen from './components/screens/ResultsScreen';
+import StudioScreen from './components/screens/StudioScreen';
+import { studio } from './services/studio';
 
 const log = createLogger('App');
 
-export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results';
+export type Screen = 'welcome' | 'goal' | 'upload' | 'styles' | 'tariff' | 'processing' | 'results' | 'studio';
 
 interface SelectedTariff {
   id: string;
@@ -70,6 +72,9 @@ function App() {
     price?: number;
     paymentMethod?: 'rub' | 'credits';
   } | null>(null);
+  // 🟢 STAGE WALLET 1.4 — баланс кошелька (загружается при старте по customer_key)
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [walletLoaded, setWalletLoaded] = useState<boolean>(false);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -218,6 +223,43 @@ function App() {
         }
       } catch (e) {
         log.warn('find-recent-order failed', e);
+      }
+    })();
+  }, []);
+
+  // 🟢 STAGE WALLET 1.4 — загрузка баланса кошелька при старте
+  // Если баланс > 0 → автоматически переключаем главный экран на Studio.
+  // Не мешаем восстановлению старых заказов (current_order_id) и URL ?order_id=.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order_id')) {
+      setWalletLoaded(true);
+      return;
+    }
+    if (localStorage.getItem('current_order_id')) {
+      setWalletLoaded(true);
+      return;
+    }
+
+    const customerKey = localStorage.getItem('customer_key');
+    if (!customerKey) {
+      setWalletLoaded(true);
+      return;
+    }
+
+    (async () => {
+      try {
+        const info = await studio.getBalance(customerKey);
+        log.info('Wallet balance loaded', { balance: info.balance, exists: info.exists });
+        setWalletBalance(info.balance);
+        // Если есть кредиты и юзер на welcome — открываем Studio
+        if (info.balance > 0 && screen === 'welcome' && !recentOrderPrompt) {
+          setScreen('studio');
+        }
+      } catch (e) {
+        log.warn('Wallet balance load failed', e);
+      } finally {
+        setWalletLoaded(true);
       }
     })();
   }, []);
@@ -767,6 +809,15 @@ function App() {
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
       <main className="relative min-h-screen">
+        {screen === 'studio' && (
+          <StudioScreen
+            customerKey={getCustomerKey()}
+            initialBalance={walletBalance}
+            onBalanceChange={setWalletBalance}
+            onBuyMore={() => navigateTo('tariff')}
+          />
+        )}
+
         {screen === 'welcome' && (
           <WelcomeScreen onStart={() => navigateTo('goal')} />
         )}
