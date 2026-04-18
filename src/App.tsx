@@ -59,6 +59,8 @@ function App() {
   const [orderResults, setOrderResults] = useState<string[]>([]);
   // Store order-based job directly (not from sessionStorage)
   const [orderJob, setOrderJob] = useState<Job | null>(null);
+  // STAGE 1.2 — block double clicks on payment button
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -370,6 +372,12 @@ function App() {
   };
 
   const handleSelectTariff = async (tariff: SelectedTariff) => {
+    // STAGE 1.2 — prevent double payment creation
+    if (isCreatingPayment) {
+      log.info('Payment creation already in progress — ignoring duplicate click');
+      return;
+    }
+    setIsCreatingPayment(true);
     setSelectedTariff(tariff);
     setPaymentError(null);
     log.info('Creating payment', { tariff: tariff.name, price: tariff.price });
