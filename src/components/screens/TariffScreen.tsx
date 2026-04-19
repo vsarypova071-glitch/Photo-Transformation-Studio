@@ -82,48 +82,8 @@ export default function TariffScreen({
         </div>
       )}
 
-      <div className="mb-6 rounded-2xl border border-border bg-card p-4">
-        <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4"
-            checked={acceptedPrivacy}
-            onChange={(e) => setAcceptedPrivacy(e.target.checked)}
-          />
-          <span className="text-muted-foreground">
-            Я соглашаюсь с{" "}
-            <a
-              href="https://docs.google.com/document/d/15IpEOrOKkaEZ9MVpB2cvkeh1HGzYXr4jH3zne9BheRM/edit?usp=sharing"
-              target="_blank"
-              rel="noreferrer"
-              className="text-foreground underline underline-offset-4"
-              onClick={(e) => e.stopPropagation()}>
-              Публичной офертой
-            </a>
-            {" "}и{" "}
-            <a
-              href={privacyUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-foreground underline underline-offset-4"
-              onClick={(e) => e.stopPropagation()}>
-              Политикой конфиденциальности
-            </a>
-          </span>
-        </label>
-      </div>
-
-      <div className="mb-6 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed text-muted-foreground">
-        <p className="font-semibold text-foreground mb-2">Стоимость услуг:</p>
-        <p>Базовый пакет — 479 ₽ (5 фотографий)</p>
-        <p>Стандартный пакет — 1 299 ₽ (15 фотографий)</p>
-        <p>Премиум пакет — 2 999 ₽ (50 фотографий)</p>
-        <p className="mt-2">Оплата производится онлайн на сайте.</p>
-      </div>
-
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
-          const disabled = !acceptedPrivacy || isProcessing;
           const canPayWithCredits = creditBalance !== null && creditBalance >= tariff.photos;
 
           return (
@@ -164,49 +124,95 @@ export default function TariffScreen({
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-2">
-                {canPayWithCredits && (
+              {canPayWithCredits && (
+                <div className="mt-4">
                   <button
                     onClick={() => onPayWithCredits(tariff)}
-                    disabled={disabled}
-                    className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all
-                      ${disabled
+                    disabled={!acceptedPrivacy || isProcessing}
+                    className={`w-full py-3 rounded-xl font-semibold text-sm transition-all
+                      ${!acceptedPrivacy || isProcessing
                         ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
-                        : "bg-emerald-600 hover:bg-emerald-500 text-white"}
+                        : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30"}
                     `}>
                     💎 Оплатить кредитами ({tariff.photos})
                   </button>
-                )}
-                <button
-                  onClick={() => onSelectTariff(tariff)}
-                  disabled={disabled}
-                  className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
-                    ${disabled
-                      ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground"}
-                  `}>
-                  {isProcessing ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Открываем ЮKassa…
-                    </>
-                  ) : (
-                    <>💳 Оплатить {tariff.price.toLocaleString("ru-RU")} ₽</>
-                  )}
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      <p className="text-center text-xs mt-6 text-slate-50">
-        💳 Безопасная оплата через ЮKassa
-      </p>
-      <p className="text-center text-[10px] mt-2 leading-relaxed px-4 text-slate-200">
-        После оплаты запускается генерация AI-фотографий<br />
-        на основе загруженного изображения и выбранного стиля.<br />
-        Результаты предоставляются в цифровом виде.
+      {/* Чекбокс согласия — перед кнопками оплаты */}
+      <div className="mt-6 mb-4 rounded-2xl border border-border bg-card p-4">
+        <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 flex-shrink-0"
+            checked={acceptedPrivacy}
+            onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+          />
+          <span className="text-muted-foreground">
+            Я принимаю условия{" "}
+            <a
+              href="https://docs.google.com/document/d/15IpEOrOKkaEZ9MVpB2cvkeh1HGzYXr4jH3zne9BheRM/edit?usp=sharing"
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-4"
+              onClick={(e) => e.stopPropagation()}>
+              Публичной оферты
+            </a>
+            {" "}и{" "}
+            <a
+              href={privacyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-foreground underline underline-offset-4"
+              onClick={(e) => e.stopPropagation()}>
+              Политики конфиденциальности
+            </a>
+          </span>
+        </label>
+      </div>
+
+      {/* Кнопки оплаты картой по тарифам */}
+      <div className="space-y-3">
+        {TARIFFS.map((tariff) => {
+          const disabled = !acceptedPrivacy || isProcessing;
+          return (
+            <button
+              key={`pay-${tariff.id}`}
+              onClick={() => onSelectTariff(tariff)}
+              disabled={disabled}
+              className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
+                ${disabled
+                  ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+                  : tariff.popular
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/40"
+                    : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"}
+              `}>
+              {isProcessing ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Открываем ЮKassa…
+                </>
+              ) : (
+                <>💳 {tariff.name} — {tariff.price.toLocaleString("ru-RU")} ₽</>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {!acceptedPrivacy && (
+        <p className="text-center text-xs mt-3 text-muted-foreground">
+          Чтобы продолжить, подтвердите согласие с офертой
+        </p>
+      )}
+
+      <p className="text-center text-[11px] mt-6 leading-relaxed px-4 text-slate-200">
+        После оплаты начисляются кредиты для генерации AI-фото<br />
+        Результат за 30–60 секунд • Безопасная оплата через ЮKassa
       </p>
     </section>
   );
