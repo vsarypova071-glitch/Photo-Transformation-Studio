@@ -72,7 +72,6 @@ export default function StylesScreen({
 
   const renderStyleCard = (style: Style) => {
     const isSelected = selectedStyles.includes(style.id);
-    const isRecommended = goalConfig?.recommended === style.id;
     return (
       <div
         key={style.id}
@@ -81,8 +80,6 @@ export default function StylesScreen({
         className={`relative rounded-[2rem] overflow-hidden cursor-pointer group
           ${isSelected
             ? 'scale-[1.03] ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_28px_4px_hsl(var(--primary)/0.55),0_8px_24px_hsl(var(--primary)/0.2)]'
-            : isRecommended
-            ? 'ring-4 ring-primary/60 ring-offset-1 ring-offset-background shadow-[0_0_16px_hsl(var(--primary)/0.35)] hover:scale-[1.025] hover:shadow-[0_0_22px_hsl(var(--primary)/0.45)] active:scale-[0.98]'
             : 'ring-4 ring-transparent hover:ring-primary/25 hover:scale-[1.02] hover:shadow-[0_6px_20px_hsl(var(--primary)/0.18)] active:scale-[0.98]'
           }`}
       >
@@ -101,11 +98,6 @@ export default function StylesScreen({
           <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
           {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
         </div>
-        {isRecommended && !isSelected && (
-          <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
-            <p className="text-[7px] font-black text-primary-foreground uppercase tracking-widest">★ Топ</p>
-          </div>
-        )}
         {isSelected && (
           <div
             style={{ animation: 'scale-in 0.18s cubic-bezier(0.34,1.56,0.64,1)' }}
