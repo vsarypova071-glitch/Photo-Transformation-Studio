@@ -6,6 +6,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TARIFF_CONFIG = {
+  basic: { price: 479, photosCount: 5 },
+  standard: { price: 1299, photosCount: 15 },
+  premium: { price: 2999, photosCount: 50 },
+} as const;
+
+function normalizeText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function arraysEqual(left: unknown, right: unknown): boolean {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((item, index) => item === right[index]);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,13 +41,30 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { tariffId, price, photosCount, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey } = await req.json();
+    const body = await req.json();
+    const { tariffId, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey } = body;
 
-    if (!tariffId || !price || !photosCount || !userSessionId) {
+    if (!tariffId || !userSessionId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const tariff = TARIFF_CONFIG[tariffId as keyof typeof TARIFF_CONFIG];
+    if (!tariff) {
+      return new Response(JSON.stringify({ error: "Invalid tariff" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const price = tariff.price;
+    const photosCount = tariff.photosCount;
+    const safeStyleIds = Array.isArray(styleIds) ? styleIds.filter((id): id is string => typeof id === "string") : [];
+    const safeOriginalImageUrl = typeof originalImageUrl === "string" && originalImageUrl.trim().length > 0
+      ? originalImageUrl
+      : null;
+    const safeCustomPrompt = normalizeText(customPrompt) || null;
+    const safeIsFullBody = Boolean(isFullBody);
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -72,17 +107,27 @@ Deno.serve(async (req: Request) => {
 
       // === STAGE 1.2 — DUPLICATE PROTECTION: reuse existing pending order < 10 min ===
       const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data: existingPending } = await supabaseAdmin
+      const { data: existingPendingOrders } = await supabaseAdmin
         .from("orders")
-        .select("id, payment_id, payment_status, created_at")
+        .select("id, payment_id, payment_status, created_at, tariff_id, price, photos_count, style_ids, original_image, custom_prompt, is_full_body")
         .eq("customer_key", customerKey)
         .eq("payment_status", "pending")
         .gte("created_at", tenMinAgo)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(5);
 
-      if (existingPending && existingPending.payment_id) {
+      const existingPending = existingPendingOrders?.find((pendingOrder) => (
+        pendingOrder.payment_id &&
+        pendingOrder.tariff_id === tariffId &&
+        pendingOrder.price === price &&
+        pendingOrder.photos_count === photosCount &&
+        arraysEqual(pendingOrder.style_ids ?? [], safeStyleIds) &&
+        (pendingOrder.original_image ?? null) === safeOriginalImageUrl &&
+        normalizeText(pendingOrder.custom_prompt) === (safeCustomPrompt ?? "") &&
+        Boolean(pendingOrder.is_full_body) === safeIsFullBody
+      ));
+
+      if (existingPending?.payment_id) {
         // Re-fetch payment URL from YooKassa for the existing pending payment
         try {
           const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
@@ -202,10 +247,10 @@ Deno.serve(async (req: Request) => {
         tariff_id: tariffId,
         photos_count: photosCount,
         price,
-        style_ids: styleIds || [],
-        original_image: originalImageUrl || null,
-        custom_prompt: customPrompt || null,
-        is_full_body: isFullBody || false,
+        style_ids: safeStyleIds,
+        original_image: safeOriginalImageUrl,
+        custom_prompt: safeCustomPrompt,
+        is_full_body: safeIsFullBody,
         payment_status: "pending",
         generation_status: "waiting",
         customer_key: customerKey || null,
