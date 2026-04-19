@@ -98,11 +98,6 @@ export default function StylesScreen({
           <p className="text-[10px] font-black text-foreground uppercase leading-tight tracking-wide">{style.name}</p>
           {style.description && <p className="text-[8px] font-medium text-muted-foreground mt-1 leading-tight line-clamp-2">{style.description}</p>}
         </div>
-        {isRecommended && !isSelected && (
-          <div className="absolute top-3 left-3 bg-primary/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
-            <p className="text-[7px] font-black text-primary-foreground uppercase tracking-widest">★ Топ</p>
-          </div>
-        )}
         {isSelected && (
           <div
             style={{ animation: 'scale-in 0.18s cubic-bezier(0.34,1.56,0.64,1)' }}
