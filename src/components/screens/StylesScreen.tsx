@@ -59,16 +59,11 @@ export default function StylesScreen({
 
   const filteredStyles = styles.filter(s => s.category === activeCategory);
 
-  // Sort: priority styles first, then the rest
-  const sortedStyles = goalConfig
-    ? [
-        ...goalConfig.priority.map(id => filteredStyles.find(s => s.id === id)).filter(Boolean) as typeof filteredStyles,
-        ...filteredStyles.filter(s => !goalConfig.priority.includes(s.id)),
-      ]
-    : filteredStyles;
+  // Порядок строго из массива STYLES (constants.ts), без приоритизации по цели
+  const sortedStyles = filteredStyles;
 
-  const priorityStyles = goalConfig ? sortedStyles.filter(s => goalConfig.priority.includes(s.id)) : [];
-  const restStyles = goalConfig ? sortedStyles.filter(s => !goalConfig.priority.includes(s.id)) : sortedStyles;
+  const priorityStyles: typeof filteredStyles = [];
+  const restStyles = sortedStyles;
 
   const renderStyleCard = (style: Style) => {
     const isSelected = selectedStyles.includes(style.id);
