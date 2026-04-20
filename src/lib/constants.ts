@@ -13,7 +13,7 @@ import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
 import businessEliteImg from '@/assets/styles/business-elite.png';
 import royalPresenceImg from '@/assets/styles/royal-presence.png';
 
-export const STYLES: Style[] = [
+const REALISTIC_STYLES: Style[] = [
   // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
   { 
     id: 'quiet_luxury', 
