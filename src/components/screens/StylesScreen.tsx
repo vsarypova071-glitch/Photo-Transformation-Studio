@@ -133,20 +133,9 @@ export default function StylesScreen({
         ))}
       </div>
 
-      {/* Recommended section */}
-      {goalConfig && priorityStyles.length > 0 && activeCategory === 'realistic' && (
-        <>
-          <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-4">✦ Рекомендуемые стили для вашей цели</p>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {priorityStyles.map(renderStyleCard)}
-          </div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">Все стили</p>
-        </>
-      )}
-
-      {/* Rest of styles grid */}
+      {/* Unified styles grid — priority styles first, then the rest, no gaps */}
       <div className="grid grid-cols-2 gap-4 mb-10">
-        {(goalConfig && activeCategory === 'realistic' ? restStyles : sortedStyles).map(renderStyleCard)}
+        {(goalConfig && activeCategory === 'realistic' ? sortedStyles : sortedStyles).map(renderStyleCard)}
       </div>
 
       {/* Full Body Toggle */}
