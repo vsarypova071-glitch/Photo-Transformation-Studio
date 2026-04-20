@@ -13,7 +13,7 @@ import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
 import businessEliteImg from '@/assets/styles/business-elite.png';
 import royalPresenceImg from '@/assets/styles/royal-presence.png';
 
-export const STYLES: Style[] = [
+const STYLES_RAW: Style[] = [
   // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
   { 
     id: 'quiet_luxury', 
@@ -122,6 +122,32 @@ export const STYLES: Style[] = [
     previewUrl: royalPresenceImg 
   }
 ];
+
+// Желаемый порядок отображения стилей realism (для повышения конверсии)
+const REALISTIC_ORDER = [
+  'business_elite',
+  'old_money',
+  'new_york_power',
+  'evening_glamour',
+  'luxe_editorial',
+  'intellectual_elegance',
+  'quiet_luxury',
+  'milano_style',
+  'parisian_chic',
+  'scandinavian_minimal',
+  'golden_hour_glow',
+  'luxury_resort',
+];
+
+const realisticOrdered = REALISTIC_ORDER
+  .map(id => STYLES_RAW.find(s => s.id === id))
+  .filter((s): s is Style => Boolean(s));
+
+const otherStyles = STYLES_RAW.filter(
+  s => s.category !== 'realistic' || !REALISTIC_ORDER.includes(s.id)
+);
+
+export const STYLES: Style[] = [...realisticOrdered, ...otherStyles];
 
 export const PACKAGES: Package[] = [
   {
