@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { Job } from '../../types';
+import { useState, useEffect, useRef } from "react";
+import { Job } from "../../types";
 
-const BONUS_KEY = 'ai_studio_share_bonus';
+const BONUS_KEY = "ai_studio_share_bonus";
 
 interface ResultsScreenProps {
   job: Job;
@@ -16,14 +16,14 @@ const SHARE_TEXT = `Создал свою AI фотосессию ✨\n\n#AIphot
 async function addWatermark(imageSrc: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
 
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (!ctx) {
         resolve(imageSrc);
         return;
@@ -34,14 +34,14 @@ async function addWatermark(imageSrc: string): Promise<string> {
       const fontSize = Math.max(14, Math.min(18, img.naturalWidth * 0.025));
       ctx.font = `bold ${fontSize}px Inter, sans-serif`;
       ctx.globalAlpha = 0.6;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
       ctx.shadowBlur = 6;
-      ctx.fillText('AI Photo Studio', img.naturalWidth - 20, img.naturalHeight - 20);
+      ctx.fillText("AI Photo Studio", img.naturalWidth - 20, img.naturalHeight - 20);
 
-      resolve(canvas.toDataURL('image/png'));
+      resolve(canvas.toDataURL("image/png"));
     };
 
     img.onerror = () => resolve(imageSrc);
@@ -52,35 +52,35 @@ async function addWatermark(imageSrc: string): Promise<string> {
 async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
   const res = await fetch(dataUrl);
   const blob = await res.blob();
-  return new File([blob], filename, { type: blob.type || 'image/png' });
+  return new File([blob], filename, { type: blob.type || "image/png" });
 }
 
 async function getBlobFromImageSource(src: string): Promise<Blob> {
-  const res = await fetch(src, { mode: 'cors', cache: 'no-cache' });
+  const res = await fetch(src, { mode: "cors", cache: "no-cache" });
   if (!res.ok) {
     throw new Error(`Не удалось получить изображение: ${res.status}`);
   }
   return await res.blob();
 }
 
-function getImageExtension(src: string, fallback = 'jpg'): string {
+function getImageExtension(src: string, fallback = "jpg"): string {
   const dataUrlMatch = src.match(/^data:image\/([a-zA-Z0-9.+-]+);/i)?.[1]?.toLowerCase();
   if (dataUrlMatch) {
-    if (dataUrlMatch === 'jpeg') return 'jpg';
-    if (dataUrlMatch === 'svg+xml') return 'svg';
-    return dataUrlMatch.replace('+xml', '');
+    if (dataUrlMatch === "jpeg") return "jpg";
+    if (dataUrlMatch === "svg+xml") return "svg";
+    return dataUrlMatch.replace("+xml", "");
   }
 
-  const cleanUrl = src.split('?')[0].split('#')[0];
+  const cleanUrl = src.split("?")[0].split("#")[0];
   const urlMatch = cleanUrl.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
   return urlMatch || fallback;
 }
 
 function triggerAnchorDownload(href: string, filename: string) {
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = href;
   a.download = filename;
-  a.rel = 'noopener';
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -88,10 +88,11 @@ function triggerAnchorDownload(href: string, filename: string) {
 
 // STAGE 2.1: iOS Safari ignores <a download>. We must use blob URL + new tab + hint.
 function isIOS(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  return /iPad|iPhone|iPod/.test(ua) ||
-    (ua.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document);
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return (
+    /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && typeof document !== "undefined" && "ontouchend" in document)
+  );
 }
 
 function forceDownloadBlob(blob: Blob, filename: string): { iosHint: boolean } {
@@ -100,12 +101,12 @@ function forceDownloadBlob(blob: Blob, filename: string): { iosHint: boolean } {
   if (isIOS()) {
     // На iOS <a download> не работает — открываем в новой вкладке,
     // пользователь долгим тапом сохраняет в Фото.
-    window.open(blobUrl, '_blank');
+    window.open(blobUrl, "_blank");
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     return { iosHint: true };
   }
 
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = blobUrl;
   a.download = filename;
   document.body.appendChild(a);
@@ -116,15 +117,9 @@ function forceDownloadBlob(blob: Blob, filename: string): { iosHint: boolean } {
   return { iosHint: false };
 }
 
-export default function ResultsScreen({
-  job,
-  onRefine,
-  onFullBody,
-  onNewPhoto,
-  onBackToStyles,
-}: ResultsScreenProps) {
+export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, onBackToStyles }: ResultsScreenProps) {
   const [showMagick, setShowMagick] = useState(false);
-  const [refinePrompt, setRefinePrompt] = useState('');
+  const [refinePrompt, setRefinePrompt] = useState("");
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [sharingPlatform, setSharingPlatform] = useState<string | null>(null);
   const [showBonusToast, setShowBonusToast] = useState(false);
@@ -138,17 +133,17 @@ export default function ResultsScreen({
   const popupShownRef = useRef(false);
 
   const allResults = (job.results || []).filter(Boolean);
-  const resultImage = allResults[activeIndex] || allResults[0] || '';
+  const resultImage = allResults[activeIndex] || allResults[0] || "";
 
   // STAGE 3.1: detect partial result — fewer photos than ordered
   const expected = job.expectedCount ?? allResults.length;
   const missingCount = Math.max(0, expected - allResults.length);
   const isPartial = missingCount > 0 && allResults.length > 0;
   const refundedRub =
-    isPartial && job.paymentMethod === 'rub' && typeof job.priceRub === 'number' && job.priceRub > 0
+    isPartial && job.paymentMethod === "rub" && typeof job.priceRub === "number" && job.priceRub > 0
       ? Math.round((job.priceRub / expected) * missingCount)
       : 0;
-  const refundedCredits = isPartial && job.paymentMethod === 'credits' ? missingCount : 0;
+  const refundedCredits = isPartial && job.paymentMethod === "credits" ? missingCount : 0;
 
   useEffect(() => {
     if (resultImage && !popupShownRef.current) {
@@ -166,11 +161,11 @@ export default function ResultsScreen({
 
     const fileName = `ai-photo-${job.id || Date.now()}-${activeIndex + 1}.png`;
 
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = resultImage;
     a.download = fileName;
-    a.rel = 'noopener';
-    a.style.display = 'none';
+    a.rel = "noopener";
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -189,7 +184,7 @@ export default function ResultsScreen({
     setTimeout(() => setShowBonusToast(false), 3500);
   };
 
-  const handleShare = async (platform: 'instagram' | 'telegram' | 'twitter') => {
+  const handleShare = async (platform: "instagram" | "telegram" | "twitter") => {
     if (!resultImage) return;
 
     setSharingPlatform(platform);
@@ -197,9 +192,9 @@ export default function ResultsScreen({
 
     // Twitter — всегда web-intent. Открываем СРАЗУ, до любых await,
     // чтобы не потерять user-gesture (popup-блокеры).
-    if (platform === 'twitter') {
+    if (platform === "twitter") {
       const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
-      window.open(tweetUrl, '_blank', 'noopener');
+      window.open(tweetUrl, "_blank", "noopener");
       grantShareBonus();
       setSharingPlatform(null);
       return;
@@ -207,18 +202,15 @@ export default function ResultsScreen({
 
     try {
       const watermarked = await addWatermark(resultImage);
-      const file = await dataUrlToFile(
-        watermarked,
-        `ai-photo-studio-${Date.now()}.png`
-      );
+      const file = await dataUrlToFile(watermarked, `ai-photo-studio-${Date.now()}.png`);
 
       // Native share-sheet с файлом — лучший UX (iOS/Android).
       // Обязательно проверяем canShare({ files }), иначе на десктопах
       // navigator.share есть, но файлы не поддерживаются → молча падает.
       const canShareFiles =
-        typeof navigator !== 'undefined' &&
-        typeof navigator.share === 'function' &&
-        typeof (navigator as any).canShare === 'function' &&
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function" &&
+        typeof (navigator as any).canShare === "function" &&
         (navigator as any).canShare({ files: [file] });
 
       if (canShareFiles) {
@@ -228,31 +220,31 @@ export default function ResultsScreen({
           return;
         } catch (err: any) {
           // AbortError = юзер закрыл sheet, бонус не даём, фолбэк не нужен
-          if (err?.name === 'AbortError') return;
+          if (err?.name === "AbortError") return;
           // иначе проваливаемся в web-фолбэк ниже
-          console.warn('navigator.share files failed, falling back', err);
+          console.warn("navigator.share files failed, falling back", err);
         }
       }
 
       // Web-фолбэк (десктоп / браузер без file-share):
       // 1) скачиваем фото 2) открываем web-страницу нужной соцсети,
       // куда юзер вручную приложит фото.
-      await handleDownload(true);
+      handleDownload(true);
 
-      if (platform === 'telegram') {
+      if (platform === "telegram") {
         const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(
-          'https://ai-fotosessia.ru'
+          "https://ai-fotosessia.ru",
         )}&text=${encodeURIComponent(SHARE_TEXT)}`;
-        window.open(tgUrl, '_blank', 'noopener');
-      } else if (platform === 'instagram') {
+        window.open(tgUrl, "_blank", "noopener");
+      } else if (platform === "instagram") {
         // У Instagram нет web-share для фото. Открываем создание поста —
         // юзер сам приложит только что скачанный файл.
-        window.open('https://www.instagram.com/', '_blank', 'noopener');
+        window.open("https://www.instagram.com/", "_blank", "noopener");
       }
 
       grantShareBonus();
     } catch (err) {
-      console.log('Share cancelled or failed', err);
+      console.log("Share cancelled or failed", err);
     } finally {
       setSharingPlatform(null);
     }
@@ -262,17 +254,13 @@ export default function ResultsScreen({
     <>
       <div
         className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${
-          showBonusToast
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 -translate-y-4 pointer-events-none'
+          showBonusToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
         <div className="flex items-center gap-3 bg-primary text-primary-foreground px-6 py-4 rounded-2xl shadow-2xl font-black text-sm whitespace-nowrap">
           <span className="text-xl">🎁</span>
           <div>
-            <p className="text-xs opacity-80 uppercase tracking-widest leading-none mb-0.5">
-              Бонус получен!
-            </p>
+            <p className="text-xs opacity-80 uppercase tracking-widest leading-none mb-0.5">Бонус получен!</p>
             <p>+1 бесплатная генерация</p>
           </div>
         </div>
@@ -281,9 +269,7 @@ export default function ResultsScreen({
       {/* STAGE 2.1: iOS save-to-Photos hint */}
       <div
         className={`fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${
-          iosHint
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 -translate-y-4 pointer-events-none'
+          iosHint ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
         <div className="flex items-center gap-3 bg-foreground text-background px-5 py-3 rounded-2xl shadow-2xl font-semibold text-xs max-w-[90vw]">
@@ -304,15 +290,11 @@ export default function ResultsScreen({
           <div className="relative w-full max-w-md glass rounded-[2rem] p-8 border border-primary/20 animate-in slide-in-from-bottom duration-400 shadow-2xl">
             <div className="text-center mb-6">
               <div className="text-3xl mb-3">✨</div>
-              <h3 className="text-lg font-black text-foreground mb-1">
-                Ваше фото готово!
-              </h3>
+              <h3 className="text-lg font-black text-foreground mb-1">Ваше фото готово!</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Поделитесь результатом и получите
                 <br />
-                <span className="text-primary font-black">
-                  +1 бесплатное фото
-                </span>
+                <span className="text-primary font-black">+1 бесплатное фото</span>
               </p>
             </div>
 
@@ -326,7 +308,7 @@ export default function ResultsScreen({
               <button
                 onClick={() => {
                   setShowSharePopup(false);
-                  handleShare('telegram');
+                  handleShare("telegram");
                 }}
                 className="flex-[2] bg-primary text-primary-foreground py-4 rounded-2xl font-black text-xs uppercase shadow-2xl"
               >
@@ -338,9 +320,7 @@ export default function ResultsScreen({
       )}
 
       <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
-        <h2 className="text-3xl font-black uppercase mb-4 text-foreground">
-          Результат
-        </h2>
+        <h2 className="text-3xl font-black uppercase mb-4 text-foreground">Результат</h2>
 
         {/* STAGE 3.1: partial-result notice with pro-rata refund info */}
         {isPartial && (
@@ -352,10 +332,18 @@ export default function ResultsScreen({
               </p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {refundedRub > 0 && (
-                  <>За недостающие {missingCount} мы автоматически вернули <span className="text-primary font-black">{refundedRub} ₽</span> на вашу карту. Возврат может занять до 5 рабочих дней.</>
+                  <>
+                    За недостающие {missingCount} мы автоматически вернули{" "}
+                    <span className="text-primary font-black">{refundedRub} ₽</span> на вашу карту. Возврат может занять
+                    до 5 рабочих дней.
+                  </>
                 )}
                 {refundedCredits > 0 && (
-                  <>За недостающие {missingCount} мы вернули <span className="text-primary font-black">{refundedCredits}</span> {refundedCredits === 1 ? 'кредит' : 'кредита'} на ваш баланс.</>
+                  <>
+                    За недостающие {missingCount} мы вернули{" "}
+                    <span className="text-primary font-black">{refundedCredits}</span>{" "}
+                    {refundedCredits === 1 ? "кредит" : "кредита"} на ваш баланс.
+                  </>
                 )}
                 {refundedRub === 0 && refundedCredits === 0 && (
                   <>За недостающие {missingCount} фото мы автоматически оформили возврат.</>
@@ -372,8 +360,8 @@ export default function ResultsScreen({
                 onClick={() => setActiveIndex(i)}
                 className={`flex-1 py-2 rounded-xl text-xs font-black uppercase transition-all ${
                   activeIndex === i
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'bg-secondary text-muted-foreground'
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "bg-secondary text-muted-foreground"
                 }`}
               >
                 Вариант {i + 1}
@@ -398,14 +386,7 @@ export default function ResultsScreen({
             {isDownloading ? (
               <div className="w-6 h-6 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             ) : (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                   strokeLinecap="round"
@@ -423,16 +404,10 @@ export default function ResultsScreen({
                 key={i}
                 onClick={() => setActiveIndex(i)}
                 className={`flex-1 aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
-                  activeIndex === i
-                    ? 'border-primary shadow-lg shadow-primary/30'
-                    : 'border-transparent opacity-60'
+                  activeIndex === i ? "border-primary shadow-lg shadow-primary/30" : "border-transparent opacity-60"
                 }`}
               >
-                <img
-                  src={img}
-                  className="w-full h-full object-cover"
-                  alt={`thumb ${i + 1}`}
-                />
+                <img src={img} className="w-full h-full object-cover" alt={`thumb ${i + 1}`} />
               </button>
             ))}
           </div>
@@ -441,52 +416,42 @@ export default function ResultsScreen({
         <div className="flex items-start gap-2.5 bg-muted/40 border border-border/50 rounded-2xl px-4 py-3 mb-5">
           <span className="text-base mt-0.5">🤖</span>
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            <span className="font-bold text-foreground/70">
-              Это художественная интерпретация AI.
-            </span>{' '}
-            Черты лица могут незначительно отличаться от оригинала — выберите
-            лучший вариант из {allResults.length > 1 ? `${allResults.length} ` : ''}
-            результата{allResults.length > 1 ? 'ов' : 'а'}.
+            <span className="font-bold text-foreground/70">Это художественная интерпретация AI.</span> Черты лица могут
+            незначительно отличаться от оригинала — выберите лучший вариант из{" "}
+            {allResults.length > 1 ? `${allResults.length} ` : ""}
+            результата{allResults.length > 1 ? "ов" : "а"}.
           </p>
         </div>
 
         <div className="glass rounded-[2rem] p-6 border border-white/5 mb-6">
           <div className="flex items-center justify-between mb-5">
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">
-              Поделиться результатом
-            </p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Поделиться результатом</p>
 
             {bonusCredits > 0 && (
               <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 rounded-full px-3 py-1">
                 <span className="text-xs">🎁</span>
-                <span className="text-[10px] font-black text-primary">
-                  +{bonusCredits} бонус
-                </span>
+                <span className="text-[10px] font-black text-primary">+{bonusCredits} бонус</span>
               </div>
             )}
           </div>
 
           <p className="text-[10px] text-muted-foreground mb-4 leading-relaxed">
-            Поделитесь результатом — получите{' '}
-            <span className="text-primary font-black">
-              +1 бесплатную генерацию
-            </span>
+            Поделитесь результатом — получите <span className="text-primary font-black">+1 бесплатную генерацию</span>
           </p>
 
           <div className="flex items-center justify-around">
             <button
-              onClick={() => handleShare('instagram')}
+              onClick={() => handleShare("instagram")}
               disabled={sharingPlatform !== null}
               className="flex flex-col items-center gap-2 group disabled:opacity-50"
             >
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 group-hover:scale-110 shadow-lg"
                 style={{
-                  background:
-                    'linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4)',
+                  background: "linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4)",
                 }}
               >
-                {sharingPlatform === 'instagram' ? (
+                {sharingPlatform === "instagram" ? (
                   <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
@@ -494,21 +459,19 @@ export default function ResultsScreen({
                   </svg>
                 )}
               </div>
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                Instagram
-              </span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Instagram</span>
             </button>
 
             <button
-              onClick={() => handleShare('telegram')}
+              onClick={() => handleShare("telegram")}
               disabled={sharingPlatform !== null}
               className="flex flex-col items-center gap-2 group disabled:opacity-50"
             >
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-90 group-hover:scale-110 shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #2aabee, #229ed9)' }}
+                style={{ background: "linear-gradient(135deg, #2aabee, #229ed9)" }}
               >
-                {sharingPlatform === 'telegram' ? (
+                {sharingPlatform === "telegram" ? (
                   <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
@@ -516,18 +479,16 @@ export default function ResultsScreen({
                   </svg>
                 )}
               </div>
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                Telegram
-              </span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Telegram</span>
             </button>
 
             <button
-              onClick={() => handleShare('twitter')}
+              onClick={() => handleShare("twitter")}
               disabled={sharingPlatform !== null}
               className="flex flex-col items-center gap-2 group disabled:opacity-50"
             >
               <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center transition-all active:scale-90 group-hover:scale-110 shadow-lg border border-white/10">
-                {sharingPlatform === 'twitter' ? (
+                {sharingPlatform === "twitter" ? (
                   <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 ) : (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -535,9 +496,7 @@ export default function ResultsScreen({
                   </svg>
                 )}
               </div>
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                Twitter
-              </span>
+              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Twitter</span>
             </button>
           </div>
         </div>
@@ -564,9 +523,7 @@ export default function ResultsScreen({
 
         {showMagick && (
           <div className="glass p-8 rounded-[2rem] border-primary/20 mt-6 animate-in slide-in-from-top duration-300">
-            <p className="text-[10px] font-black text-primary mb-3 uppercase tracking-widest">
-              Магическая ретушь
-            </p>
+            <p className="text-[10px] font-black text-primary mb-3 uppercase tracking-widest">Магическая ретушь</p>
 
             <textarea
               value={refinePrompt}
