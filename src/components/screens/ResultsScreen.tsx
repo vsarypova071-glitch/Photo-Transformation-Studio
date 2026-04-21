@@ -163,82 +163,36 @@ export default function ResultsScreen({
 
     setIsDownloading(true);
 
-    let blobUrl: string | null = null;
-
-    // Детект мобильного устройства (iOS или Android)
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
     const isMobile = isIOS() || /Android/i.test(ua) || /Mobile/i.test(ua);
 
+    // Фиксированное имя файла — НЕ берём из resultImage (там base64).
+    // job.id + индекс варианта обеспечивают уникальность и читаемость.
+    const safeId = (job?.id || `${Date.now()}`).toString().slice(0, 8);
+    const fileName = withWatermark
+      ? `ai-photo-${safeId}-${activeIndex + 1}-wm.png`
+      : `ai-photo-${safeId}-${activeIndex + 1}.png`;
+
     try {
-      // 1. Получить исходник (с водяным знаком или без)
+      // Источник: либо исходник, либо версия с водяным знаком (тоже data URL)
       const sourceUrl = withWatermark ? await addWatermark(resultImage) : resultImage;
 
-      // 2. Любой URL (data: или http) → Blob через fetch
-      const res = await fetch(sourceUrl, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const rawBlob = await res.blob();
-      if (!rawBlob.size) throw new Error('Empty blob');
-
-      // 3. Корректный MIME-тип
-      const headerType = res.headers.get('content-type') || '';
-      const mimeType =
-        rawBlob.type ||
-        (headerType.startsWith('image/') ? headerType : null) ||
-        (withWatermark ? 'image/png' : 'image/jpeg');
-
-      const blob = rawBlob.type ? rawBlob : new Blob([rawBlob], { type: mimeType });
-
-      // 4. Имя файла с правильным расширением
-      const extFromMime = mimeType.split('/')[1]?.split(';')[0]?.toLowerCase();
-      const rawExt = withWatermark ? 'png' : extFromMime || getImageExtension(resultImage, 'jpg');
-      const fileExtension = rawExt === 'jpeg' ? 'jpg' : rawExt;
-      const fileName = withWatermark
-        ? `ai-photo-${Date.now()}-watermarked.${fileExtension}`
-        : `ai-photo-${Date.now()}.${fileExtension}`;
-
-      // 5. ОСНОВНОЙ ПУТЬ для мобильных — Web Share API (системное меню)
-      if (isMobile) {
-        try {
-          const file = new File([blob], fileName, { type: mimeType });
-          const navAny = navigator as any;
-          const canShareFiles =
-            typeof navAny.canShare === 'function' && navAny.canShare({ files: [file] });
-
-          if (canShareFiles && typeof navAny.share === 'function') {
-            await navAny.share({ files: [file], title: fileName });
-            return;
-          }
-        } catch (shareErr: any) {
-          // Пользователь отменил Share Sheet — это не ошибка, выходим тихо
-          if (shareErr && (shareErr.name === 'AbortError' || shareErr.name === 'NotAllowedError')) {
-            return;
-          }
-          // иначе — падаем во fallback ниже
-          console.warn('[Download] Web Share unavailable, fallback:', shareErr);
-        }
-
-        // Fallback для мобильных: открыть blob в новой вкладке (долгий тап → Сохранить)
-        blobUrl = URL.createObjectURL(blob);
-        const opened = window.open(blobUrl, '_blank');
-        if (!opened) window.open(resultImage, '_blank');
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-        const urlToRevoke = blobUrl;
-        blobUrl = null;
-        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60_000);
-        return;
-      }
-
-      // 6. Desktop: обычное скачивание через <a download>
-      blobUrl = URL.createObjectURL(blob);
+      // Прямое скачивание через <a href=dataURL download=filename>
+      // Без fetch/blob — иначе имя файла слетает в base64-хвост.
       const a = document.createElement('a');
-      a.href = blobUrl;
+      a.href = sourceUrl;
       a.download = fileName;
       a.rel = 'noopener';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+
+      // На мобильных download для data URL часто игнорируется —
+      // покажем подсказку «долгий тап → Сохранить» и откроем в новой вкладке как fallback.
+      if (isMobile) {
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 8000);
+      }
     } catch (err) {
       console.error('[Download] failed, fallback to new tab:', err);
       try {
@@ -251,9 +205,6 @@ export default function ResultsScreen({
         alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
       }
     } finally {
-      if (blobUrl) {
-        setTimeout(() => URL.revokeObjectURL(blobUrl as string), 1500);
-      }
       setIsDownloading(false);
     }
   };
