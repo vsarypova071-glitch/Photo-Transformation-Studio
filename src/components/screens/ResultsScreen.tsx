@@ -63,6 +63,29 @@ async function getBlobFromImageSource(src: string): Promise<Blob> {
   return await res.blob();
 }
 
+function getImageExtension(src: string, fallback = 'jpg'): string {
+  const dataUrlMatch = src.match(/^data:image\/([a-zA-Z0-9.+-]+);/i)?.[1]?.toLowerCase();
+  if (dataUrlMatch) {
+    if (dataUrlMatch === 'jpeg') return 'jpg';
+    if (dataUrlMatch === 'svg+xml') return 'svg';
+    return dataUrlMatch.replace('+xml', '');
+  }
+
+  const cleanUrl = src.split('?')[0].split('#')[0];
+  const urlMatch = cleanUrl.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
+  return urlMatch || fallback;
+}
+
+function triggerAnchorDownload(href: string, filename: string) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 // STAGE 2.1: iOS Safari ignores <a download>. We must use blob URL + new tab + hint.
 function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -165,10 +188,18 @@ export default function ResultsScreen({
     setIsDownloading(true);
 
     try {
+      const fileExtension = withWatermark ? 'png' : getImageExtension(resultImage, 'jpg');
       const fileName = withWatermark
-        ? `ai-photo-${Date.now()}-watermarked.png`
-        : `ai-photo-${Date.now()}.jpg`;
+        ? `ai-photo-${Date.now()}-watermarked.${fileExtension}`
+        : `ai-photo-${Date.now()}.${fileExtension}`;
       console.log('[DL] FILE NAME:', fileName);
+
+      if (!withWatermark && resultImage.startsWith('data:') && !isIOS()) {
+        console.log('[DL] DIRECT DATA URL DOWNLOAD START');
+        triggerAnchorDownload(resultImage, fileName);
+        console.log('[DL] DIRECT DATA URL DOWNLOAD TRIGGERED');
+        return;
+      }
 
       let blob: Blob;
 
@@ -234,16 +265,9 @@ export default function ResultsScreen({
       console.log('[DL] DOWNLOAD VIA <a> START');
       const blobUrl = URL.createObjectURL(blob);
       console.log('[DL] BLOB URL CREATED:', blobUrl);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fileName;
-      console.log('[DL] A TAG CREATED', { href: a.href, download: a.download });
-      document.body.appendChild(a);
-      console.log('[DL] A TAG APPENDED');
-      a.click();
+      console.log('[DL] A TAG CREATED', { href: blobUrl, download: fileName });
+      triggerAnchorDownload(blobUrl, fileName);
       console.log('[DL] A TAG CLICK TRIGGERED');
-      document.body.removeChild(a);
-      console.log('[DL] A TAG REMOVED');
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err: any) {
       console.error('[DL] DOWNLOAD ERROR FULL:', err);
