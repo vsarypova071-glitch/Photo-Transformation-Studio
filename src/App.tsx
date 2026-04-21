@@ -573,7 +573,7 @@ function App() {
             photosCount: tariff.photos,
             userSessionId: sessionId,
             styleIds: selectedStyles,
-            originalImageUrl: urlData.publicUrl,
+            originalImageUrl: publicUrl,
             customPrompt: '',
             isFullBody,
             customerKey: getCustomerKey(),
@@ -624,19 +624,12 @@ function App() {
       }
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const { error: uploadError } = await supabase.storage
-        .from('user-photos')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-
-      if (uploadError) {
-        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      let imageStoragePath: string;
+      try {
+        imageStoragePath = await uploadPhotoDirect(fileName, blob);
+      } catch (e: any) {
+        throw new Error('Ошибка загрузки фото: ' + (e?.message || 'Failed to fetch'));
       }
-
-      const { data: urlData } = supabase.storage
-        .from('user-photos')
-        .getPublicUrl(fileName);
-
-      const imageStoragePath = urlData.publicUrl;
       log.info('Image uploaded to storage', { path: fileName });
 
       const response = await fetch(
