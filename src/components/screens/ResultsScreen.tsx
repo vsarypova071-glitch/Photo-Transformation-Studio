@@ -256,54 +256,62 @@ export default function ResultsScreen({
     setSharingPlatform(platform);
     setShowSharePopup(false);
 
+    // Twitter — всегда web-intent. Открываем СРАЗУ, до любых await,
+    // чтобы не потерять user-gesture (popup-блокеры).
+    if (platform === 'twitter') {
+      const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}`;
+      window.open(tweetUrl, '_blank', 'noopener');
+      grantShareBonus();
+      setSharingPlatform(null);
+      return;
+    }
+
     try {
       const watermarked = await addWatermark(resultImage);
-      let shared = false;
+      const file = await dataUrlToFile(
+        watermarked,
+        `ai-photo-studio-${Date.now()}.png`
+      );
 
-      if (navigator.share) {
-        const file = await dataUrlToFile(
-          watermarked,
-          `ai-photo-studio-${Date.now()}.png`
-        );
+      // Native share-sheet с файлом — лучший UX (iOS/Android).
+      // Обязательно проверяем canShare({ files }), иначе на десктопах
+      // navigator.share есть, но файлы не поддерживаются → молча падает.
+      const canShareFiles =
+        typeof navigator !== 'undefined' &&
+        typeof navigator.share === 'function' &&
+        typeof (navigator as any).canShare === 'function' &&
+        (navigator as any).canShare({ files: [file] });
 
-        const shareData: ShareData = {
-          files: [file],
-          text: SHARE_TEXT,
-        };
-
-        if (platform === 'twitter') {
-          const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            SHARE_TEXT
-          )}`;
-          window.open(tweetUrl, '_blank');
-          shared = true;
-        } else {
-          await navigator.share(shareData);
-          shared = true;
-        }
-      } else {
-        if (platform === 'twitter') {
-          const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            SHARE_TEXT
-          )}`;
-          window.open(tweetUrl, '_blank');
-          shared = true;
-        } else if (platform === 'telegram') {
-          const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(
-            'https://photo-transformation-studio.lovable.app'
-          )}&text=${encodeURIComponent(SHARE_TEXT)}`;
-          window.open(tgUrl, '_blank');
-          await handleDownload(true);
-          shared = true;
-        } else {
-          await handleDownload(true);
-          shared = true;
+      if (canShareFiles) {
+        try {
+          await navigator.share({ files: [file], text: SHARE_TEXT });
+          grantShareBonus();
+          return;
+        } catch (err: any) {
+          // AbortError = юзер закрыл sheet, бонус не даём, фолбэк не нужен
+          if (err?.name === 'AbortError') return;
+          // иначе проваливаемся в web-фолбэк ниже
+          console.warn('navigator.share files failed, falling back', err);
         }
       }
 
-      if (shared) {
-        grantShareBonus();
+      // Web-фолбэк (десктоп / браузер без file-share):
+      // 1) скачиваем фото 2) открываем web-страницу нужной соцсети,
+      // куда юзер вручную приложит фото.
+      await handleDownload(true);
+
+      if (platform === 'telegram') {
+        const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(
+          'https://ai-fotosessia.ru'
+        )}&text=${encodeURIComponent(SHARE_TEXT)}`;
+        window.open(tgUrl, '_blank', 'noopener');
+      } else if (platform === 'instagram') {
+        // У Instagram нет web-share для фото. Открываем создание поста —
+        // юзер сам приложит только что скачанный файл.
+        window.open('https://www.instagram.com/', '_blank', 'noopener');
       }
+
+      grantShareBonus();
     } catch (err) {
       console.log('Share cancelled or failed', err);
     } finally {
