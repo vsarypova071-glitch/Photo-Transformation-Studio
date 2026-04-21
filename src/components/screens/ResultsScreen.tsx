@@ -158,87 +158,26 @@ export default function ResultsScreen({
     }
   }, [resultImage]);
 
-  const handleDownload = async (withWatermark = false) => {
-    if (!resultImage || isDownloading) return;
+  // Минимальный синхронный download — без fetch/blob/objectURL.
+  // Прямой <a href={resultImage} download={fileName}>. Корректное имя файла.
+  // Для iOS показываем подсказку «Зажмите → Сохранить».
+  const handleDownload = (_withWatermark = false) => {
+    if (!resultImage) return;
 
-    setIsDownloading(true);
+    const fileName = `ai-photo-${job.id || Date.now()}-${activeIndex + 1}.png`;
 
-    let blobUrl: string | null = null;
+    const a = document.createElement('a');
+    a.href = resultImage;
+    a.download = fileName;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-    try {
-      // 1. Получить исходник (с водяным знаком или без)
-      const sourceUrl = withWatermark ? await addWatermark(resultImage) : resultImage;
-
-      // 2. Любой URL (data: или http) преобразуем в Blob через fetch
-      const res = await fetch(sourceUrl, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const rawBlob = await res.blob();
-      if (!rawBlob.size) throw new Error('Empty blob');
-
-      // 3. Гарантируем корректный MIME-тип
-      const headerType = res.headers.get('content-type') || '';
-      const mimeType =
-        rawBlob.type ||
-        (headerType.startsWith('image/') ? headerType : null) ||
-        (withWatermark ? 'image/png' : 'image/jpeg');
-
-      const blob = rawBlob.type ? rawBlob : new Blob([rawBlob], { type: mimeType });
-
-      // 4. Имя файла с правильным расширением
-      const extFromMime = mimeType.split('/')[1]?.split(';')[0]?.toLowerCase();
-      const fileExtension =
-        (withWatermark ? 'png' : extFromMime || getImageExtension(resultImage, 'jpg')) === 'jpeg'
-          ? 'jpg'
-          : withWatermark
-          ? 'png'
-          : extFromMime || getImageExtension(resultImage, 'jpg');
-      const fileName = withWatermark
-        ? `ai-photo-${Date.now()}-watermarked.${fileExtension}`
-        : `ai-photo-${Date.now()}.${fileExtension}`;
-
-      // 5. Временный object URL
-      blobUrl = URL.createObjectURL(blob);
-
-      // 6. iOS Safari: <a download> игнорируется — открываем blob в новой вкладке
-      if (isIOS()) {
-        const opened = window.open(blobUrl, '_blank');
-        if (!opened) {
-          // popup заблокирован — fallback на исходник
-          window.open(resultImage, '_blank');
-        }
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-        // На iOS revoke позже — вкладка должна успеть отрисовать
-        const urlToRevoke = blobUrl;
-        blobUrl = null;
-        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60_000);
-        return;
-      }
-
-      // 7. Android + Desktop: <a> ОБЯЗАТЕЛЬНО в DOM перед click()
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fileName;
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (err) {
-      console.error('[Download] failed, fallback to new tab:', err);
-      // 9. Fallback: открыть изображение в новой вкладке
-      try {
-        window.open(resultImage, '_blank');
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-      } catch {
-        alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
-      }
-    } finally {
-      if (blobUrl) {
-        setTimeout(() => URL.revokeObjectURL(blobUrl as string), 1500);
-      }
-      setIsDownloading(false);
+    if (isIOS()) {
+      setIosHint(true);
+      setTimeout(() => setIosHint(false), 8000);
     }
   };
 
