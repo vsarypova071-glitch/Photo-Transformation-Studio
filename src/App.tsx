@@ -3,7 +3,7 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory, Job } from './types';
 import { createLogger } from './utils/logger';
-import { supabase } from './integrations/supabase/client';
+
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
 import GoalScreen from './components/screens/GoalScreen';
@@ -42,6 +42,34 @@ function getCustomerKey(): string {
     localStorage.setItem('customer_key', key);
   }
   return key;
+}
+
+// 🔧 FIX upload "Failed to fetch": заливаем фото прямым POST на Storage REST,
+// минуя SDK-fetch (который в preview-iframe иногда рушится TypeError'ом
+// на больших blob'ах). Эндпоинт, политики и анон-ключ — те же.
+async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string> {
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/user-photos/${fileName}`;
+  const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${anon}`,
+      'apikey': anon,
+      'Content-Type': blob.type || 'image/jpeg',
+      'x-upsert': 'true',
+    },
+    body: blob,
+  });
+  if (!resp.ok) {
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const j = await resp.json();
+      msg = j?.message || j?.error || msg;
+    } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/user-photos/${fileName}`;
+  return publicUrl;
 }
 
 function App() {
@@ -523,17 +551,12 @@ function App() {
       }
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const { error: uploadError } = await supabase.storage
-        .from('user-photos')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-
-      if (uploadError) {
-        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      let publicUrl: string;
+      try {
+        publicUrl = await uploadPhotoDirect(fileName, blob);
+      } catch (e: any) {
+        throw new Error('Ошибка загрузки фото: ' + (e?.message || 'Failed to fetch'));
       }
-
-      const { data: urlData } = supabase.storage
-        .from('user-photos')
-        .getPublicUrl(fileName);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pay-with-credits`,
@@ -550,7 +573,7 @@ function App() {
             photosCount: tariff.photos,
             userSessionId: sessionId,
             styleIds: selectedStyles,
-            originalImageUrl: urlData.publicUrl,
+            originalImageUrl: publicUrl,
             customPrompt: '',
             isFullBody,
             customerKey: getCustomerKey(),
@@ -601,19 +624,12 @@ function App() {
       }
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const { error: uploadError } = await supabase.storage
-        .from('user-photos')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-
-      if (uploadError) {
-        throw new Error('Ошибка загрузки фото: ' + uploadError.message);
+      let imageStoragePath: string;
+      try {
+        imageStoragePath = await uploadPhotoDirect(fileName, blob);
+      } catch (e: any) {
+        throw new Error('Ошибка загрузки фото: ' + (e?.message || 'Failed to fetch'));
       }
-
-      const { data: urlData } = supabase.storage
-        .from('user-photos')
-        .getPublicUrl(fileName);
-
-      const imageStoragePath = urlData.publicUrl;
       log.info('Image uploaded to storage', { path: fileName });
 
       const response = await fetch(
