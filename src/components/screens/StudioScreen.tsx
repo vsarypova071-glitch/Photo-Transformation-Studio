@@ -145,15 +145,27 @@ export default function StudioScreen({
     }
   };
 
-  // === Скачивание ===
+  // === Скачивание === (минимальный синхронный patch — без fetch/blob)
   const handleDownload = () => {
     if (!resultImage) return;
+    const fileName = `ai-photo-${Date.now()}-1.png`;
+
     const link = document.createElement('a');
     link.href = resultImage;
-    link.download = `ai-foto-${resultStyleName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.png`;
+    link.download = fileName;
+    link.rel = 'noopener';
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      ((navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+    if (isIOS) {
+      alert('Зажмите изображение → Сохранить');
+    }
+
     log.info('Photo downloaded by user');
   };
 
