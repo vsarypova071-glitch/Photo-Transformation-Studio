@@ -136,60 +136,93 @@ export default function ResultsScreen({
   }, [resultImage]);
 
   const handleDownload = async (withWatermark = false) => {
-    if (!resultImage || isDownloading) return;
+    // === DIAGNOSTIC LOGS START ===
+    console.log('[DL] DOWNLOAD CLICKED', { withWatermark });
+    console.log('[DL] resultImage:', resultImage);
+    console.log('[DL] isDownloading before start:', isDownloading);
+    console.log('[DL] userAgent:', typeof navigator !== 'undefined' ? navigator.userAgent : 'no-nav');
+    console.log('[DL] isIOS():', isIOS());
+    console.log(
+      '[DL] IMAGE SOURCE TYPE:',
+      resultImage?.startsWith('data:')
+        ? 'data-url'
+        : resultImage?.startsWith('http')
+        ? 'http-url'
+        : resultImage?.startsWith('blob:')
+        ? 'blob-url'
+        : 'unknown'
+    );
 
+    if (!resultImage || isDownloading) {
+      console.warn('[DL] EARLY RETURN', {
+        hasResultImage: !!resultImage,
+        isDownloading,
+      });
+      return;
+    }
+
+    console.log('[DL] isDownloading set true');
     setIsDownloading(true);
 
     try {
       const fileName = withWatermark
         ? `ai-photo-${Date.now()}-watermarked.png`
         : `ai-photo-${Date.now()}.jpg`;
+      console.log('[DL] FILE NAME:', fileName);
 
-      // Determine the source: if data URL, use directly. If watermark, generate data URL.
-      let downloadHref: string = resultImage;
+      let blob: Blob;
 
       if (withWatermark) {
-        downloadHref = await addWatermark(resultImage);
-      }
-
-      // If source is a data URL — download directly without fetch/blob (works on Huawei/Android).
-      if (downloadHref.startsWith('data:')) {
-        if (isIOS()) {
-          // iOS Safari: open in new tab so user can long-press to save.
-          window.open(downloadHref, '_blank');
+        console.log('[DL] WATERMARK PATH START');
+        const watermarkedDataUrl = await addWatermark(resultImage);
+        console.log('[DL] watermark dataUrl length:', watermarkedDataUrl?.length);
+        const res = await fetch(watermarkedDataUrl);
+        console.log('[DL] watermark fetch ok:', res.ok, 'status:', res.status);
+        blob = await res.blob();
+        console.log('[DL] watermark BLOB CREATED', { type: blob.type, size: blob.size });
+      } else {
+        try {
+          console.log('[DL] FETCH START', resultImage);
+          const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
+          console.log('[DL] FETCH RESPONSE', {
+            status: res.status,
+            ok: res.ok,
+            type: res.type,
+            url: res.url,
+          });
+          if (!res.ok) {
+            throw new Error(`Не удалось получить изображение: ${res.status}`);
+          }
+          blob = await res.blob();
+          console.log('[DL] BLOB CREATED', { type: blob.type, size: blob.size });
+          if (!blob.size) {
+            console.error('[DL] BLOB SIZE = 0, treating as failure');
+            throw new Error('Empty blob');
+          }
+        } catch (corsErr: any) {
+          console.error('[DL] FETCH / CORS ERROR:', corsErr);
+          console.error('[DL] FETCH ERROR MESSAGE:', corsErr?.message);
+          console.error('[DL] FETCH ERROR STACK:', corsErr?.stack);
+          console.warn('[DL] CORS fallback — opening direct URL');
+          const opened = window.open(resultImage, '_blank');
+          console.log('[DL] WINDOW OPEN RESULT (cors fallback):', opened);
           setIosHint(true);
           setTimeout(() => setIosHint(false), 8000);
           setIsDownloading(false);
           return;
         }
-
-        const a = document.createElement('a');
-        a.href = downloadHref;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        return;
       }
 
-      // Remote URL path — fetch as blob with CORS fallback.
-      let blob: Blob;
-      try {
-        const res = await fetch(downloadHref, { mode: 'cors', cache: 'no-cache' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        blob = await res.blob();
-        if (!blob.size) throw new Error('Empty blob');
-      } catch (corsErr) {
-        window.open(downloadHref, '_blank');
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-        setIsDownloading(false);
-        return;
-      }
-
+      // iOS Safari path
       if (isIOS()) {
+        console.log('[DL] IOS FLOW START');
         const blobUrl = URL.createObjectURL(blob);
-        window.open(blobUrl, '_blank');
+        console.log('[DL] IOS BLOB URL CREATED:', blobUrl);
+        const opened = window.open(blobUrl, '_blank');
+        console.log('[DL] IOS WINDOW OPEN RESULT:', opened);
+        if (!opened) {
+          console.error('[DL] IOS window.open BLOCKED by browser (popup blocker)');
+        }
         setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
         setIosHint(true);
         setTimeout(() => setIosHint(false), 8000);
@@ -197,23 +230,36 @@ export default function ResultsScreen({
         return;
       }
 
+      // Android + Desktop path
+      console.log('[DL] DOWNLOAD VIA <a> START');
       const blobUrl = URL.createObjectURL(blob);
+      console.log('[DL] BLOB URL CREATED:', blobUrl);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = fileName;
+      console.log('[DL] A TAG CREATED', { href: a.href, download: a.download });
       document.body.appendChild(a);
+      console.log('[DL] A TAG APPENDED');
       a.click();
+      console.log('[DL] A TAG CLICK TRIGGERED');
       document.body.removeChild(a);
+      console.log('[DL] A TAG REMOVED');
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err) {
+    } catch (err: any) {
+      console.error('[DL] DOWNLOAD ERROR FULL:', err);
+      console.error('[DL] DOWNLOAD ERROR MESSAGE:', err?.message);
+      console.error('[DL] DOWNLOAD ERROR STACK:', err?.stack);
       try {
-        window.open(resultImage, '_blank');
+        const opened = window.open(resultImage, '_blank');
+        console.log('[DL] FINAL FALLBACK window.open result:', opened);
         setIosHint(true);
         setTimeout(() => setIosHint(false), 8000);
-      } catch {
+      } catch (openErr) {
+        console.error('[DL] FINAL FALLBACK FAILED:', openErr);
         alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
       }
     } finally {
+      console.log('[DL] FINALLY RUN — isDownloading set false');
       setIsDownloading(false);
     }
   };
