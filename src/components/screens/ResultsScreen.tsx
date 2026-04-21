@@ -159,131 +159,85 @@ export default function ResultsScreen({
   }, [resultImage]);
 
   const handleDownload = async (withWatermark = false) => {
-    // === DIAGNOSTIC LOGS START ===
-    console.log('[DL] DOWNLOAD CLICKED', { withWatermark });
-    console.log('[DL] resultImage:', resultImage);
-    console.log('[DL] isDownloading before start:', isDownloading);
-    console.log('[DL] userAgent:', typeof navigator !== 'undefined' ? navigator.userAgent : 'no-nav');
-    console.log('[DL] isIOS():', isIOS());
-    console.log(
-      '[DL] IMAGE SOURCE TYPE:',
-      resultImage?.startsWith('data:')
-        ? 'data-url'
-        : resultImage?.startsWith('http')
-        ? 'http-url'
-        : resultImage?.startsWith('blob:')
-        ? 'blob-url'
-        : 'unknown'
-    );
+    if (!resultImage || isDownloading) return;
 
-    if (!resultImage || isDownloading) {
-      console.warn('[DL] EARLY RETURN', {
-        hasResultImage: !!resultImage,
-        isDownloading,
-      });
-      return;
-    }
-
-    console.log('[DL] isDownloading set true');
     setIsDownloading(true);
 
+    let blobUrl: string | null = null;
+
     try {
-      const fileExtension = withWatermark ? 'png' : getImageExtension(resultImage, 'jpg');
+      // 1. Получить исходник (с водяным знаком или без)
+      const sourceUrl = withWatermark ? await addWatermark(resultImage) : resultImage;
+
+      // 2. Любой URL (data: или http) преобразуем в Blob через fetch
+      const res = await fetch(sourceUrl, { mode: 'cors', cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const rawBlob = await res.blob();
+      if (!rawBlob.size) throw new Error('Empty blob');
+
+      // 3. Гарантируем корректный MIME-тип
+      const headerType = res.headers.get('content-type') || '';
+      const mimeType =
+        rawBlob.type ||
+        (headerType.startsWith('image/') ? headerType : null) ||
+        (withWatermark ? 'image/png' : 'image/jpeg');
+
+      const blob = rawBlob.type ? rawBlob : new Blob([rawBlob], { type: mimeType });
+
+      // 4. Имя файла с правильным расширением
+      const extFromMime = mimeType.split('/')[1]?.split(';')[0]?.toLowerCase();
+      const fileExtension =
+        (withWatermark ? 'png' : extFromMime || getImageExtension(resultImage, 'jpg')) === 'jpeg'
+          ? 'jpg'
+          : withWatermark
+          ? 'png'
+          : extFromMime || getImageExtension(resultImage, 'jpg');
       const fileName = withWatermark
         ? `ai-photo-${Date.now()}-watermarked.${fileExtension}`
         : `ai-photo-${Date.now()}.${fileExtension}`;
-      console.log('[DL] FILE NAME:', fileName);
 
-      if (!withWatermark && resultImage.startsWith('data:') && !isIOS()) {
-        console.log('[DL] DIRECT DATA URL DOWNLOAD START');
-        triggerAnchorDownload(resultImage, fileName);
-        console.log('[DL] DIRECT DATA URL DOWNLOAD TRIGGERED');
-        return;
-      }
+      // 5. Временный object URL
+      blobUrl = URL.createObjectURL(blob);
 
-      let blob: Blob;
-
-      if (withWatermark) {
-        console.log('[DL] WATERMARK PATH START');
-        const watermarkedDataUrl = await addWatermark(resultImage);
-        console.log('[DL] watermark dataUrl length:', watermarkedDataUrl?.length);
-        const res = await fetch(watermarkedDataUrl);
-        console.log('[DL] watermark fetch ok:', res.ok, 'status:', res.status);
-        blob = await res.blob();
-        console.log('[DL] watermark BLOB CREATED', { type: blob.type, size: blob.size });
-      } else {
-        try {
-          console.log('[DL] FETCH START', resultImage);
-          const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
-          console.log('[DL] FETCH RESPONSE', {
-            status: res.status,
-            ok: res.ok,
-            type: res.type,
-            url: res.url,
-          });
-          if (!res.ok) {
-            throw new Error(`Не удалось получить изображение: ${res.status}`);
-          }
-          blob = await res.blob();
-          console.log('[DL] BLOB CREATED', { type: blob.type, size: blob.size });
-          if (!blob.size) {
-            console.error('[DL] BLOB SIZE = 0, treating as failure');
-            throw new Error('Empty blob');
-          }
-        } catch (corsErr: any) {
-          console.error('[DL] FETCH / CORS ERROR:', corsErr);
-          console.error('[DL] FETCH ERROR MESSAGE:', corsErr?.message);
-          console.error('[DL] FETCH ERROR STACK:', corsErr?.stack);
-          console.warn('[DL] CORS fallback — opening direct URL');
-          const opened = window.open(resultImage, '_blank');
-          console.log('[DL] WINDOW OPEN RESULT (cors fallback):', opened);
-          setIosHint(true);
-          setTimeout(() => setIosHint(false), 8000);
-          setIsDownloading(false);
-          return;
-        }
-      }
-
-      // iOS Safari path
+      // 6. iOS Safari: <a download> игнорируется — открываем blob в новой вкладке
       if (isIOS()) {
-        console.log('[DL] IOS FLOW START');
-        const blobUrl = URL.createObjectURL(blob);
-        console.log('[DL] IOS BLOB URL CREATED:', blobUrl);
         const opened = window.open(blobUrl, '_blank');
-        console.log('[DL] IOS WINDOW OPEN RESULT:', opened);
         if (!opened) {
-          console.error('[DL] IOS window.open BLOCKED by browser (popup blocker)');
+          // popup заблокирован — fallback на исходник
+          window.open(resultImage, '_blank');
         }
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
         setIosHint(true);
         setTimeout(() => setIosHint(false), 8000);
-        setIsDownloading(false);
+        // На iOS revoke позже — вкладка должна успеть отрисовать
+        const urlToRevoke = blobUrl;
+        blobUrl = null;
+        setTimeout(() => URL.revokeObjectURL(urlToRevoke), 60_000);
         return;
       }
 
-      // Android + Desktop path
-      console.log('[DL] DOWNLOAD VIA <a> START');
-      const blobUrl = URL.createObjectURL(blob);
-      console.log('[DL] BLOB URL CREATED:', blobUrl);
-      console.log('[DL] A TAG CREATED', { href: blobUrl, download: fileName });
-      triggerAnchorDownload(blobUrl, fileName);
-      console.log('[DL] A TAG CLICK TRIGGERED');
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err: any) {
-      console.error('[DL] DOWNLOAD ERROR FULL:', err);
-      console.error('[DL] DOWNLOAD ERROR MESSAGE:', err?.message);
-      console.error('[DL] DOWNLOAD ERROR STACK:', err?.stack);
+      // 7. Android + Desktop: <a> ОБЯЗАТЕЛЬНО в DOM перед click()
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('[Download] failed, fallback to new tab:', err);
+      // 9. Fallback: открыть изображение в новой вкладке
       try {
-        const opened = window.open(resultImage, '_blank');
-        console.log('[DL] FINAL FALLBACK window.open result:', opened);
+        window.open(resultImage, '_blank');
         setIosHint(true);
         setTimeout(() => setIosHint(false), 8000);
-      } catch (openErr) {
-        console.error('[DL] FINAL FALLBACK FAILED:', openErr);
+      } catch {
         alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
       }
     } finally {
-      console.log('[DL] FINALLY RUN — isDownloading set false');
+      if (blobUrl) {
+        setTimeout(() => URL.revokeObjectURL(blobUrl as string), 1500);
+      }
       setIsDownloading(false);
     }
   };
