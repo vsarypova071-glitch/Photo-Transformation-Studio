@@ -155,51 +155,50 @@ export default function ResultsScreen({
         try {
           blob = await getBlobFromImageSource(resultImage);
         } catch (corsErr) {
-          // STAGE 2.1: CORS-fallback — если fetch упал (например, CORS),
-          // открываем картинку в новой вкладке. Пользователь сохранит вручную.
+          // CORS-fallback — если fetch упал, открываем картинку в новой вкладке.
+          // Пользователь сохранит долгим тапом.
           console.warn('CORS fetch failed, fallback to direct open', corsErr);
           window.open(resultImage, '_blank');
-          if (isIOS()) {
-            setIosHint(true);
-            setTimeout(() => setIosHint(false), 6000);
-          }
+          setIosHint(true);
+          setTimeout(() => setIosHint(false), 8000);
           setIsDownloading(false);
           return;
         }
       }
 
-      // На телефоне сначала пробуем нативное меню "Поделиться / Сохранить"
-      if (navigator.share) {
-        try {
-          const file = new File([blob], fileName, {
-            type: blob.type || (withWatermark ? 'image/png' : 'image/jpeg'),
-          });
-
-          const shareData: ShareData = {
-            files: [file],
-            title: 'AI Photo Studio',
-            text: 'Сохранить фото',
-          };
-
-          if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-            await navigator.share(shareData);
-            setIsDownloading(false);
-            return;
-          }
-        } catch (err) {
-          console.log('Share fallback to direct download', err);
-        }
-      }
-
-      // Обычное скачивание файла с нормальным именем
-      const result = forceDownloadBlob(blob, fileName);
-      if (result.iosHint) {
+      // iOS Safari: <a download> не работает.
+      // Открываем blob в новой вкладке + показываем подсказку «долгий тап → Сохранить в Фото».
+      if (isIOS()) {
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
         setIosHint(true);
-        setTimeout(() => setIosHint(false), 6000);
+        setTimeout(() => setIosHint(false), 8000);
+        setIsDownloading(false);
+        return;
       }
+
+      // Android и десктоп: прямое скачивание файла.
+      // Это надёжнее, чем navigator.share, который открывает меню «Поделиться»
+      // и сбивает с толку (пользователь думает, что скачивание сломано).
+      const a = document.createElement('a');
+      const blobUrl = URL.createObjectURL(blob);
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (err) {
       console.error('Download failed', err);
-      alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
+      // Последний fallback — открыть картинку напрямую
+      try {
+        window.open(resultImage, '_blank');
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 8000);
+      } catch {
+        alert('Не удалось сохранить изображение. Попробуйте ещё раз.');
+      }
     } finally {
       setIsDownloading(false);
     }
