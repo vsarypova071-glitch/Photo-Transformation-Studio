@@ -3,7 +3,7 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory, Job } from './types';
 import { createLogger } from './utils/logger';
-import { supabase } from './integrations/supabase/client';
+
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
 import GoalScreen from './components/screens/GoalScreen';
