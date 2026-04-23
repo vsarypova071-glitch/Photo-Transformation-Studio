@@ -42,6 +42,7 @@ export default function StudioScreen({
   // result
   const [resultImage, setResultImage] = useState<string>('');
   const [resultStyleName, setResultStyleName] = useState<string>('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // common
   const [error, setError] = useState<string | null>(null);
@@ -347,9 +348,14 @@ export default function StudioScreen({
             <p className="text-sm text-muted-foreground font-serif">{resultStyleName}</p>
           </div>
 
-          <div className="rounded-3xl overflow-hidden border border-border shadow-2xl">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block w-full p-0 m-0 border-0 bg-transparent rounded-3xl overflow-hidden border border-border shadow-2xl cursor-zoom-in"
+            aria-label="Открыть фото на весь экран"
+          >
             <img src={resultImage} alt="Сгенерированное фото" className="w-full h-auto block" />
-          </div>
+          </button>
 
           {/* Предупреждение 152-ФЗ */}
           <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
