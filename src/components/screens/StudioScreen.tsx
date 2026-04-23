@@ -403,6 +403,30 @@ export default function StudioScreen({
             className="max-w-full max-h-full object-contain select-none"
             draggable={false}
           />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              try {
+                let blobUrl = resultImage;
+                if (resultImage.startsWith('data:')) {
+                  const [meta, b64] = resultImage.split(',');
+                  const mime = meta.match(/data:(.*?);base64/)?.[1] || 'image/png';
+                  const bin = atob(b64);
+                  const bytes = new Uint8Array(bin.length);
+                  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                  blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+                }
+                window.open(blobUrl, '_blank', 'noopener,noreferrer');
+              } catch {
+                window.open(resultImage, '_blank', 'noopener,noreferrer');
+              }
+            }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md active:scale-95 transition-transform shadow-xl"
+            aria-label="Открыть оригинал в новой вкладке"
+          >
+            Открыть оригинал
+          </button>
         </div>
       )}
     </section>
