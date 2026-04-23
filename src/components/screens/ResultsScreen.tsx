@@ -125,6 +125,7 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
   const [showBonusToast, setShowBonusToast] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [iosHint, setIosHint] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [bonusCredits, setBonusCredits] = useState(() => {
     const saved = sessionStorage.getItem(BONUS_KEY);
     return saved ? parseInt(saved, 10) : 0;
@@ -371,15 +372,22 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
         )}
 
         <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 mb-4 shadow-2xl group">
-          <img
-            key={activeIndex}
-            src={resultImage}
-            className="w-full bg-secondary min-h-[400px] object-cover animate-in fade-in duration-300"
-            alt={`Вариант ${activeIndex + 1}`}
-          />
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block w-full p-0 m-0 border-0 bg-transparent cursor-zoom-in"
+            aria-label="Открыть фото на весь экран"
+          >
+            <img
+              key={activeIndex}
+              src={resultImage}
+              className="w-full bg-secondary min-h-[400px] object-cover animate-in fade-in duration-300"
+              alt={`Вариант ${activeIndex + 1}`}
+            />
+          </button>
 
           <button
-            onClick={() => handleDownload(false)}
+            onClick={(e) => { e.stopPropagation(); handleDownload(false); }}
             disabled={isDownloading}
             className="absolute bottom-8 right-8 bg-primary text-primary-foreground p-5 rounded-full shadow-2xl active:scale-90 transition-all hover:scale-110 disabled:opacity-60 disabled:hover:scale-100"
           >
