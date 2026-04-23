@@ -377,6 +377,34 @@ export default function StudioScreen({
           </button>
         </div>
       )}
+
+      {/* Lightbox: фото на весь экран. На мобильных — long-press → «Сохранить в Фото» */}
+      {lightboxOpen && resultImage && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-5 right-5 z-10 w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform"
+            aria-label="Закрыть"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+          <img
+            src={resultImage}
+            alt="Сгенерированное фото"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain select-none"
+            draggable={false}
+          />
+        </div>
+      )}
     </section>
   );
 }
