@@ -901,7 +901,6 @@ function App() {
         {screen === 'tariff' && (
           <TariffScreen
             onSelectTariff={handleSelectTariff}
-            onPayWithCredits={handlePayWithCredits}
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
             isProcessing={isCreatingPayment}
