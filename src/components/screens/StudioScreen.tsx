@@ -42,6 +42,7 @@ export default function StudioScreen({
   // result
   const [resultImage, setResultImage] = useState<string>('');
   const [resultStyleName, setResultStyleName] = useState<string>('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // common
   const [error, setError] = useState<string | null>(null);
@@ -347,9 +348,14 @@ export default function StudioScreen({
             <p className="text-sm text-muted-foreground font-serif">{resultStyleName}</p>
           </div>
 
-          <div className="rounded-3xl overflow-hidden border border-border shadow-2xl">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="block w-full p-0 m-0 border-0 bg-transparent rounded-3xl overflow-hidden border border-border shadow-2xl cursor-zoom-in"
+            aria-label="Открыть фото на весь экран"
+          >
             <img src={resultImage} alt="Сгенерированное фото" className="w-full h-auto block" />
-          </div>
+          </button>
 
           {/* Предупреждение 152-ФЗ */}
           <div className="px-4 py-3 rounded-xl bg-primary/5 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
@@ -369,6 +375,34 @@ export default function StudioScreen({
           >
             {balance > 0 ? `Сгенерировать ещё (осталось ${balance})` : 'Купить ещё фото'}
           </button>
+        </div>
+      )}
+
+      {/* Lightbox: фото на весь экран. На мобильных — long-press → «Сохранить в Фото» */}
+      {lightboxOpen && resultImage && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-5 right-5 z-10 w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform"
+            aria-label="Закрыть"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+          <img
+            src={resultImage}
+            alt="Сгенерированное фото"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain select-none"
+            draggable={false}
+          />
         </div>
       )}
     </section>
