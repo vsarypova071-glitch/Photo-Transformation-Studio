@@ -16,7 +16,6 @@ const TARIFFS: Tariff[] = [
 
 interface TariffScreenProps {
   onSelectTariff: (tariff: Tariff) => void;
-  onPayWithCredits: (tariff: Tariff) => void;
   onBack: () => void;
   paymentError?: string | null;
   isProcessing?: boolean;
@@ -28,7 +27,6 @@ function getCustomerKey(): string | null {
 
 export default function TariffScreen({
   onSelectTariff,
-  onPayWithCredits,
   onBack,
   paymentError,
   isProcessing = false,
@@ -84,8 +82,6 @@ export default function TariffScreen({
 
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
-          const canPayWithCredits = creditBalance !== null && creditBalance >= tariff.photos;
-
           return (
             <div
               key={tariff.id}
@@ -123,21 +119,6 @@ export default function TariffScreen({
                   {tariff.photos >= 50 && <span>✔ Приоритет</span>}
                 </div>
               </div>
-
-              {canPayWithCredits && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => onPayWithCredits(tariff)}
-                    disabled={!acceptedPrivacy || isProcessing}
-                    className={`w-full py-3 rounded-xl font-semibold text-sm transition-all
-                      ${!acceptedPrivacy || isProcessing
-                        ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
-                        : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30"}
-                    `}>
-                    💎 Оплатить кредитами ({tariff.photos})
-                  </button>
-                </div>
-              )}
             </div>
           );
         })}
