@@ -343,12 +343,16 @@ export default function StudioScreen({
             ⚠️ <strong>Скачайте сейчас.</strong> Фото нигде не сохраняется — после закрытия страницы оно будет недоступно.
           </div>
 
-          <button
-            onClick={handleDownload}
-            className="w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+          <a
+            href={resultImage}
+            download={`ai-photo-${Date.now()}.jpg`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => log.info('Photo downloaded by user')}
+            className="block w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base text-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
           >
             ↓ Скачать фото
-          </button>
+          </a>
 
           <button
             onClick={handleNext}
