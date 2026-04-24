@@ -146,25 +146,72 @@ export default function StudioScreen({
     }
   };
 
-  // === Скачивание === (минимальный синхронный patch — без fetch/blob)
-  const handleDownload = () => {
+  // === Скачивание ===
+  const handleDownload = async () => {
     if (!resultImage) return;
+
     const fileName = `ai-photo-${Date.now()}-1.png`;
-
-    const link = document.createElement('a');
-    link.href = resultImage;
-    link.download = fileName;
-    link.rel = 'noopener';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
     const isIOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       ((navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-    if (isIOS) {
-      alert('Зажмите изображение → Сохранить');
+
+    try {
+      const response = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (isIOS) {
+        const win = window.open('', '_blank', 'noopener,noreferrer');
+        if (!win) {
+          window.location.href = blobUrl;
+        } else {
+          win.document.open();
+          win.document.write(`<!doctype html>
+<html><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+<title>Сохранить фото</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;height:100%;}
+  body{display:flex;align-items:center;justify-content:center;}
+  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
+</style>
+</head><body>
+<img src="${blobUrl}" alt="Фото" />
+</body></html>`);
+          win.document.close();
+          alert('Зажмите изображение → Сохранить');
+        }
+
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } else {
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        link.rel = 'noopener';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      }
+    } catch (err) {
+      log.error('Download failed', err);
+
+      try {
+        const link = document.createElement('a');
+        link.href = resultImage;
+        link.download = fileName;
+        link.rel = 'noopener';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch {
+        window.location.href = resultImage;
+      }
     }
 
     log.info('Photo downloaded by user');
