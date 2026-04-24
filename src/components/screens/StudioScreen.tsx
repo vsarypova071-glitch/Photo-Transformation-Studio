@@ -408,18 +408,28 @@ export default function StudioScreen({
             onClick={(e) => {
               e.stopPropagation();
               try {
-                let blobUrl = resultImage;
-                if (resultImage.startsWith('data:')) {
-                  const [meta, b64] = resultImage.split(',');
-                  const mime = meta.match(/data:(.*?);base64/)?.[1] || 'image/png';
-                  const bin = atob(b64);
-                  const bytes = new Uint8Array(bin.length);
-                  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                  blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+                const win = window.open('', '_blank', 'noopener,noreferrer');
+                if (!win) {
+                  window.location.href = resultImage;
+                  return;
                 }
-                window.open(blobUrl, '_blank', 'noopener,noreferrer');
+                win.document.open();
+                win.document.write(`<!doctype html>
+<html><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
+<title>Оригинал фото</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;height:100%;}
+  body{display:flex;align-items:center;justify-content:center;}
+  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
+</style>
+</head><body>
+<img src="${resultImage}" alt="Оригинал" />
+</body></html>`);
+                win.document.close();
               } catch {
-                window.open(resultImage, '_blank', 'noopener,noreferrer');
+                window.location.href = resultImage;
               }
             }}
             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md active:scale-95 transition-transform shadow-xl"
