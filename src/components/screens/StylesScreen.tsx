@@ -48,8 +48,7 @@ export default function StylesScreen({
   onCategoryChange,
   onFullBodyToggle,
   onBack,
-  onGenerate,
-  onTestGenerate
+  onGenerate
 }: StylesScreenProps) {
   const [customPrompt, setCustomPrompt] = useState('');
   const canGenerate = selectedStyles.length > 0 || customPrompt.trim() !== '';
