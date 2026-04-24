@@ -146,76 +146,10 @@ export default function StudioScreen({
     }
   };
 
-  // === Скачивание ===
-  const handleDownload = async () => {
-    if (!resultImage) return;
+  // Скачивание и открытие оригинала теперь делаются обычными <a> ссылками,
+  // потому что resultImage стал HTTPS URL (Supabase Storage). Блобы и window.open
+  // больше не нужны — браузеры умеют корректно скачивать публичные URL.
 
-    const fileName = `ai-photo-${Date.now()}-1.png`;
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      ((navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-
-    try {
-      const response = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
-      if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      if (isIOS) {
-        const win = window.open('', '_blank', 'noopener,noreferrer');
-        if (!win) {
-          window.location.href = blobUrl;
-        } else {
-          win.document.open();
-          win.document.write(`<!doctype html>
-<html><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
-<title>Сохранить фото</title>
-<style>
-  html,body{margin:0;padding:0;background:#000;height:100%;}
-  body{display:flex;align-items:center;justify-content:center;}
-  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
-</style>
-</head><body>
-<img src="${blobUrl}" alt="Фото" />
-</body></html>`);
-          win.document.close();
-          alert('Зажмите изображение → Сохранить');
-        }
-
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-      } else {
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        link.rel = 'noopener';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      }
-    } catch (err) {
-      log.error('Download failed', err);
-
-      try {
-        const link = document.createElement('a');
-        link.href = resultImage;
-        link.download = fileName;
-        link.rel = 'noopener';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch {
-        window.location.href = resultImage;
-      }
-    }
-
-    log.info('Photo downloaded by user');
-  };
 
   // === После результата — обратно к выбору стиля ===
   const handleNext = () => {
@@ -409,12 +343,16 @@ export default function StudioScreen({
             ⚠️ <strong>Скачайте сейчас.</strong> Фото нигде не сохраняется — после закрытия страницы оно будет недоступно.
           </div>
 
-          <button
-            onClick={handleDownload}
-            className="w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+          <a
+            href={resultImage}
+            download={`ai-photo-${Date.now()}.jpg`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => log.info('Photo downloaded by user')}
+            className="block w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base text-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
           >
             ↓ Скачать фото
-          </button>
+          </a>
 
           <button
             onClick={handleNext}
@@ -450,40 +388,16 @@ export default function StudioScreen({
             className="max-w-full max-h-full object-contain select-none"
             draggable={false}
           />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              try {
-                const win = window.open('', '_blank', 'noopener,noreferrer');
-                if (!win) {
-                  window.location.href = resultImage;
-                  return;
-                }
-                win.document.open();
-                win.document.write(`<!doctype html>
-<html><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
-<title>Оригинал фото</title>
-<style>
-  html,body{margin:0;padding:0;background:#000;height:100%;}
-  body{display:flex;align-items:center;justify-content:center;}
-  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
-</style>
-</head><body>
-<img src="${resultImage}" alt="Оригинал" />
-</body></html>`);
-                win.document.close();
-              } catch {
-                window.location.href = resultImage;
-              }
-            }}
+          <a
+            href={resultImage}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md active:scale-95 transition-transform shadow-xl"
             aria-label="Открыть оригинал в новой вкладке"
           >
             Открыть оригинал
-          </button>
+          </a>
         </div>
       )}
     </section>

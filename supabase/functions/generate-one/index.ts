@@ -362,12 +362,59 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // === 7. Успех — фиксируем done и отдаём фото клиенту (НЕ СОХРАНЯЕМ!) ===
+    // === 7. Успех — сохраняем результат в Storage и отдаём HTTPS URL ===
+    let publicUrl: string;
+    try {
+      const match = imageUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+      if (!match) throw new Error("AI returned non-data-url image");
+      const mime = match[1];
+      const b64 = match[2];
+      const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+
+      // base64 → Uint8Array
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      const filePath = `results/${customerKey}/${generationId}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("user-photos")
+        .upload(filePath, bytes, { contentType: mime, upsert: true });
+
+      if (upErr) throw new Error("Storage upload failed: " + upErr.message);
+
+      const { data: pub } = supabase.storage.from("user-photos").getPublicUrl(filePath);
+      publicUrl = pub.publicUrl;
+      console.log(`[GEN-ONE] ✅ Result saved to storage: ${publicUrl}`);
+    } catch (e: any) {
+      console.error(`[GEN-ONE] ❌ Failed to save result to storage:`, e.message);
+      // Возвращаем кредит — юзер не должен платить за фото, которое мы не смогли сохранить
+      if (debited) {
+        await supabase.rpc("refund_balance", { p_account_id: accountId, p_amount: 1 });
+        await supabase.from("credit_transactions").insert({
+          account_id: accountId,
+          type: "refund",
+          amount: 1,
+          idempotency_key: `refund_gen_${generationId}`,
+          description: `Возврат: не удалось сохранить результат`,
+        });
+      }
+      await supabase.from("generations")
+        .update({ status: "error", error_message: ("Storage upload failed: " + e.message).slice(0, 500) })
+        .eq("id", generationId);
+      return new Response(JSON.stringify({
+        error: "Не удалось сохранить фото. Кредит возвращён.",
+        refunded: true,
+      }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     await supabase.from("generations")
       .update({ status: "done" })
       .eq("id", generationId);
 
-    console.log(`[GEN-ONE] ✅ Generation ${generationId} done — returning image to client`);
+    console.log(`[GEN-ONE] ✅ Generation ${generationId} done — returning HTTPS url`);
 
     // Получаем актуальный баланс для UI
     const { data: finalAcc } = await supabase
@@ -378,7 +425,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({
       generation_id: generationId,
-      image_url: imageUrl,
+      image_url: publicUrl,
       balance: finalAcc?.balance ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
