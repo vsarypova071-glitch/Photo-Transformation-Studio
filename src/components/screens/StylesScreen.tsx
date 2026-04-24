@@ -12,7 +12,6 @@ interface StylesScreenProps {
   onFullBodyToggle: () => void;
   onBack: () => void;
   onGenerate: () => void;
-  onTestGenerate?: () => void;
 }
 
 const GOAL_CONFIG: Record<string, { priority: string[]; recommended: string }> = {
