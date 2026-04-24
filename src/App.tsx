@@ -876,65 +876,6 @@ function App() {
             onFullBodyToggle={() => setIsFullBody(!isFullBody)}
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}
-            onTestGenerate={async () => {
-              if (selectedStyles.length === 0) {
-                alert('Выберите хотя бы один стиль');
-                return;
-              }
-              navigateTo('processing');
-              try {
-                const stylePrompts = selectedStyles
-                  .map(id => STYLES.find(s => s.id === id)?.prompt)
-                  .filter(Boolean)
-                  .join('\n');
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 300000);
-
-                const response = await fetch(
-                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-photo`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                    },
-                    body: JSON.stringify({
-                      imageBase64: uploadedImage,
-                      stylePrompt: stylePrompts || 'Luxury fashion portrait photography',
-                      isPremium: false,
-                      customPrompt: '',
-                    }),
-                    signal: controller.signal,
-                  }
-                );
-                clearTimeout(timeoutId);
-
-                const data = await response.json();
-                if (!response.ok || !data?.imageUrl) {
-                  throw new Error(data?.error || 'Ошибка генерации');
-                }
-
-                const testJob: Job = {
-                  id: 'test_' + Date.now(),
-                  userId: 'test',
-                  status: 'done',
-                  styleIds: selectedStyles,
-                  isFullBody,
-                  originalImage: uploadedImage,
-                  results: [data.imageUrl],
-                  createdAt: Date.now(),
-                };
-                setOrderJob(testJob);
-                setCurrentJobId(testJob.id);
-                navigateTo('results');
-              } catch (e: any) {
-                log.error('Test generation failed', e);
-                alert('Ошибка: ' + (e?.message || 'Неизвестная ошибка'));
-                navigateTo('styles');
-              }
-            }}
           />
         )}
 
