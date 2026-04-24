@@ -731,10 +731,50 @@ function App() {
   };
 
   const handleRetryGeneration = async () => {
-    if (!currentOrderId) return;
     setRetrying(true);
     setProcessingError(null);
     try {
+      const customerKey = getCustomerKey();
+
+      // Resolve orderId: state -> localStorage -> server lookup of recent paid order
+      let orderIdToRetry = currentOrderId || localStorage.getItem('current_order_id');
+
+      if (!orderIdToRetry) {
+        try {
+          const findResp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+            }
+          );
+          const findData = await findResp.json();
+          if (
+            findData?.found &&
+            findData?.paymentStatus === 'succeeded' &&
+            findData?.generationStatus !== 'done' &&
+            findData?.orderId
+          ) {
+            orderIdToRetry = findData.orderId;
+          }
+        } catch (e) {
+          log.warn('find-recent-order during retry failed', e);
+        }
+      }
+
+      if (!orderIdToRetry) {
+        setProcessingError('Не удалось найти оплаченный заказ для повтора. Обратитесь в поддержку.');
+        return;
+      }
+
+      // Sync state + storage so polling and further retries use the same id
+      if (orderIdToRetry !== currentOrderId) {
+        setCurrentOrderId(orderIdToRetry);
+      }
+      localStorage.setItem('current_order_id', orderIdToRetry);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
         {
@@ -744,7 +784,7 @@ function App() {
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ orderId: currentOrderId, customerKey: getCustomerKey() }),
+          body: JSON.stringify({ orderId: orderIdToRetry, customerKey }),
         }
       );
       const data = await response.json();
@@ -754,7 +794,7 @@ function App() {
       if (data.alreadyDone && data.results?.length) {
         setOrderResults(data.results);
         const job: Job = {
-          id: 'order_' + currentOrderId, userId: getSessionId(), status: 'done',
+          id: 'order_' + orderIdToRetry, userId: getSessionId(), status: 'done',
           styleIds: selectedStyles, isFullBody, originalImage: uploadedImage,
           results: data.results, createdAt: Date.now(),
         };
@@ -763,7 +803,7 @@ function App() {
         navigateTo('results');
       } else {
         // Resume polling
-        pollOrderStatus(currentOrderId);
+        pollOrderStatus(orderIdToRetry);
       }
     } catch (e: any) {
       log.error('Retry generation failed', e);
