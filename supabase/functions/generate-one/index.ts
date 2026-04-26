@@ -416,6 +416,17 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[GEN-ONE] ✅ Generation ${generationId} done — returning HTTPS url`);
 
+    // Fire-and-forget cleanup: removes result files older than 10 min.
+    // Never awaited — errors are silently ignored so generation always succeeds.
+    fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/cleanup-orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: "{}",
+    }).catch(() => {});
+
     // Получаем актуальный баланс для UI
     const { data: finalAcc } = await supabase
       .from("credit_accounts")
