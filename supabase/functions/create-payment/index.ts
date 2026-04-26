@@ -194,6 +194,8 @@ Deno.serve(async (req: Request) => {
     let aiCheckPassed = false;
 
     if (LOVABLE_API_KEY) {
+      const aiController = new AbortController();
+      const aiTimeoutId = setTimeout(() => aiController.abort(), 10_000);
       try {
         const testResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -206,6 +208,7 @@ Deno.serve(async (req: Request) => {
             messages: [{ role: "user", content: "test" }],
             max_tokens: 1,
           }),
+          signal: aiController.signal,
         });
 
         if (testResponse.status === 402) {
@@ -221,6 +224,8 @@ Deno.serve(async (req: Request) => {
       } catch (aiErr: any) {
         console.error("AI balance check network error:", aiErr.message);
         aiCheckPassed = false;
+      } finally {
+        clearTimeout(aiTimeoutId);
       }
     }
 

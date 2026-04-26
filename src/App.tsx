@@ -48,28 +48,38 @@ function getCustomerKey(): string {
 // минуя SDK-fetch (который в preview-iframe иногда рушится TypeError'ом
 // на больших blob'ах). Эндпоинт, политики и анон-ключ — те же.
 async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
   const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/user-photos/${fileName}`;
   const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${anon}`,
-      'apikey': anon,
-      'Content-Type': blob.type || 'image/jpeg',
-      'x-upsert': 'true',
-    },
-    body: blob,
-  });
-  if (!resp.ok) {
-    let msg = `HTTP ${resp.status}`;
-    try {
-      const j = await resp.json();
-      msg = j?.message || j?.error || msg;
-    } catch { /* ignore */ }
-    throw new Error(msg);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${anon}`,
+        'apikey': anon,
+        'Content-Type': blob.type || 'image/jpeg',
+        'x-upsert': 'true',
+      },
+      body: blob,
+      signal: controller.signal,
+    });
+    if (!resp.ok) {
+      let msg = `HTTP ${resp.status}`;
+      try {
+        const j = await resp.json();
+        msg = j?.message || j?.error || msg;
+      } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/user-photos/${fileName}`;
+    return publicUrl;
+  } catch (e: any) {
+    if (e.name === 'AbortError') throw new Error('Сервис временно не отвечает, попробуйте ещё раз');
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/user-photos/${fileName}`;
-  return publicUrl;
 }
 
 function App() {
