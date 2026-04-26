@@ -218,8 +218,8 @@ function App() {
           return;
         }
 
-        // If still pending after 60 polls (3 min), something is wrong
-        if (data.paymentStatus === 'pending' && pollCount > 60) {
+        // If still pending after 5 polls (15 sec), payment wasn't completed
+        if (data.paymentStatus === 'pending' && pollCount > 5) {
           clearInterval(interval);
           setPaymentError('Оплата не подтверждена. Попробуйте снова.');
           navigateTo('tariff');
@@ -522,9 +522,17 @@ function App() {
             return;
           }
 
-          // Still processing or pending — show processing and poll
-          setScreen('processing');
-          pollOrderStatus(orderId);
+          // Paid and still generating — show processing and poll
+          if (data.paymentStatus !== 'pending') {
+            setScreen('processing');
+            pollOrderStatus(orderId);
+          } else {
+            // User returned from YooKassa without completing payment
+            localStorage.removeItem('current_order_id');
+            setCurrentOrderId(null);
+            setPaymentError('Оплата не завершена. Выберите тариф и попробуйте снова.');
+            setScreen('tariff');
+          }
         } catch (e) {
           log.error('Initial order check failed', e);
           setScreen('processing');
