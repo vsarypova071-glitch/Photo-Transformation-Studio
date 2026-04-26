@@ -176,7 +176,12 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
       } catch {
         const win = window.open("", "_blank", "noopener,noreferrer");
         if (!win) {
-          window.location.href = resultImage;
+          // Попап заблокирован (браузер Telegram/Instagram/WhatsApp).
+          // Вместо ухода со страницы открываем лайтбокс — пользователь
+          // удерживает картинку и сохраняет в «Фото».
+          setLightboxOpen(true);
+          setIosHint(true);
+          setTimeout(() => setIosHint(false), 8000);
           return;
         }
 

@@ -43,6 +43,8 @@ export default function StudioScreen({
   const [resultImage, setResultImage] = useState<string>('');
   const [resultStyleName, setResultStyleName] = useState<string>('');
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
 
   // common
   const [error, setError] = useState<string | null>(null);
@@ -146,10 +148,53 @@ export default function StudioScreen({
     }
   };
 
-  // Скачивание и открытие оригинала теперь делаются обычными <a> ссылками,
-  // потому что resultImage стал HTTPS URL (Supabase Storage). Блобы и window.open
-  // больше не нужны — браузеры умеют корректно скачивать публичные URL.
+  // === Скачивание фото с поддержкой iOS/Android ===
+  const handleDownload = async () => {
+    if (!resultImage || isDownloading) return;
+    const fileName = `ai-photo-${Date.now()}.jpg`;
+    setIsDownloading(true);
+    setIosHint(false);
+    try {
+      const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
+      const ua = navigator.userAgent || '';
+      const ios = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+
+      if (ios) {
+        // iOS Safari/WebView игнорирует <a download> — открываем в новой вкладке,
+        // пользователь долгим тапом сохраняет в «Фото».
+        const win = window.open(blobUrl, '_blank');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 8000);
+        if (!win) {
+          // Попап заблокирован (in-app браузер) — открываем лайтбокс с подсказкой
+          setLightboxOpen(true);
+        }
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      }
+    } catch {
+      // CORS или сеть недоступны — открываем прямую ссылку
+      const win = window.open(resultImage, '_blank', 'noopener');
+      setIosHint(true);
+      setTimeout(() => setIosHint(false), 8000);
+      if (!win) {
+        setLightboxOpen(true);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // === После результата — обратно к выбору стиля ===
   const handleNext = () => {
@@ -321,6 +366,19 @@ export default function StudioScreen({
         </div>
       )}
 
+      {/* iOS hint — подсказка «удержите, чтобы сохранить» */}
+      {iosHint && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500">
+          <div className="flex items-center gap-3 bg-foreground text-background px-5 py-3 rounded-2xl shadow-2xl font-semibold text-xs max-w-[90vw]">
+            <span className="text-lg">📲</span>
+            <div className="leading-tight">
+              <p className="font-black mb-0.5">Сохраните фото</p>
+              <p className="opacity-80">Удерживайте картинку → «Сохранить в Фото»</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* === ШАГ 4: РЕЗУЛЬТАТ === */}
       {step === 'result' && resultImage && (
         <div className="space-y-6">
@@ -343,16 +401,19 @@ export default function StudioScreen({
             ⚠️ <strong>Скачайте сейчас.</strong> Фото нигде не сохраняется — после закрытия страницы оно будет недоступно.
           </div>
 
-          <a
-            href={resultImage}
-            download={`ai-photo-${Date.now()}.jpg`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => log.info('Photo downloaded by user')}
-            className="block w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base text-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/30"
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="block w-full py-5 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-base text-center hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 disabled:opacity-60"
           >
-            ↓ Скачать фото
-          </a>
+            {isDownloading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin inline-block" />
+                Скачивание…
+              </span>
+            ) : '↓ Скачать фото'}
+          </button>
 
           <button
             onClick={handleNext}

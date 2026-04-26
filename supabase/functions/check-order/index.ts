@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const isPaid = order.payment_status === "succeeded";
-    const isTerminal = order.generation_status === "done" || order.generation_status === "error" || order.generation_status === "canceled";
+    const isTerminal = order.generation_status === "done" || order.generation_status === "error" || order.generation_status === "canceled" || order.generation_status === "credits_credited";
     const isStuckActive = (order.generation_status === "running" || order.generation_status === "waiting")
       && (Date.now() - new Date(order.updated_at).getTime() > STUCK_TIMEOUT_MS);
 

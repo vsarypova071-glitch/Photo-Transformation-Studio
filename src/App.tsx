@@ -791,7 +791,18 @@ function App() {
       if (!response.ok) {
         throw new Error(data.error || 'Не удалось перезапустить генерацию');
       }
-      if (data.alreadyDone && data.results?.length) {
+      if (data.creditsCredited) {
+        // Кредиты уже начислены — этот заказ кредитный, пакетная генерация не нужна.
+        // Идём в Studio, баланс актуализируем через getBalance.
+        localStorage.removeItem('current_order_id');
+        setCurrentOrderId(null);
+        setProcessingError(null);
+        try {
+          const info = await studio.getBalance(getCustomerKey());
+          setWalletBalance(info.balance);
+        } catch (_) { /* ignore */ }
+        navigateTo('studio');
+      } else if (data.alreadyDone && data.results?.length) {
         setOrderResults(data.results);
         const job: Job = {
           id: 'order_' + orderIdToRetry, userId: getSessionId(), status: 'done',

@@ -128,6 +128,14 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Кредитный заказ — кредиты уже начислены, генерировать пакетом нельзя.
+    // Пользователь должен генерировать по одному фото из Studio.
+    if (order.generation_status === "credits_credited" || (order.credits_purchased ?? 0) > 0) {
+      return new Response(JSON.stringify({ creditsCredited: true, balance: order.credits_purchased ?? 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (order.generation_status === "done" && order.results?.length >= order.photos_count) {
       return new Response(JSON.stringify({ alreadyDone: true, results: order.results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
