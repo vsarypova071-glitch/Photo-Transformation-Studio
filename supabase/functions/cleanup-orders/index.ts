@@ -122,8 +122,36 @@ Deno.serve(async (req: Request) => {
       console.log(`Deleted ${deletedPhotos} temp photos from storage`);
     }
 
+    // 4. Delete AI-generated result files for done generations older than 10 minutes.
+    // Path pattern: results/{customer_key}/{generation_id}.{ext}
+    // We try all 3 possible extensions — no schema change needed.
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+    const { data: doneGenerations, error: genFetchError } = await supabase
+      .from("generations")
+      .select("id, customer_key")
+      .eq("status", "done")
+      .lt("updated_at", tenMinutesAgo)
+      .limit(100);
+
+    let deletedResults = 0;
+    if (genFetchError) {
+      console.error("Fetch done generations error:", genFetchError.message);
+    } else if (doneGenerations && doneGenerations.length > 0) {
+      for (const gen of doneGenerations) {
+        const { error: delErr } = await supabase.storage
+          .from("user-photos")
+          .remove([
+            `results/${gen.customer_key}/${gen.id}.jpg`,
+            `results/${gen.customer_key}/${gen.id}.png`,
+            `results/${gen.customer_key}/${gen.id}.webp`,
+          ]);
+        if (!delErr) deletedResults++;
+      }
+      console.log(`Processed ${doneGenerations.length} done generations, deleted result files: ${deletedResults}`);
+    }
+
     return new Response(
-      JSON.stringify({ expired: expiredCount, stuck: stuckCount, photosDeleted: deletedPhotos }),
+      JSON.stringify({ expired: expiredCount, stuck: stuckCount, photosDeleted: deletedPhotos, resultsDeleted: deletedResults }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
