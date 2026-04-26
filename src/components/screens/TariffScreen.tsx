@@ -33,6 +33,7 @@ export default function TariffScreen({
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [selectedTariff, setSelectedTariff] = useState<Tariff | null>(null);
 
   useEffect(() => {
     const key = getCustomerKey();
@@ -82,13 +83,17 @@ export default function TariffScreen({
 
       <div className="space-y-4">
         {TARIFFS.map((tariff) => {
+          const isSelected = selectedTariff?.id === tariff.id;
           return (
             <div
               key={tariff.id}
-              className={`w-full p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden
-                ${tariff.popular
-                  ? "border-primary bg-primary/5 shadow-lg shadow-primary/20"
-                  : "border-border bg-card"}
+              onClick={() => setSelectedTariff(tariff)}
+              className={`w-full p-5 rounded-2xl border-2 transition-all text-left relative overflow-hidden cursor-pointer
+                ${isSelected
+                  ? "border-primary bg-primary/15 shadow-lg shadow-primary/30 ring-2 ring-primary/40"
+                  : tariff.popular
+                    ? "border-primary bg-primary/5 shadow-lg shadow-primary/20"
+                    : "border-border bg-card hover:border-primary/50"}
               `}>
               {tariff.popular && (
                 <div className="absolute top-0 right-0 text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-xl bg-yellow-300">
@@ -156,38 +161,34 @@ export default function TariffScreen({
         </label>
       </div>
 
-      {/* Кнопки оплаты картой по тарифам */}
-      <div className="space-y-3">
-        {TARIFFS.map((tariff) => {
-          const disabled = !acceptedPrivacy || isProcessing;
-          return (
-            <button
-              key={`pay-${tariff.id}`}
-              onClick={() => onSelectTariff(tariff)}
-              disabled={disabled}
-              className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
-                ${disabled
-                  ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
-                  : tariff.popular
-                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/40"
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"}
-              `}>
-              {isProcessing ? (
-                <>
-                  <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Открываем ЮKassa…
-                </>
-              ) : (
-                <>💳 {tariff.name} — {tariff.price.toLocaleString("ru-RU")} ₽</>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <button
+        onClick={() => selectedTariff && onSelectTariff(selectedTariff)}
+        disabled={!acceptedPrivacy || !selectedTariff || isProcessing}
+        className={`w-full py-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
+          ${!acceptedPrivacy || !selectedTariff || isProcessing
+            ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/40"}
+        `}>
+        {isProcessing ? (
+          <>
+            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            Открываем ЮKassa…
+          </>
+        ) : selectedTariff ? (
+          <>💳 Оплатить {selectedTariff.name} — {selectedTariff.price.toLocaleString("ru-RU")} ₽</>
+        ) : (
+          <>Выберите тариф выше</>
+        )}
+      </button>
 
-      {!acceptedPrivacy && (
-        <p className="text-center text-xs mt-3 text-muted-foreground">
-          Чтобы продолжить, подтвердите согласие с офертой
+      {!selectedTariff && (
+        <p className="text-center text-xs mt-2 text-muted-foreground">
+          Нажмите на карточку тарифа, чтобы выбрать
+        </p>
+      )}
+      {selectedTariff && !acceptedPrivacy && (
+        <p className="text-center text-xs mt-2 text-muted-foreground">
+          Подтвердите согласие с офертой выше
         </p>
       )}
 
