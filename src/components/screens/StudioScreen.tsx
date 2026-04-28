@@ -10,6 +10,14 @@ import { createLogger } from '@/utils/logger';
 
 const log = createLogger('StudioScreen');
 
+// 1 генерация / 2 генерации / 5 генераций
+function pluralGen(n: number): string {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'генерация';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'генерации';
+  return 'генераций';
+}
+
 interface StudioScreenProps {
   customerKey: string;
   initialBalance: number;
@@ -102,7 +110,7 @@ export default function StudioScreen({
       return;
     }
     if (balance < 1) {
-      setError('Недостаточно кредитов');
+      setError('Закончились генерации');
       return;
     }
 
@@ -134,7 +142,7 @@ export default function StudioScreen({
       log.error('Generation failed', err);
       const msg = err?.error || err?.message || 'Ошибка генерации';
       const refunded = err?.refunded;
-      setError(refunded ? `${msg} Кредит возвращён на баланс.` : msg);
+      setError(refunded ? `${msg} Генерация возвращена на баланс.` : msg);
       // если кредит вернули — обновим баланс
       if (typeof err?.balance === 'number') {
         setBalance(err.balance);
@@ -221,7 +229,7 @@ export default function StudioScreen({
         </div>
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Баланс</p>
-          <p className="text-2xl font-bold text-primary">{balance} <span className="text-xs text-muted-foreground">фото</span></p>
+          <p className="text-2xl font-bold text-primary">{balance} <span className="text-xs text-muted-foreground">{pluralGen(balance)}</span></p>
         </div>
       </header>
 
@@ -350,7 +358,7 @@ export default function StudioScreen({
             disabled={!selectedStyleId || balance < 1}
             className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all"
           >
-            {balance < 1 ? 'Недостаточно кредитов' : `Сгенерировать (−1 фото)`}
+            {balance < 1 ? 'Закончились генерации' : `Сгенерировать (−1 фото)`}
           </button>
 
           {balance < 1 && (

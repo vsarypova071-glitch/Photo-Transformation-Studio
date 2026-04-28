@@ -25,6 +25,14 @@ function getCustomerKey(): string | null {
   return localStorage.getItem('customer_key');
 }
 
+// 1 генерация / 2 генерации / 5 генераций
+function pluralGen(n: number): string {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'генерация';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'генерации';
+  return 'генераций';
+}
+
 export default function TariffScreen({
   onSelectTariff,
   onBack,
@@ -70,7 +78,7 @@ export default function TariffScreen({
         </p>
         {creditBalance !== null && creditBalance > 0 && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-            💎 Баланс: {creditBalance} кредитов
+            💎 Баланс: {creditBalance} {pluralGen(creditBalance)}
           </div>
         )}
       </div>
