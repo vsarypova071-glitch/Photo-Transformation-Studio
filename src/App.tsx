@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory, Job } from './types';
@@ -113,6 +113,70 @@ function App() {
   // 🟢 STAGE WALLET 1.4 — баланс кошелька (загружается при старте по customer_key)
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [walletLoaded, setWalletLoaded] = useState<boolean>(false);
+
+  // Авто-обновление бандла: имя текущего JS + флаг «идёт генерация в Studio»
+  const bundleHashRef = useRef<string | null>(null);
+  const studioGeneratingRef = useRef<boolean>(false);
+
+  // === АВТО-ОБНОВЛЕНИЕ ===
+  // Сравнивает имя текущего JS-бандла с тем, что отдаёт сервер.
+  // Если разные — перезагружает страницу. Юзеру не нужно чистить кэш.
+  // Не перезагружаем на чувствительных экранах: tariff (оплата),
+  // processing (генерация заказа), studio во время одиночной генерации.
+  useEffect(() => {
+    if (bundleHashRef.current === null) {
+      const scripts = Array.from(document.querySelectorAll('script[type="module"][src]'));
+      for (const s of scripts) {
+        const src = s.getAttribute('src') || '';
+        if (src.endsWith('.js') || src.includes('/assets/')) {
+          bundleHashRef.current = src.split('?')[0].split('/').pop() || null;
+          break;
+        }
+      }
+    }
+    if (!bundleHashRef.current) return; // dev mode (main.tsx) — пропускаем
+
+    const isUnsafeScreen = () => {
+      if (screen === 'tariff' || screen === 'processing') return true;
+      if (screen === 'studio' && studioGeneratingRef.current) return true;
+      return false;
+    };
+
+    const checkAndReload = async () => {
+      if (isUnsafeScreen()) return;
+      try {
+        const resp = await fetch('/?_v=' + Date.now(), { cache: 'no-store' });
+        if (!resp.ok) return;
+        const html = await resp.text();
+        const m = html.match(/<script[^>]+src=["']([^"']+\.js[^"']*)["']/i);
+        if (!m) return;
+        const remoteName = m[1].split('?')[0].split('/').pop();
+        if (remoteName && remoteName !== bundleHashRef.current) {
+          log.info('New build detected, reloading', { current: bundleHashRef.current, remote: remoteName });
+          window.location.reload();
+        }
+      } catch {
+        // network/parse error — игнорим
+      }
+    };
+
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else if (Date.now() - hiddenAt > 30_000) {
+        checkAndReload();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    const interval = setInterval(checkAndReload, 5 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearInterval(interval);
+    };
+  }, [screen]);
 
   const navigateTo = (newScreen: Screen) => {
     log.info('Navigate', { from: screen, to: newScreen });
@@ -873,6 +937,7 @@ function App() {
             initialBalance={walletBalance}
             onBalanceChange={setWalletBalance}
             onBuyMore={() => navigateTo('tariff')}
+            onGeneratingChange={(g) => { studioGeneratingRef.current = g; }}
           />
         )}
 

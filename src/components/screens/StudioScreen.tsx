@@ -3,7 +3,7 @@
 // → кнопка «Сгенерировать (-1)» → показ фото с большой кнопкой «Скачать»
 // + предупреждение «фото нигде не сохраняется».
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { STYLES } from '@/lib/constants';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
@@ -23,6 +23,7 @@ interface StudioScreenProps {
   initialBalance: number;
   onBalanceChange: (newBalance: number) => void;
   onBuyMore: () => void;
+  onGeneratingChange?: (generating: boolean) => void;
 }
 
 type Step = 'upload' | 'choose' | 'generating' | 'result';
@@ -32,6 +33,7 @@ export default function StudioScreen({
   initialBalance,
   onBalanceChange,
   onBuyMore,
+  onGeneratingChange,
 }: StudioScreenProps) {
   const [balance, setBalance] = useState(initialBalance);
   const [step, setStep] = useState<Step>('upload');
@@ -57,6 +59,11 @@ export default function StudioScreen({
 
   // common
   const [error, setError] = useState<string | null>(null);
+
+  // Сообщаем родителю когда идёт генерация — чтобы авто-reload не сорвал её
+  useEffect(() => {
+    onGeneratingChange?.(step === 'generating');
+  }, [step, onGeneratingChange]);
 
   const sessionId = (() => {
     let id = sessionStorage.getItem('anon_user_id');
