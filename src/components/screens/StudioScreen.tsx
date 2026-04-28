@@ -45,6 +45,7 @@ export default function StudioScreen({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [iosHint, setIosHint] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
 
   // common
   const [error, setError] = useState<string | null>(null);
@@ -148,49 +149,55 @@ export default function StudioScreen({
     }
   };
 
-  // === Скачивание фото с поддержкой iOS/Android ===
+  // === Скачивание фото — приоритет на системное «Поделиться» ===
+  // Web Share API с файлом открывает родное меню Android/iOS, где есть
+  // «Сохранить в галерею». Это привычный путь — никаких «куда оно делось».
   const handleDownload = async () => {
     if (!resultImage || isDownloading) return;
     const fileName = `ai-photo-${Date.now()}.jpg`;
     setIsDownloading(true);
     setIosHint(false);
+    setSavedToast(false);
+
     try {
       const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
 
-      const ua = navigator.userAgent || '';
-      const ios = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Mac') && 'ontouchend' in document);
+      const nav = navigator as Navigator & {
+        canShare?: (data?: { files?: File[] }) => boolean;
+        share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>;
+      };
 
-      if (ios) {
-        // iOS Safari/WebView игнорирует <a download> — открываем в новой вкладке,
-        // пользователь долгим тапом сохраняет в «Фото».
-        const win = window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-        if (!win) {
-          // Попап заблокирован (in-app браузер) — открываем лайтбокс с подсказкой
-          setLightboxOpen(true);
+      // 1. Системное окно «Поделиться» (Android Chrome/Yandex/Samsung, iOS Safari)
+      if (nav.share && nav.canShare?.({ files: [file] })) {
+        try {
+          await nav.share({ files: [file], title: 'AI фотосессия' });
+          return; // Юзер сам выбрал куда сохранить — ничего больше не надо
+        } catch (shareErr: any) {
+          // AbortError = юзер закрыл share sheet, это норма
+          if (shareErr?.name === 'AbortError') return;
+          // Иначе — падаем в fallback ниже
         }
-      } else {
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
       }
+
+      // 2. Fallback: <a download> с явным тостом-подтверждением
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+      // Чтобы юзер видел что что-то произошло — а не «кнопка моргнула»
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 5000);
     } catch {
-      // CORS или сеть недоступны — открываем прямую ссылку
-      const win = window.open(resultImage, '_blank', 'noopener');
-      setIosHint(true);
-      setTimeout(() => setIosHint(false), 8000);
-      if (!win) {
-        setLightboxOpen(true);
-      }
+      // 3. Последний шанс: лайтбокс с понятной инструкцией «удерживайте фото»
+      setLightboxOpen(true);
     } finally {
       setIsDownloading(false);
     }
@@ -379,6 +386,19 @@ export default function StudioScreen({
         </div>
       )}
 
+      {/* Тост-подтверждение успешного скачивания */}
+      {savedToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500">
+          <div className="flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl font-semibold text-xs max-w-[90vw]">
+            <span className="text-lg">✅</span>
+            <div className="leading-tight">
+              <p className="font-black mb-0.5">Фото сохранено</p>
+              <p className="opacity-90">Проверьте папку «Загрузки» или Галерею</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* === ШАГ 4: РЕЗУЛЬТАТ === */}
       {step === 'result' && resultImage && (
         <div className="space-y-6">
@@ -449,16 +469,12 @@ export default function StudioScreen({
             className="max-w-full max-h-full object-contain select-none"
             draggable={false}
           />
-          <a
-            href={resultImage}
-            target="_blank"
-            rel="noopener noreferrer"
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md active:scale-95 transition-transform shadow-xl"
-            aria-label="Открыть оригинал в новой вкладке"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md shadow-xl text-center max-w-[90vw]"
           >
-            Открыть оригинал
-          </a>
+            📲 Удерживайте фото → «Сохранить изображение»
+          </div>
         </div>
       )}
     </section>

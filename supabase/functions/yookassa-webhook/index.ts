@@ -125,7 +125,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         account_id: account.id,
         order_id: orderId,
-        type: "topup",
+        type: "credit",
         amount: photosCount,
         idempotency_key: topupKey,
         description: `Пополнение за заказ ${order.tariff_id} (${photosCount} фото)`,
