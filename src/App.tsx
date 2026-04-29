@@ -683,33 +683,10 @@ function App() {
         // STAGE 1.2 — release lock since we're navigating away
         setIsCreatingPayment(false);
 
-        // Already finished — go straight to results
-        if (data.generationStatus === 'done' && data.results?.length > 0) {
-          setOrderResults(data.results);
-          const job: Job = {
-            id: 'order_' + data.orderId,
-            userId: getSessionId(),
-            status: 'done',
-            styleIds: selectedStyles,
-            isFullBody,
-            originalImage: uploadedImage,
-            results: data.results,
-            createdAt: Date.now(),
-          };
-          setOrderJob(job);
-          setCurrentJobId(job.id);
-          navigateTo('results');
-          return;
-        }
-
-        // Failed generation — show retry UI on processing screen
-        if (data.generationStatus === 'error') {
-          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
-          navigateTo('processing');
-          return;
-        }
-
-        // Still running/waiting — show processing and poll
+        // Backend больше не возвращает existingOrder для done/error/running —
+        // только credits_credited (обработан выше) или reused pending YooKassa
+        // (там вернётся paymentUrl, не existingOrder). На всякий случай —
+        // если получили незнакомое состояние, ведём на processing.
         navigateTo('processing');
         pollOrderStatus(data.orderId);
         return;
