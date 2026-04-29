@@ -107,6 +107,8 @@ function App() {
     generationStatus: string;
     photosCount: number;
     results: string[];
+    originalImage?: string | null;
+    styleIds?: string[];
     price?: number;
     paymentMethod?: 'rub' | 'credits';
   } | null>(null);
@@ -330,6 +332,11 @@ function App() {
 
   // Restore order from localStorage on mount
   useEffect(() => {
+    // Fresh payment return is handled by the dedicated ?order_id= effect below.
+    // Do not restore an older saved order first, otherwise users can land on a stale error screen.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order_id')) return;
+
     const savedOrderId = localStorage.getItem('current_order_id');
     if (savedOrderId && !currentOrderId) {
       log.info('Restoring order from localStorage', { orderId: savedOrderId });
@@ -341,9 +348,6 @@ function App() {
     // STAGE 2.2: no local order — try to find a recent paid one by customer_key.
     // Covers: cleared cache, new browser, second device with same localStorage cust_ key.
     // Skip if we're returning from payment (?order_id= in URL) — that's handled separately.
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('order_id')) return;
-
     const customerKey = localStorage.getItem('customer_key');
     if (!customerKey) return;
 
@@ -361,11 +365,20 @@ function App() {
         const data = await response.json();
         if (data.found && data.orderId) {
           log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
+          if (data.generationStatus === 'credits_credited') {
+            await handleCreditsCredited(data.orderId, {
+              photoUrl: data.originalImage,
+              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
+            });
+            return;
+          }
           setRecentOrderPrompt({
             orderId: data.orderId,
             generationStatus: data.generationStatus,
             photosCount: data.photosCount,
             results: data.results || [],
+            originalImage: data.originalImage,
+            styleIds: Array.isArray(data.styleIds) ? data.styleIds : [],
             price: data.price,
             paymentMethod: data.paymentMethod,
           });
@@ -374,7 +387,7 @@ function App() {
         log.warn('find-recent-order failed', e);
       }
     })();
-  }, []);
+  }, [handleCreditsCredited]);
 
   // 🟢 STAGE WALLET 1.4 — загрузка баланса кошелька при старте
   // Если баланс > 0 → автоматически переключаем главный экран на Studio.
@@ -418,6 +431,15 @@ function App() {
     if (!recentOrderPrompt) return;
     const { orderId, generationStatus, results } = recentOrderPrompt;
     setRecentOrderPrompt(null);
+
+    if (generationStatus === 'credits_credited') {
+      handleCreditsCredited(orderId, {
+        photoUrl: recentOrderPrompt.originalImage,
+        styleId: recentOrderPrompt.styleIds?.[0],
+      });
+      return;
+    }
+
     setCurrentOrderId(orderId);
     localStorage.setItem('current_order_id', orderId);
 
@@ -702,6 +724,15 @@ function App() {
       // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
       if (data.existingOrder && data.orderId) {
         log.info('Existing paid order detected', { orderId: data.orderId, generationStatus: data.generationStatus, results: data.results?.length });
+          if (data.generationStatus === 'credits_credited') {
+            setIsCreatingPayment(false);
+            await handleCreditsCredited(data.orderId, {
+              photoUrl: data.originalImage,
+              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : selectedStyles[0],
+            });
+            return;
+          }
+
         setCurrentOrderId(data.orderId);
         localStorage.setItem('current_order_id', data.orderId);
         setPaymentError(null);
@@ -859,6 +890,13 @@ function App() {
             }
           );
           const findData = await findResp.json();
+          if (findData?.found && findData?.generationStatus === 'credits_credited' && findData?.orderId) {
+            await handleCreditsCredited(findData.orderId, {
+              photoUrl: findData.originalImage,
+              styleId: Array.isArray(findData.styleIds) ? findData.styleIds[0] : undefined,
+            });
+            return;
+          }
           if (
             findData?.found &&
             findData?.paymentStatus === 'succeeded' &&
@@ -874,6 +912,24 @@ function App() {
 
       if (!orderIdToRetry) {
         setProcessingError('Не удалось найти оплаченный заказ для повтора. Обратитесь в поддержку.');
+        return;
+      }
+
+      const statusResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderIdToRetry}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const statusData = await statusResponse.json();
+      if (statusData?.generationStatus === 'credits_credited') {
+        await handleCreditsCredited(orderIdToRetry, {
+          photoUrl: statusData.originalImage,
+          styleId: Array.isArray(statusData.styleIds) ? statusData.styleIds[0] : undefined,
+        });
         return;
       }
 

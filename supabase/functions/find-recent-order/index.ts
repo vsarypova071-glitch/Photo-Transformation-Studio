@@ -6,11 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// STAGE 2.2: Resume oldest reachable paid order for a customer_key.
+    // STAGE 2.2: Resume oldest reachable paid order for a customer_key.
 // Used when user returns to the app and `current_order_id` is missing
 // from localStorage (cleared cache, new browser, etc).
 // Returns the most recent succeeded order in the last 24h that still
-// has reachable state (done with results, running, waiting, or error).
+    // has reachable state (done with results, running, waiting, error, or credited wallet order).
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -36,10 +36,10 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, generation_status, results, photos_count, tariff_id, payment_id, price, created_at, updated_at")
+      .select("id, payment_status, generation_status, results, photos_count, tariff_id, payment_id, price, created_at, updated_at, original_image, style_ids, credits_purchased")
       .eq("customer_key", customerKey)
       .eq("payment_status", "succeeded")
-      .in("generation_status", ["done", "running", "waiting", "error"])
+      .in("generation_status", ["done", "running", "waiting", "error", "credits_credited"])
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -77,6 +77,9 @@ Deno.serve(async (req: Request) => {
       results: order.results || [],
       photosCount: order.photos_count,
       tariffId: order.tariff_id,
+      originalImage: order.original_image || null,
+      styleIds: order.style_ids || [],
+      creditsPurchased: order.credits_purchased || 0,
       price: order.price,
       paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
       createdAt: order.created_at,
