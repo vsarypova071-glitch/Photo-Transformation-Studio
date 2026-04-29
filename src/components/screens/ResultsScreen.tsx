@@ -157,52 +157,34 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
   const handleDownload = async (_withWatermark = false) => {
     if (!resultImage || isDownloading) return;
 
-    const fileName = `ai-photo-${job.id || Date.now()}-${activeIndex + 1}.${getImageExtension(resultImage, "png")}`;
+    const fileName = `ai-photo-${job.id || Date.now()}-${activeIndex + 1}.${getImageExtension(resultImage, "jpg")}`;
 
     setIsDownloading(true);
-    setIosHint(false);
 
     try {
-      const blob = await getBlobFromImageSource(resultImage);
-      const { iosHint } = forceDownloadBlob(blob, fileName);
-
-      if (iosHint) {
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
+      // data:image — скачиваем напрямую, без fetch
+      if (resultImage.startsWith("data:image")) {
+        const a = document.createElement("a");
+        a.href = resultImage;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
       }
-    } catch {
-      try {
-        triggerAnchorDownload(resultImage, fileName);
-      } catch {
-        const win = window.open("", "_blank", "noopener,noreferrer");
-        if (!win) {
-          // Попап заблокирован (браузер Telegram/Instagram/WhatsApp).
-          // Вместо ухода со страницы открываем лайтбокс — пользователь
-          // удерживает картинку и сохраняет в «Фото».
-          setLightboxOpen(true);
-          setIosHint(true);
-          setTimeout(() => setIosHint(false), 8000);
-          return;
-        }
 
-        win.document.open();
-        win.document.write(`<!doctype html>
-<html><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
-<title>Сохранить фото</title>
-<style>
-  html,body{margin:0;padding:0;background:#000;height:100%;}
-  body{display:flex;align-items:center;justify-content:center;}
-  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
-</style>
-</head><body>
-<img src="${resultImage}" alt="Фото" />
-</body></html>`);
-        win.document.close();
-        setIosHint(true);
-        setTimeout(() => setIosHint(false), 8000);
-      }
+      const response = await fetch(resultImage);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error("Download failed", err);
     } finally {
       setIsDownloading(false);
     }
