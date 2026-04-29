@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, payment_status, generation_status, results, payment_id, photos_count, price, updated_at")
+      .select("id, payment_status, generation_status, results, payment_id, photos_count, price, updated_at, original_image, style_ids")
       .eq("id", orderId)
       .single();
 
@@ -73,6 +73,8 @@ Deno.serve(async (req: Request) => {
         photosCount: order.photos_count,
         price: order.price,
         paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
+        originalImage: order.original_image || null,
+        styleIds: order.style_ids || [],
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -88,6 +90,8 @@ Deno.serve(async (req: Request) => {
         photosCount: order.photos_count,
         price: order.price,
         paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
+        originalImage: order.original_image || null,
+        styleIds: order.style_ids || [],
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -131,6 +135,8 @@ Deno.serve(async (req: Request) => {
             photosCount: order.photos_count,
             price: order.price,
             paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
+            originalImage: order.original_image || null,
+            styleIds: order.style_ids || [],
           }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
         } else if (yooData.status === "canceled") {
@@ -159,6 +165,8 @@ Deno.serve(async (req: Request) => {
       photosCount: order.photos_count,
       price: order.price,
       paymentMethod: order.payment_id?.startsWith("credits_") ? "credits" : "rub",
+      originalImage: order.original_image || null,
+      styleIds: order.style_ids || [],
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

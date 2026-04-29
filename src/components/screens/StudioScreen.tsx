@@ -3,7 +3,7 @@
 // → кнопка «Сгенерировать (-1)» → показ фото с большой кнопкой «Скачать»
 // + предупреждение «фото нигде не сохраняется».
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { STYLES } from '@/lib/constants';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
@@ -24,6 +24,9 @@ interface StudioScreenProps {
   onBalanceChange: (newBalance: number) => void;
   onBuyMore: () => void;
   onGeneratingChange?: (generating: boolean) => void;
+  // Prefill после оплаты — пропускаем шаг загрузки фото и выбор стиля
+  prefillPhotoUrl?: string;
+  prefillStyleId?: string;
 }
 
 type Step = 'upload' | 'choose' | 'generating' | 'result';
@@ -34,6 +37,8 @@ export default function StudioScreen({
   onBalanceChange,
   onBuyMore,
   onGeneratingChange,
+  prefillPhotoUrl,
+  prefillStyleId,
 }: StudioScreenProps) {
   const [balance, setBalance] = useState(initialBalance);
   const [step, setStep] = useState<Step>('upload');
@@ -64,6 +69,22 @@ export default function StudioScreen({
   useEffect(() => {
     onGeneratingChange?.(step === 'generating');
   }, [step, onGeneratingChange]);
+
+  // Prefill после оплаты: подставляем фото и стиль из заказа.
+  // Срабатывает ОДИН раз — флаг prefillConsumedRef защищает от повторов
+  // при ре-рендерах. Юзер сразу попадает на шаг "выбор стиля", где
+  // фото уже превью и кнопка "Сгенерировать" активна.
+  const prefillConsumedRef = useRef(false);
+  useEffect(() => {
+    if (prefillConsumedRef.current) return;
+    if (!prefillPhotoUrl) return;
+    prefillConsumedRef.current = true;
+    setUploadedUrl(prefillPhotoUrl);
+    setUploadedImage(prefillPhotoUrl); // публичный URL работает как src для <img>
+    setBiometryConsent(true); // юзер уже соглашался при оплате
+    if (prefillStyleId) setSelectedStyleId(prefillStyleId);
+    setStep('choose');
+  }, [prefillPhotoUrl, prefillStyleId]);
 
   const sessionId = (() => {
     let id = sessionStorage.getItem('anon_user_id');

@@ -113,6 +113,12 @@ function App() {
   // 🟢 STAGE WALLET 1.4 — баланс кошелька (загружается при старте по customer_key)
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [walletLoaded, setWalletLoaded] = useState<boolean>(false);
+  // Prefill для Studio после оплаты — фото и стиль из заказа.
+  // Юзер не загружает второй раз и не выбирает стиль заново.
+  const [prefilledStudio, setPrefilledStudio] = useState<{
+    photoUrl: string;
+    styleId?: string;
+  } | null>(null);
 
   // Авто-обновление бандла: имя текущего JS + флаг «идёт генерация в Studio»
   const bundleHashRef = useRef<string | null>(null);
@@ -187,8 +193,13 @@ function App() {
   // 🟢 STAGE WALLET: после оплаты пакета webhook начисляет кредиты и ставит
   // generation_status='credits_credited'. Здесь — общий хэндлер: подтянуть
   // баланс, очистить orderId и переключить юзера в Studio.
-  const handleCreditsCredited = useCallback(async (orderId: string) => {
-    log.info('Order credited as wallet topup', { orderId });
+  // prefill — данные из заказа (фото и первый стиль), чтобы Studio
+  // открылась сразу с шагом «Сгенерировать», без повторной загрузки.
+  const handleCreditsCredited = useCallback(async (
+    orderId: string,
+    prefill?: { photoUrl?: string | null; styleId?: string | null }
+  ) => {
+    log.info('Order credited as wallet topup', { orderId, prefill });
     localStorage.removeItem('current_order_id');
     setCurrentOrderId(null);
     setPaymentError(null);
@@ -199,6 +210,12 @@ function App() {
       setWalletBalance(info.balance);
     } catch (e) {
       log.warn('Balance refresh after topup failed', e);
+    }
+    if (prefill?.photoUrl) {
+      setPrefilledStudio({
+        photoUrl: prefill.photoUrl,
+        styleId: prefill.styleId || undefined,
+      });
     }
     setScreen('studio');
     window.scrollTo(0, 0);
@@ -226,7 +243,10 @@ function App() {
         // 🟢 STAGE WALLET: оплачен пакет → кредиты начислены → ведём в Studio
         if (data.generationStatus === 'credits_credited') {
           clearInterval(interval);
-          await handleCreditsCredited(orderId);
+          await handleCreditsCredited(orderId, {
+            photoUrl: data.originalImage,
+            styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
+          });
           return;
         }
 
@@ -449,7 +469,10 @@ function App() {
 
       // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
       if (data.generationStatus === 'credits_credited') {
-        await handleCreditsCredited(orderId);
+        await handleCreditsCredited(orderId, {
+          photoUrl: data.originalImage,
+          styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
+        });
         return;
       }
 
@@ -538,7 +561,10 @@ function App() {
 
           // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
           if (data.generationStatus === 'credits_credited') {
-            await handleCreditsCredited(orderId);
+            await handleCreditsCredited(orderId, {
+              photoUrl: data.originalImage,
+              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
+            });
             return;
           }
 
@@ -938,6 +964,8 @@ function App() {
             onBalanceChange={setWalletBalance}
             onBuyMore={() => navigateTo('tariff')}
             onGeneratingChange={(g) => { studioGeneratingRef.current = g; }}
+            prefillPhotoUrl={prefilledStudio?.photoUrl}
+            prefillStyleId={prefilledStudio?.styleId}
           />
         )}
 
