@@ -724,6 +724,15 @@ function App() {
       // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
       if (data.existingOrder && data.orderId) {
         log.info('Existing paid order detected', { orderId: data.orderId, generationStatus: data.generationStatus, results: data.results?.length });
+          if (data.generationStatus === 'credits_credited') {
+            setIsCreatingPayment(false);
+            await handleCreditsCredited(data.orderId, {
+              photoUrl: data.originalImage,
+              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : selectedStyles[0],
+            });
+            return;
+          }
+
         setCurrentOrderId(data.orderId);
         localStorage.setItem('current_order_id', data.orderId);
         setPaymentError(null);
