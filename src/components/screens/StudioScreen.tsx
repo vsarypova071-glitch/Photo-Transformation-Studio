@@ -204,48 +204,36 @@ export default function StudioScreen({
     if (!resultImage || isDownloading) return;
     const fileName = `ai-photo-${Date.now()}.jpg`;
     setIsDownloading(true);
-    setIosHint(false);
-    setSavedToast(false);
 
     try {
-      const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
-
-      const nav = navigator as Navigator & {
-        canShare?: (data?: { files?: File[] }) => boolean;
-        share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>;
-      };
-
-      // 1. Системное окно «Поделиться» (Android Chrome/Yandex/Samsung, iOS Safari)
-      if (nav.share && nav.canShare?.({ files: [file] })) {
-        try {
-          await nav.share({ files: [file], title: 'AI фотосессия' });
-          return; // Юзер сам выбрал куда сохранить — ничего больше не надо
-        } catch (shareErr: any) {
-          // AbortError = юзер закрыл share sheet, это норма
-          if (shareErr?.name === 'AbortError') return;
-          // Иначе — падаем в fallback ниже
-        }
+      // data:image — без fetch, напрямую
+      if (resultImage.startsWith('data:image')) {
+        const a = document.createElement('a');
+        a.href = resultImage;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setSavedToast(true);
+        setTimeout(() => setSavedToast(false), 5000);
+        return;
       }
 
-      // 2. Fallback: <a download> с явным тостом-подтверждением
+      const response = await fetch(resultImage);
+      const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
-      // Чтобы юзер видел что что-то произошло — а не «кнопка моргнула»
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 5000);
-    } catch {
-      // 3. Последний шанс: лайтбокс с понятной инструкцией «удерживайте фото»
-      setLightboxOpen(true);
+    } catch (err) {
+      console.error('Download failed', err);
     } finally {
       setIsDownloading(false);
     }
