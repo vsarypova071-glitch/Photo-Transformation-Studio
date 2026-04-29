@@ -443,26 +443,7 @@ function App() {
     setCurrentOrderId(orderId);
     localStorage.setItem('current_order_id', orderId);
 
-    if (generationStatus === 'done' && results.length > 0) {
-      const job: Job = {
-        id: 'order_' + orderId,
-        userId: getSessionId(),
-        status: 'done',
-        styleIds: [],
-        isFullBody: false,
-        originalImage: '',
-        results,
-        createdAt: Date.now(),
-        // STAGE 3.1
-        expectedCount: recentOrderPrompt.photosCount,
-        priceRub: recentOrderPrompt.price,
-        paymentMethod: recentOrderPrompt.paymentMethod,
-      };
-      setOrderJob(job);
-      setCurrentJobId(job.id);
-      setOrderResults(results);
-      setScreen('results');
-    } else if (generationStatus === 'error') {
+    if (generationStatus === 'error') {
       setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
       setScreen('processing');
     } else {
@@ -498,27 +479,9 @@ function App() {
         return;
       }
 
-      if (data.generationStatus === 'done' && data.results?.length > 0) {
-        const job: Job = {
-          id: 'order_' + orderId,
-          userId: getSessionId(),
-          status: 'done',
-          styleIds: [],
-          isFullBody: false,
-          originalImage: '',
-          results: data.results,
-          createdAt: Date.now(),
-          // STAGE 3.1
-          expectedCount: data.photosCount,
-          priceRub: data.price,
-          paymentMethod: data.paymentMethod,
-        };
-        setOrderJob(job);
-        setCurrentJobId(job.id);
-        setOrderResults(data.results);
-        setScreen('results');
-        return;
-      }
+      // Legacy 'done' batch results no longer auto-open in restoreOrder — credit flow only.
+
+
 
       // STAGE 3.2: refunded — show on tariff with friendly message
       if (data.paymentStatus === 'refunded') {
@@ -590,28 +553,9 @@ function App() {
             return;
           }
 
-          // Already done — show results directly
-          if (data.generationStatus === 'done' && data.results?.length > 0) {
-            const job: Job = {
-              id: 'order_' + orderId,
-              userId: getSessionId(),
-              status: 'done',
-              styleIds: [],
-              isFullBody: false,
-              originalImage: '',
-              results: data.results,
-              createdAt: Date.now(),
-              // STAGE 3.1
-              expectedCount: data.photosCount,
-              priceRub: data.price,
-              paymentMethod: data.paymentMethod,
-            };
-            setOrderJob(job);
-            setCurrentJobId(job.id);
-            setOrderResults(data.results);
-            setScreen('results');
-            return;
-          }
+          // Legacy 'done' batch results no longer auto-open after payment return — credit flow only.
+
+
 
           // STAGE 3.2: refunded — friendly message + back to tariff
           if (data.paymentStatus === 'refunded') {
@@ -739,33 +683,10 @@ function App() {
         // STAGE 1.2 — release lock since we're navigating away
         setIsCreatingPayment(false);
 
-        // Already finished — go straight to results
-        if (data.generationStatus === 'done' && data.results?.length > 0) {
-          setOrderResults(data.results);
-          const job: Job = {
-            id: 'order_' + data.orderId,
-            userId: getSessionId(),
-            status: 'done',
-            styleIds: selectedStyles,
-            isFullBody,
-            originalImage: uploadedImage,
-            results: data.results,
-            createdAt: Date.now(),
-          };
-          setOrderJob(job);
-          setCurrentJobId(job.id);
-          navigateTo('results');
-          return;
-        }
-
-        // Failed generation — show retry UI on processing screen
-        if (data.generationStatus === 'error') {
-          setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
-          navigateTo('processing');
-          return;
-        }
-
-        // Still running/waiting — show processing and poll
+        // Backend больше не возвращает existingOrder для done/error/running —
+        // только credits_credited (обработан выше) или reused pending YooKassa
+        // (там вернётся paymentUrl, не existingOrder). На всякий случай —
+        // если получили незнакомое состояние, ведём на processing.
         navigateTo('processing');
         pollOrderStatus(data.orderId);
         return;

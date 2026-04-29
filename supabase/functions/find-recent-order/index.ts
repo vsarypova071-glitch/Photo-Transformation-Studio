@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       .select("id, payment_status, generation_status, results, photos_count, tariff_id, payment_id, price, created_at, updated_at, original_image, style_ids, credits_purchased")
       .eq("customer_key", customerKey)
       .eq("payment_status", "succeeded")
-      .in("generation_status", ["done", "running", "waiting", "error", "credits_credited"])
+      .in("generation_status", ["running", "waiting", "error", "credits_credited"])
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -60,14 +60,8 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // For 'done' orders: only return if results actually exist
-    const hasResults = Array.isArray(order.results) && order.results.length > 0;
-    if (order.generation_status === "done" && !hasResults) {
-      return new Response(JSON.stringify({ found: false }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // 'done' orders are excluded from the filter above — legacy batch results
+    // never auto-resume in the credit-based flow.
 
     return new Response(JSON.stringify({
       found: true,
