@@ -107,6 +107,8 @@ function App() {
     generationStatus: string;
     photosCount: number;
     results: string[];
+    originalImage?: string | null;
+    styleIds?: string[];
     price?: number;
     paymentMethod?: 'rub' | 'credits';
   } | null>(null);
@@ -330,6 +332,11 @@ function App() {
 
   // Restore order from localStorage on mount
   useEffect(() => {
+    // Fresh payment return is handled by the dedicated ?order_id= effect below.
+    // Do not restore an older saved order first, otherwise users can land on a stale error screen.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('order_id')) return;
+
     const savedOrderId = localStorage.getItem('current_order_id');
     if (savedOrderId && !currentOrderId) {
       log.info('Restoring order from localStorage', { orderId: savedOrderId });
@@ -341,9 +348,6 @@ function App() {
     // STAGE 2.2: no local order — try to find a recent paid one by customer_key.
     // Covers: cleared cache, new browser, second device with same localStorage cust_ key.
     // Skip if we're returning from payment (?order_id= in URL) — that's handled separately.
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('order_id')) return;
-
     const customerKey = localStorage.getItem('customer_key');
     if (!customerKey) return;
 
@@ -361,11 +365,20 @@ function App() {
         const data = await response.json();
         if (data.found && data.orderId) {
           log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
+          if (data.generationStatus === 'credits_credited') {
+            await handleCreditsCredited(data.orderId, {
+              photoUrl: data.originalImage,
+              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
+            });
+            return;
+          }
           setRecentOrderPrompt({
             orderId: data.orderId,
             generationStatus: data.generationStatus,
             photosCount: data.photosCount,
             results: data.results || [],
+            originalImage: data.originalImage,
+            styleIds: Array.isArray(data.styleIds) ? data.styleIds : [],
             price: data.price,
             paymentMethod: data.paymentMethod,
           });
@@ -374,7 +387,7 @@ function App() {
         log.warn('find-recent-order failed', e);
       }
     })();
-  }, []);
+  }, [handleCreditsCredited]);
 
   // 🟢 STAGE WALLET 1.4 — загрузка баланса кошелька при старте
   // Если баланс > 0 → автоматически переключаем главный экран на Studio.
