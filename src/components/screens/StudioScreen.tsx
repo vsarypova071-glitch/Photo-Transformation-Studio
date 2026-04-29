@@ -79,6 +79,7 @@ export default function StudioScreen({
     if (prefillConsumedRef.current) return;
     if (!prefillPhotoUrl) return;
     prefillConsumedRef.current = true;
+    console.log('PREFILL applied', { prefillPhotoUrl, prefillStyleId });
     setUploadedUrl(prefillPhotoUrl);
     setUploadedImage(prefillPhotoUrl); // публичный URL работает как src для <img>
     setBiometryConsent(true); // юзер уже соглашался при оплате
@@ -150,6 +151,17 @@ export default function StudioScreen({
 
     setError(null);
     setStep('generating');
+
+    console.log('GEN REQUEST', {
+      customerKey,
+      selectedStyleId,
+      uploadedUrl,
+      hasSelectedStyle: !!style,
+      stylePrompt: style.prompt,
+      isFullBody,
+      originalDimensions,
+      balance,
+    });
 
     try {
       const res = await studio.generateOne({
