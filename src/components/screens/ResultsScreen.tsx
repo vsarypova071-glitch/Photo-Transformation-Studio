@@ -320,40 +320,6 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
             className="max-w-full max-h-full object-contain select-none"
             draggable={false}
           />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              try {
-                const win = window.open('', '_blank', 'noopener,noreferrer');
-                if (!win) {
-                  window.location.href = resultImage;
-                  return;
-                }
-                win.document.open();
-                win.document.write(`<!doctype html>
-<html><head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
-<title>Оригинал фото</title>
-<style>
-  html,body{margin:0;padding:0;background:#000;height:100%;}
-  body{display:flex;align-items:center;justify-content:center;}
-  img{max-width:100%;max-height:100vh;display:block;-webkit-touch-callout:default;}
-</style>
-</head><body>
-<img src="${resultImage}" alt="Оригинал" />
-</body></html>`);
-                win.document.close();
-              } catch {
-                window.location.href = resultImage;
-              }
-            }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md active:scale-95 transition-transform shadow-xl"
-            aria-label="Открыть оригинал в новой вкладке"
-          >
-            Открыть оригинал
-          </button>
         </div>
       )}
 
