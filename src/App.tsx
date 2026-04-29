@@ -443,26 +443,7 @@ function App() {
     setCurrentOrderId(orderId);
     localStorage.setItem('current_order_id', orderId);
 
-    if (generationStatus === 'done' && results.length > 0) {
-      const job: Job = {
-        id: 'order_' + orderId,
-        userId: getSessionId(),
-        status: 'done',
-        styleIds: [],
-        isFullBody: false,
-        originalImage: '',
-        results,
-        createdAt: Date.now(),
-        // STAGE 3.1
-        expectedCount: recentOrderPrompt.photosCount,
-        priceRub: recentOrderPrompt.price,
-        paymentMethod: recentOrderPrompt.paymentMethod,
-      };
-      setOrderJob(job);
-      setCurrentJobId(job.id);
-      setOrderResults(results);
-      setScreen('results');
-    } else if (generationStatus === 'error') {
+    if (generationStatus === 'error') {
       setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
       setScreen('processing');
     } else {
