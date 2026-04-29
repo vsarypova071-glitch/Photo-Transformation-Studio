@@ -479,27 +479,9 @@ function App() {
         return;
       }
 
-      if (data.generationStatus === 'done' && data.results?.length > 0) {
-        const job: Job = {
-          id: 'order_' + orderId,
-          userId: getSessionId(),
-          status: 'done',
-          styleIds: [],
-          isFullBody: false,
-          originalImage: '',
-          results: data.results,
-          createdAt: Date.now(),
-          // STAGE 3.1
-          expectedCount: data.photosCount,
-          priceRub: data.price,
-          paymentMethod: data.paymentMethod,
-        };
-        setOrderJob(job);
-        setCurrentJobId(job.id);
-        setOrderResults(data.results);
-        setScreen('results');
-        return;
-      }
+      // Legacy 'done' batch results no longer auto-open in restoreOrder — credit flow only.
+
+
 
       // STAGE 3.2: refunded — show on tariff with friendly message
       if (data.paymentStatus === 'refunded') {
@@ -571,28 +553,9 @@ function App() {
             return;
           }
 
-          // Already done — show results directly
-          if (data.generationStatus === 'done' && data.results?.length > 0) {
-            const job: Job = {
-              id: 'order_' + orderId,
-              userId: getSessionId(),
-              status: 'done',
-              styleIds: [],
-              isFullBody: false,
-              originalImage: '',
-              results: data.results,
-              createdAt: Date.now(),
-              // STAGE 3.1
-              expectedCount: data.photosCount,
-              priceRub: data.price,
-              paymentMethod: data.paymentMethod,
-            };
-            setOrderJob(job);
-            setCurrentJobId(job.id);
-            setOrderResults(data.results);
-            setScreen('results');
-            return;
-          }
+          // Legacy 'done' batch results no longer auto-open after payment return — credit flow only.
+
+
 
           // STAGE 3.2: refunded — friendly message + back to tariff
           if (data.paymentStatus === 'refunded') {
