@@ -30,8 +30,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const YOOKASSA_SHOP_ID = Deno.env.get("YOOKASSA_SHOP_ID");
-    const YOOKASSA_SECRET_KEY = Deno.env.get("YOOKASSA_SECRET_KEY");
+    const YOOKASSA_SHOP_ID = Deno.env.get("YOOKASSA_SHOP_ID")?.trim();
+    const YOOKASSA_SECRET_KEY = Deno.env.get("YOOKASSA_SECRET_KEY")?.trim();
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { tariffId, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey } = body;
+    const { tariffId, userSessionId, styleIds, originalImageUrl, customPrompt, isFullBody, customerKey, customerEmail } = body;
 
     if (!tariffId || !userSessionId) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -65,6 +65,14 @@ Deno.serve(async (req: Request) => {
       : null;
     const safeCustomPrompt = normalizeText(customPrompt) || null;
     const safeIsFullBody = Boolean(isFullBody);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const safeEmail = typeof customerEmail === "string" ? customerEmail.trim() : "";
+    if (!safeEmail || !emailRegex.test(safeEmail)) {
+      return new Response(JSON.stringify({ error: "Укажите корректный email для получения чека об оплате" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
@@ -289,7 +297,7 @@ Deno.serve(async (req: Request) => {
       description: `AI фотосессия — ${tariffId} (${photosCount} фото)`,
       receipt: {
         customer: {
-          email: "customer@example.com",
+          email: safeEmail,
         },
         items: [
           {
@@ -313,7 +321,24 @@ Deno.serve(async (req: Request) => {
       },
     };
 
+    // === DIAGNOSTIC: YooKassa credentials ===
+    console.log('[YOOKASSA-DEBUG] shopId value:', YOOKASSA_SHOP_ID);
+    console.log('[YOOKASSA-DEBUG] shopId length:', YOOKASSA_SHOP_ID?.length ?? 0);
+    console.log('[YOOKASSA-DEBUG] secret exists:', !!YOOKASSA_SECRET_KEY);
+    console.log('[YOOKASSA-DEBUG] secret length:', YOOKASSA_SECRET_KEY?.length ?? 0);
+    if (YOOKASSA_SECRET_KEY) {
+      const startsWithLive = YOOKASSA_SECRET_KEY.startsWith('live_');
+      const startsWithTest = YOOKASSA_SECRET_KEY.startsWith('test_');
+      console.log('[YOOKASSA-DEBUG] secret starts with "live_":', startsWithLive);
+      console.log('[YOOKASSA-DEBUG] secret starts with "test_":', startsWithTest);
+      console.log('[YOOKASSA-DEBUG] secret has spaces:', YOOKASSA_SECRET_KEY.includes(' '));
+      console.log('[YOOKASSA-DEBUG] secret has newlines:', YOOKASSA_SECRET_KEY.includes('\n'));
+      console.log('[YOOKASSA-DEBUG] secret preview:', YOOKASSA_SECRET_KEY.substring(0, 5) + '...' + YOOKASSA_SECRET_KEY.substring(YOOKASSA_SECRET_KEY.length - 4));
+    }
+
     const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
+    console.log('[YOOKASSA-DEBUG] base64 credentials preview:', credentials.substring(0, 20) + '...');
+
 
     const yooResponse = await fetch("https://api.yookassa.ru/v3/payments", {
       method: "POST",
