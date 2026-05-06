@@ -282,7 +282,7 @@ Deno.serve(async (req: Request) => {
 
     // Create YooKassa payment
     const idempotenceKey = crypto.randomUUID();
-    const returnUrl = `${req.headers.get("origin") || "https://photo-transformation-studio.lovable.app"}?order_id=${orderId}`;
+    const returnUrl = `${req.headers.get("origin") || "https://ai-fotosessia.ru"}?order_id=${orderId}`;
 
     const paymentBody = {
       amount: {
