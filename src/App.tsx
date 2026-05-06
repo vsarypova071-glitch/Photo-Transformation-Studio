@@ -559,6 +559,13 @@ function App() {
           );
           const data = await response.json();
 
+          // Variant B: cross-device — если оплата была с другого устройства,
+          // берём customer_key из заказа и синхронизируем localStorage.
+          // Так кредиты будут доступны в Studio на текущем устройстве.
+          if (data.customerKey && data.customerKey !== localStorage.getItem('customer_key')) {
+            localStorage.setItem('customer_key', data.customerKey);
+          }
+
           // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
           if (data.generationStatus === 'credits_credited') {
             await handleCreditsCredited(orderId, {
@@ -642,7 +649,7 @@ function App() {
     }
   }, [pollOrderStatus]);
 
-  const handleSelectTariff = async (tariff: SelectedTariff) => {
+  const handleSelectTariff = async (tariff: SelectedTariff, customerEmail: string) => {
     // STAGE 1.2 — prevent double payment creation
     if (isCreatingPayment) {
       log.info('Payment creation already in progress — ignoring duplicate click');
@@ -693,6 +700,7 @@ function App() {
             customPrompt: '',
             isFullBody,
             customerKey: getCustomerKey(),
+            customerEmail,
           }),
         }
       );
