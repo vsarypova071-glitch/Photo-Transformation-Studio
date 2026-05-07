@@ -25,6 +25,10 @@
     "noEmit": true
   },
   "exclude": [
-    "supabase/functions"
+    "supabase/functions",
+    "backup-*",
+    "server",
+    "node_modules",
+    "dist"
   ]
 }

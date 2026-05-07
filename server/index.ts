@@ -4,6 +4,8 @@ import paymentRouter from './routes/payment';
 import balanceRouter from './routes/balance';
 import orderRouter from './routes/order';
 import creditsRouter from './routes/credits';
+import photosRouter from './routes/photos';
+import generationRouter from './routes/generation';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -43,6 +45,8 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/balance', balanceRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/credits', creditsRouter);
+app.use('/api/photos', photosRouter);
+app.use('/api/generation', generationRouter);
 
 // 404
 app.use((req, res) => {

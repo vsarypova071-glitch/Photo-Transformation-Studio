@@ -43,3 +43,6 @@ supabase/.branches/
 
 # claude
 .claude/
+
+# local backups (Phase 2 staging — содержат секреты и большие архивы)
+backup-*/
