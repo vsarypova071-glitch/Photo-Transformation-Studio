@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getBalance } from "@/services/api";
 
 interface Tariff {
   id: string;
@@ -15,7 +16,7 @@ const TARIFFS: Tariff[] = [
 ];
 
 interface TariffScreenProps {
-  onSelectTariff: (tariff: Tariff) => void;
+  onSelectTariff: (tariff: Tariff, email: string) => void;
   onBack: () => void;
   paymentError?: string | null;
   isProcessing?: boolean;
@@ -23,6 +24,10 @@ interface TariffScreenProps {
 
 function getCustomerKey(): string | null {
   return localStorage.getItem('customer_key');
+}
+
+function isValidEmail(e: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 }
 
 // 1 генерация / 2 генерации / 5 генераций
@@ -42,23 +47,23 @@ export default function TariffScreen({
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [selectedTariff, setSelectedTariff] = useState<Tariff | null>(null);
+  const [email, setEmail] = useState(() => localStorage.getItem('customer_email') || '');
 
   useEffect(() => {
     const key = getCustomerKey();
     if (!key) return;
-    fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-balance?customer_key=${encodeURIComponent(key)}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-      }
-    )
-      .then(r => r.json())
-      .then(d => setCreditBalance(d.balance ?? 0))
+    getBalance(key)
+      .then((d) => setCreditBalance(d.balance ?? 0))
       .catch(() => {});
   }, []);
+
+  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value;
+    setEmail(val);
+    localStorage.setItem('customer_email', val);
+  }
+
+  const canSubmit = acceptedPrivacy && !!selectedTariff && !isProcessing && isValidEmail(email);
 
   const privacyUrl =
     "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
@@ -137,8 +142,42 @@ export default function TariffScreen({
         })}
       </div>
 
-      {/* Чекбокс согласия — перед кнопками оплаты */}
-      <div className="mt-6 mb-4 rounded-2xl border border-border bg-card p-4">
+      {/* Email для чека (54-ФЗ) — выделенный блок */}
+      <div className={`mt-6 rounded-2xl border-2 p-5 transition-all
+        ${!email
+          ? "border-yellow-400/70 bg-yellow-400/10 shadow-lg shadow-yellow-400/20 animate-pulse-subtle"
+          : !isValidEmail(email)
+            ? "border-red-500/70 bg-red-500/10"
+            : "border-emerald-500/50 bg-emerald-500/5"}
+      `}>
+        <label htmlFor="customer-email" className="flex items-center gap-2 text-base font-bold text-slate-50 mb-3">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400 text-black text-xs font-black">1</span>
+          Email для чека и результатов
+        </label>
+        <input
+          id="customer-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="Введите ваш email"
+          value={email}
+          onChange={handleEmailChange}
+          className={`w-full rounded-xl border-2 px-4 py-4 text-base font-medium bg-white text-slate-900 placeholder:text-slate-400 outline-none transition-colors shadow-inner
+            ${email && !isValidEmail(email)
+              ? "border-red-500 focus:border-red-600"
+              : "border-yellow-400/60 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/30"}
+          `}
+        />
+        <p className="mt-2.5 text-xs text-slate-200 leading-relaxed">
+          📩 На этот email придёт <strong className="text-slate-50">чек об оплате</strong> и <strong className="text-slate-50">доступ к результатам</strong>
+        </p>
+        {email && !isValidEmail(email) && (
+          <p className="mt-1.5 text-xs text-red-400 font-semibold">⚠ Введите корректный email</p>
+        )}
+      </div>
+
+      {/* Чекбокс согласия */}
+      <div className="mt-4 mb-4 rounded-2xl border border-border bg-card p-4">
         <label className="flex items-start gap-3 text-sm leading-5 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -170,12 +209,12 @@ export default function TariffScreen({
       </div>
 
       <button
-        onClick={() => selectedTariff && onSelectTariff(selectedTariff)}
-        disabled={!acceptedPrivacy || !selectedTariff || isProcessing}
-        className={`w-full py-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2
-          ${!acceptedPrivacy || !selectedTariff || isProcessing
-            ? "opacity-50 cursor-not-allowed bg-muted text-muted-foreground"
-            : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/40"}
+        onClick={() => selectedTariff && canSubmit && onSelectTariff(selectedTariff, email.trim())}
+        disabled={!canSubmit}
+        className={`w-full py-4 rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2
+          ${!canSubmit
+            ? "opacity-60 cursor-not-allowed bg-muted text-muted-foreground"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/40 active:scale-[0.98]"}
         `}>
         {isProcessing ? (
           <>
@@ -189,14 +228,25 @@ export default function TariffScreen({
         )}
       </button>
 
+      {/* Причина disabled — крупно и заметно, чтобы было ясно почему кнопка серая */}
       {!selectedTariff && (
-        <p className="text-center text-xs mt-2 text-muted-foreground">
-          Нажмите на карточку тарифа, чтобы выбрать
+        <p className="text-center text-sm mt-3 font-semibold text-yellow-300">
+          ↑ Нажмите на карточку тарифа выше, чтобы выбрать
         </p>
       )}
-      {selectedTariff && !acceptedPrivacy && (
-        <p className="text-center text-xs mt-2 text-muted-foreground">
-          Подтвердите согласие с офертой выше
+      {selectedTariff && !email && (
+        <p className="text-center text-sm mt-3 font-semibold text-red-400 flex items-center justify-center gap-2">
+          <span>⚠</span> Введите email, чтобы продолжить оплату
+        </p>
+      )}
+      {selectedTariff && email && !isValidEmail(email) && (
+        <p className="text-center text-sm mt-3 font-semibold text-red-400 flex items-center justify-center gap-2">
+          <span>⚠</span> Email указан некорректно
+        </p>
+      )}
+      {selectedTariff && isValidEmail(email) && !acceptedPrivacy && (
+        <p className="text-center text-sm mt-3 font-semibold text-yellow-300">
+          ↑ Подтвердите согласие с офертой
         </p>
       )}
 

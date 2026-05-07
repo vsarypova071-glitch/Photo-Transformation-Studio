@@ -3,6 +3,12 @@ import { backend } from './services/backend';
 import { STYLES } from './lib/constants';
 import { StyleCategory, Job } from './types';
 import { createLogger } from './utils/logger';
+import {
+  createPayment,
+  checkOrder,
+  findRecentOrder,
+  getBalance as apiGetBalance,
+} from './services/api';
 
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
@@ -44,16 +50,22 @@ function getCustomerKey(): string {
   return key;
 }
 
-// 🔧 FIX upload "Failed to fetch": заливаем фото прямым POST на Storage REST,
-// минуя SDK-fetch (который в preview-iframe иногда рушится TypeError'ом
-// на больших blob'ах). Эндпоинт, политики и анон-ключ — те же.
-async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string> {
+// Загрузка фото в Supabase Storage (legacy — будет заменено в Phase 2 на Beget storage).
+// Возвращает public URL или null если хранилище недоступно (например, кривой VITE_SUPABASE_URL).
+// Падение здесь НЕ должно ломать оплату: фронт может отправить originalImageUrl=null,
+// бэкенд это разрешает, юзер потом сгенерит из своего фото в Studio.
+async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string | null> {
+  const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
+  const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
+  if (!supabaseUrl || !anon || /\s/.test(supabaseUrl)) {
+    log.warn('Supabase storage URL/key not configured — skipping upload, payment will proceed without photo URL');
+    return null;
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30_000);
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/user-photos/${fileName}`;
-  const anon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   try {
-    const resp = await fetch(url, {
+    const resp = await fetch(`${supabaseUrl}/storage/v1/object/user-photos/${fileName}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${anon}`,
@@ -65,18 +77,13 @@ async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string> 
       signal: controller.signal,
     });
     if (!resp.ok) {
-      let msg = `HTTP ${resp.status}`;
-      try {
-        const j = await resp.json();
-        msg = j?.message || j?.error || msg;
-      } catch { /* ignore */ }
-      throw new Error(msg);
+      log.warn('Storage upload non-ok, continuing without photo URL', { status: resp.status });
+      return null;
     }
-    const publicUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/user-photos/${fileName}`;
-    return publicUrl;
+    return `${supabaseUrl}/storage/v1/object/public/user-photos/${fileName}`;
   } catch (e: any) {
-    if (e.name === 'AbortError') throw new Error('Сервис временно не отвечает, попробуйте ещё раз');
-    throw e;
+    log.warn('Storage upload failed, continuing without photo URL', { error: e?.message });
+    return null;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -228,16 +235,7 @@ function App() {
     const interval = setInterval(async () => {
       pollCount++;
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-          }
-        );
-        const data = await response.json();
+        const data = await checkOrder(orderId);
         log.info('Order status', data);
 
         // 🟢 STAGE WALLET: оплачен пакет → кредиты начислены → ведём в Studio
@@ -349,22 +347,13 @@ function App() {
 
     (async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-          }
-        );
-        const data = await response.json();
+        const data = await findRecentOrder(customerKey);
         if (data.found && data.orderId) {
           log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
           setRecentOrderPrompt({
             orderId: data.orderId,
-            generationStatus: data.generationStatus,
-            photosCount: data.photosCount,
+            generationStatus: data.generationStatus ?? '',
+            photosCount: data.photosCount ?? 0,
             results: data.results || [],
             price: data.price,
             paymentMethod: data.paymentMethod,
@@ -456,16 +445,7 @@ function App() {
 
   const restoreOrder = async (orderId: string) => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-        }
-      );
-      const data = await response.json();
+      const data = await checkOrder(orderId);
 
       // 🟢 STAGE WALLET: пакет оплачен → кредиты в кошельке → в Studio
       if (data.generationStatus === 'credits_credited') {
@@ -548,16 +528,7 @@ function App() {
       // First check order status before showing processing
       (async () => {
         try {
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-            }
-          );
-          const data = await response.json();
+          const data = await checkOrder(orderId);
 
           // Variant B: cross-device — если оплата была с другого устройства,
           // берём customer_key из заказа и синхронизируем localStorage.
@@ -673,39 +644,27 @@ function App() {
       }
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      let imageStoragePath: string;
+      const imageStoragePath: string | null = await uploadPhotoDirect(fileName, blob);
+      log.info('Image upload result', { path: fileName, success: !!imageStoragePath });
+
+      let data;
       try {
-        imageStoragePath = await uploadPhotoDirect(fileName, blob);
-      } catch (e: any) {
-        throw new Error('Ошибка загрузки фото: ' + (e?.message || 'Failed to fetch'));
+        data = await createPayment({
+          tariffId: tariff.id as 'basic' | 'standard' | 'premium',
+          userSessionId: sessionId,
+          customerKey: getCustomerKey(),
+          customerEmail,
+          styleIds: selectedStyles,
+          originalImageUrl: imageStoragePath,
+          customPrompt: '',
+          isFullBody,
+        });
+      } catch (apiErr: any) {
+        const status = apiErr?.status ?? 500;
+        const msg = apiErr?.body?.error || apiErr?.message;
+        if (status === 503) throw new Error(msg || 'Сервис временно перегружен. Попробуйте через несколько минут.');
+        throw new Error(msg || 'Ошибка создания платежа');
       }
-      log.info('Image uploaded to storage', { path: fileName });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            tariffId: tariff.id,
-            price: tariff.price,
-            photosCount: tariff.photos,
-            userSessionId: sessionId,
-            styleIds: selectedStyles,
-            originalImageUrl: imageStoragePath,
-            customPrompt: '',
-            isFullBody,
-            customerKey: getCustomerKey(),
-            customerEmail,
-          }),
-        }
-      );
-
-      const data = await response.json();
 
       // SAFEGUARD: server detected existing paid+unfinished order — reuse it, no new payment
       if (data.existingOrder && data.orderId) {
@@ -748,11 +707,8 @@ function App() {
         return;
       }
 
-      if (!response.ok || !data.paymentUrl) {
-        if (response.status === 503) {
-          throw new Error(data.error || 'Сервис временно перегружен. Попробуйте через несколько минут.');
-        }
-        throw new Error(data.error || 'Ошибка создания платежа');
+      if (!data.paymentUrl) {
+        throw new Error('Сервис не вернул ссылку на оплату. Попробуйте снова.');
       }
 
       setCurrentOrderId(data.orderId);
@@ -846,95 +802,27 @@ function App() {
     }
   };
 
+  // Retry-generation на Beget пока не реализован (Phase 2 — миграция AI-генерации).
+  // На текущем этапе пакетная генерация на бэкенде отключена: оплата → начисление кредитов →
+  // юзер генерирует по одному фото в Studio. Если он попал на этот хендлер,
+  // это означает заказ в статусе error. Ведём в Studio с актуальным балансом.
   const handleRetryGeneration = async () => {
     setRetrying(true);
     setProcessingError(null);
     try {
       const customerKey = getCustomerKey();
-
-      // Resolve orderId: state -> localStorage -> server lookup of recent paid order
-      let orderIdToRetry = currentOrderId || localStorage.getItem('current_order_id');
-
-      if (!orderIdToRetry) {
-        try {
-          const findResp = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-            }
-          );
-          const findData = await findResp.json();
-          if (
-            findData?.found &&
-            findData?.paymentStatus === 'succeeded' &&
-            findData?.generationStatus !== 'done' &&
-            findData?.orderId
-          ) {
-            orderIdToRetry = findData.orderId;
-          }
-        } catch (e) {
-          log.warn('find-recent-order during retry failed', e);
-        }
-      }
-
-      if (!orderIdToRetry) {
-        setProcessingError('Не удалось найти оплаченный заказ для повтора. Обратитесь в поддержку.');
-        return;
-      }
-
-      // Sync state + storage so polling and further retries use the same id
-      if (orderIdToRetry !== currentOrderId) {
-        setCurrentOrderId(orderIdToRetry);
-      }
-      localStorage.setItem('current_order_id', orderIdToRetry);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ orderId: orderIdToRetry, customerKey }),
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Не удалось перезапустить генерацию');
-      }
-      if (data.creditsCredited) {
-        // Кредиты уже начислены — этот заказ кредитный, пакетная генерация не нужна.
-        // Идём в Studio, баланс актуализируем через getBalance.
-        localStorage.removeItem('current_order_id');
-        setCurrentOrderId(null);
-        setProcessingError(null);
-        try {
-          const info = await studio.getBalance(getCustomerKey());
-          setWalletBalance(info.balance);
-        } catch (_) { /* ignore */ }
+      const balance = await apiGetBalance(customerKey).catch(() => ({ balance: 0 }));
+      setWalletBalance(balance.balance);
+      localStorage.removeItem('current_order_id');
+      setCurrentOrderId(null);
+      if (balance.balance > 0) {
         navigateTo('studio');
-      } else if (data.alreadyDone && data.results?.length) {
-        setOrderResults(data.results);
-        const job: Job = {
-          id: 'order_' + orderIdToRetry, userId: getSessionId(), status: 'done',
-          styleIds: selectedStyles, isFullBody, originalImage: uploadedImage,
-          results: data.results, createdAt: Date.now(),
-        };
-        setOrderJob(job);
-        setCurrentJobId(job.id);
-        navigateTo('results');
       } else {
-        // Resume polling
-        pollOrderStatus(orderIdToRetry);
+        setProcessingError('Кредиты ещё не начислены. Подождите 1–2 минуты или обновите страницу.');
       }
     } catch (e: any) {
-      log.error('Retry generation failed', e);
-      setProcessingError('Не удалось перезапустить: ' + (e?.message || ''));
+      log.error('Retry handler failed', e);
+      setProcessingError('Не удалось обновить статус. Попробуйте перезагрузить страницу.');
     } finally {
       setRetrying(false);
     }

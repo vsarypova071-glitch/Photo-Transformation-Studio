@@ -8,6 +8,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { createLogger } from '@/utils/logger';
+import { getBalance as apiGetBalance } from '@/services/api';
 
 const log = createLogger('StudioService');
 
@@ -36,30 +37,14 @@ class StudioService {
    * Если аккаунта нет — вернёт { exists: false, balance: 0 }.
    */
   async getBalance(customerKey: string): Promise<BalanceInfo> {
-    const key = customerKey.trim().toLowerCase();
+    const key = customerKey.trim();
     log.info('Fetching balance', { customerKey: key });
-
-    // Прямой SELECT не сработает (RLS deny all) → используем edge функцию get-balance
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-balance?customer_key=${encodeURIComponent(key)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-        }
-      );
-      if (!resp.ok) {
-        log.warn('get-balance non-ok', { status: resp.status });
-        return { accountId: null, balance: 0, exists: false };
-      }
-      const data = await resp.json();
-      return {
-        accountId: data.accountId ?? null,
-        balance: typeof data.balance === 'number' ? data.balance : 0,
-        exists: !!data.exists,
-      };
+      const data = await apiGetBalance(key);
+      const balance = typeof data.balance === 'number' ? data.balance : 0;
+      // accountId/exists больше не возвращаем — фронт ими не пользуется.
+      // Сохраняем форму ответа для совместимости.
+      return { accountId: null, balance, exists: balance > 0 };
     } catch (e) {
       log.error('getBalance failed', e);
       return { accountId: null, balance: 0, exists: false };

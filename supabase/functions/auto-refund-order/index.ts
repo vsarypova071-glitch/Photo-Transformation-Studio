@@ -25,8 +25,8 @@ Deno.serve(async (req: Request) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const YOOKASSA_SHOP_ID = Deno.env.get("YOOKASSA_SHOP_ID");
-    const YOOKASSA_SECRET_KEY = Deno.env.get("YOOKASSA_SECRET_KEY");
+    const YOOKASSA_SHOP_ID = Deno.env.get("YOOKASSA_SHOP_ID")?.trim();
+    const YOOKASSA_SECRET_KEY = Deno.env.get("YOOKASSA_SECRET_KEY")?.trim();
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -202,7 +202,10 @@ Deno.serve(async (req: Request) => {
 
     // YooKassa Refund API
     // Idempotence-Key — unique per (order, partial-or-full) so retries don't duplicate refunds.
-    const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
+    const encoder = new TextEncoder();
+    const credentialsString = `${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`;
+    const credentialsBytes = encoder.encode(credentialsString);
+    const credentials = btoa(String.fromCharCode(...credentialsBytes));
     const refundBody = {
       payment_id: order.payment_id,
       amount: {

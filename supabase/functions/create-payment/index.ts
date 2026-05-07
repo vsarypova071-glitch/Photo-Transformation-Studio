@@ -1,5 +1,6 @@
 // deno-lint-ignore-file
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,7 +139,10 @@ Deno.serve(async (req: Request) => {
       if (existingPending?.payment_id) {
         // Re-fetch payment URL from YooKassa for the existing pending payment
         try {
-          const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
+          const encoder = new TextEncoder();
+          const credentialsString = `${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`;
+          const credentialsBytes = encoder.encode(credentialsString);
+          const credentials = encodeBase64(credentialsBytes);
           const yooRes = await fetch(`https://api.yookassa.ru/v3/payments/${existingPending.payment_id}`, {
             headers: { "Authorization": `Basic ${credentials}` },
           });
@@ -336,21 +340,35 @@ Deno.serve(async (req: Request) => {
       console.log('[YOOKASSA-DEBUG] secret preview:', YOOKASSA_SECRET_KEY.substring(0, 5) + '...' + YOOKASSA_SECRET_KEY.substring(YOOKASSA_SECRET_KEY.length - 4));
     }
 
-    const credentials = btoa(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`);
-    console.log('[YOOKASSA-DEBUG] base64 credentials preview:', credentials.substring(0, 20) + '...');
+    // Use Deno standard library for reliable base64 encoding
+    const credentialsString = `${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`;
+    const encoder = new TextEncoder();
+    const credentialsBytes = encoder.encode(credentialsString);
+    const credentialsBase64 = encodeBase64(credentialsBytes);
 
+
+    console.log('[YOOKASSA-DEBUG] === PAYMENT REQUEST ===');
+    console.log('[YOOKASSA-DEBUG] URL: https://api.yookassa.ru/v3/payments');
+    console.log('[YOOKASSA-DEBUG] Method: POST');
+    console.log('[YOOKASSA-DEBUG] Authorization header:', `Basic ${credentialsBase64}`);
+    console.log('[YOOKASSA-DEBUG] Idempotence-Key:', idempotenceKey);
+    console.log('[YOOKASSA-DEBUG] Request body:', JSON.stringify(paymentBody));
 
     const yooResponse = await fetch("https://api.yookassa.ru/v3/payments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Basic ${credentials}`,
+        "Authorization": `Basic ${credentialsBase64}`,
         "Idempotence-Key": idempotenceKey,
       },
       body: JSON.stringify(paymentBody),
     });
 
     const yooData = await yooResponse.json();
+
+    console.log('[YOOKASSA-DEBUG] === PAYMENT RESPONSE ===');
+    console.log('[YOOKASSA-DEBUG] Status:', yooResponse.status);
+    console.log('[YOOKASSA-DEBUG] Response:', JSON.stringify(yooData));
 
     if (!yooResponse.ok) {
       console.error("YooKassa error:", JSON.stringify(yooData));
