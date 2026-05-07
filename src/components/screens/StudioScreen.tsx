@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { STYLES } from '@/lib/constants';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
+import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
 
 const log = createLogger('StudioScreen');
 
@@ -237,53 +238,36 @@ export default function StudioScreen({
   };
 
   // === Скачивание фото — приоритет на системное «Поделиться» ===
-  // Web Share API с файлом открывает родное меню Android/iOS, где есть
-  // «Сохранить в галерею». Это привычный путь — никаких «куда оно делось».
+  // Скачивание реализовано в utils/download.ts:
+  //   - desktop / Android  →  <a href="/api/photos/download/<file>" download>  (Content-Disposition: attachment)
+  //   - iOS                →  navigator.share с File (Save to Files / Photos),
+  //                           fallback на тот же download endpoint
+  // Сервер отдаёт правильный Content-Type, Content-Length и attachment-имя
+  // ai-fotosessia-result-YYYYMMDD-HHMM.jpg.
   const handleDownload = async () => {
     if (!resultImage || isDownloading) return;
-    const fileName = `ai-photo-${Date.now()}.jpg`;
     setIsDownloading(true);
     setIosHint(false);
     setSavedToast(false);
 
     try {
-      const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+      const res = await downloadGeneratedPhoto(resultImage);
+      log.info('Download triggered', res);
 
-      const nav = navigator as Navigator & {
-        canShare?: (data?: { files?: File[] }) => boolean;
-        share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>;
-      };
-
-      // 1. Системное окно «Поделиться» (Android Chrome/Yandex/Samsung, iOS Safari)
-      if (nav.share && nav.canShare?.({ files: [file] })) {
-        try {
-          await nav.share({ files: [file], title: 'AI фотосессия' });
-          return; // Юзер сам выбрал куда сохранить — ничего больше не надо
-        } catch (shareErr: any) {
-          // AbortError = юзер закрыл share sheet, это норма
-          if (shareErr?.name === 'AbortError') return;
-          // Иначе — падаем в fallback ниже
-        }
+      if (res.via === 'web-share') {
+        // iOS Share Sheet взял на себя — юзер сам выбрал «Сохранить в Фото»
+      } else if (res.via === 'anchor-download') {
+        // browser стал скачивать — показываем подтверждающий toast
+        setSavedToast(true);
+        setTimeout(() => setSavedToast(false), 4000);
+      } else {
+        // open-window: подсказываем что в открывшейся вкладке нажать сохранить
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 6000);
       }
-
-      // 2. Fallback: <a download> с явным тостом-подтверждением
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-
-      // Чтобы юзер видел что что-то произошло — а не «кнопка моргнула»
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 5000);
-    } catch {
-      // 3. Последний шанс: лайтбокс с понятной инструкцией «удерживайте фото»
+    } catch (err) {
+      log.error('Download failed', err);
+      // самый последний fallback — лайтбокс с long-press как ручной способ
       setLightboxOpen(true);
     } finally {
       setIsDownloading(false);
@@ -560,7 +544,7 @@ export default function StudioScreen({
             onClick={(e) => e.stopPropagation()}
             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md shadow-xl text-center max-w-[90vw]"
           >
-            📲 Удерживайте фото → «Сохранить изображение»
+            Если кнопка не сработала: удерживайте фото → «Сохранить изображение»
           </div>
         </div>
       )}

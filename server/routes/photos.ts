@@ -53,31 +53,104 @@ router.post('/upload', (req, res) => {
   });
 });
 
-// GET /api/photos/:filename — отдача с TTL-проверкой
-router.get('/:filename', (req, res) => {
-  const safe = path.basename(req.params.filename);
+function mimeFor(filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  if (ext === '.png') return 'image/png';
+  if (ext === '.webp') return 'image/webp';
+  return 'image/jpeg';
+}
+
+function downloadFilename(originalExt: string): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const stamp =
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}`;
+  const ext = originalExt === '.png' ? '.png'
+            : originalExt === '.webp' ? '.webp'
+            : '.jpg';
+  return `ai-fotosessia-result-${stamp}${ext}`;
+}
+
+interface ResolvedFile {
+  ok: true;
+  filePath: string;
+  size: number;
+  mime: string;
+  ext: string;
+}
+interface ResolveError {
+  ok: false;
+  status: number;
+  body: { error: string; code?: string };
+}
+
+function resolveFile(rawName: string): ResolvedFile | ResolveError {
+  const safe = path.basename(rawName);
   const filePath = path.join(TEMP_DIR, safe);
-
-  // на всякий — не пускать наружу
   if (!filePath.startsWith(path.resolve(TEMP_DIR))) {
-    return res.status(400).json({ error: 'Bad filename' });
+    return { ok: false, status: 400, body: { error: 'Bad filename' } };
   }
+  let stats: fs.Stats;
+  try {
+    stats = fs.statSync(filePath);
+  } catch {
+    return { ok: false, status: 404, body: { error: 'Photo not found or expired' } };
+  }
+  if (!stats.isFile()) {
+    return { ok: false, status: 404, body: { error: 'Photo not found or expired' } };
+  }
+  const ageMin = (Date.now() - stats.mtimeMs) / 60_000;
+  if (ageMin > TTL_MIN) {
+    fs.unlink(filePath, () => {}); // ускоряем cleanup
+    return { ok: false, status: 410, body: { error: 'Photo expired', code: 'expired' } };
+  }
+  return {
+    ok: true,
+    filePath,
+    size: stats.size,
+    mime: mimeFor(safe),
+    ext: path.extname(safe).toLowerCase(),
+  };
+}
 
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats.isFile()) {
-      return res.status(404).json({ error: 'Photo not found or expired' });
-    }
-    const ageMin = (Date.now() - stats.mtimeMs) / 60_000;
-    if (ageMin > TTL_MIN) {
-      // Просрочено — удаляем (cron всё равно подберёт, но ускорим).
-      fs.unlink(filePath, () => {});
-      return res.status(410).json({ error: 'Photo expired', code: 'expired' });
-    }
-    // короткоживущий кэш в браузере — но не дольше TTL
-    const remainingSec = Math.max(0, Math.floor((TTL_MIN * 60) - ageMin * 60));
-    res.setHeader('Cache-Control', `public, max-age=${remainingSec}, immutable`);
-    res.sendFile(filePath);
-  });
+// GET /api/photos/:filename — обычная отдача (для <img src>)
+router.get('/:filename', (req, res) => {
+  const r = resolveFile(req.params.filename);
+  if (!r.ok) return res.status(r.status).json(r.body);
+
+  const ageMin = (Date.now() - fs.statSync(r.filePath).mtimeMs) / 60_000;
+  const remainingSec = Math.max(0, Math.floor((TTL_MIN * 60) - ageMin * 60));
+  res.setHeader('Cache-Control', `public, max-age=${remainingSec}, immutable`);
+  res.setHeader('Content-Type', r.mime);
+  res.setHeader('Content-Length', String(r.size));
+  res.sendFile(r.filePath);
+});
+
+// GET /api/photos/download/:filename — принудительное скачивание с человеческим
+// именем файла. Подходит для desktop <a href download> и mobile fallback.
+// CORS: тот же origin — спецзаголовков не нужно.
+router.get('/download/:filename', (req, res) => {
+  const r = resolveFile(req.params.filename);
+  if (!r.ok) return res.status(r.status).json(r.body);
+
+  const dlName = downloadFilename(r.ext);
+  // Двойное кодирование: ASCII-fallback + UTF-8 (RFC 5987) — наш dlName ASCII,
+  // но оставляем оба для совместимости с любыми будущими именами.
+  const asciiName = dlName;
+  const utf8Name = encodeURIComponent(dlName);
+
+  res.setHeader('Content-Type', r.mime);
+  res.setHeader('Content-Length', String(r.size));
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${asciiName}"; filename*=UTF-8''${utf8Name}`,
+  );
+  // Безопасность: не позволять браузеру угадывать MIME
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  fs.createReadStream(r.filePath).pipe(res);
 });
 
 export default router;
