@@ -53,6 +53,23 @@ router.post('/create', async (req, res) => {
     const safeIsFullBody = Boolean(isFullBody);
     const safeCustomerKey = typeof customerKey === 'string' && customerKey.trim() ? customerKey.trim() : null;
 
+    // === BALANCE GUARD: если на кошельке есть кредиты — запрещаем новую покупку ===
+    // Бизнес-правило: balance > 0 ⇒ юзер сначала тратит существующие генерации.
+    if (safeCustomerKey) {
+      const { rows: bRows } = await db.query(
+        `SELECT balance FROM credit_accounts WHERE customer_key = $1`,
+        [safeCustomerKey],
+      );
+      const currentBalance = bRows[0]?.balance ?? 0;
+      if (currentBalance > 0) {
+        return res.status(409).json({
+          error: 'У вас уже есть активный пакет. Сначала используйте оставшиеся генерации.',
+          balance: currentBalance,
+          code: 'balance_not_empty',
+        });
+      }
+    }
+
     // === SAFEGUARD: уже есть оплаченный заказ за 24ч — возвращаем его, не списываем повторно ===
     if (safeCustomerKey) {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000);

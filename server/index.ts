@@ -3,6 +3,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import paymentRouter from './routes/payment';
 import balanceRouter from './routes/balance';
 import orderRouter from './routes/order';
+import creditsRouter from './routes/credits';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -41,6 +42,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/payment', paymentRouter);
 app.use('/api/balance', balanceRouter);
 app.use('/api/order', orderRouter);
+app.use('/api/credits', creditsRouter);
 
 // 404
 app.use((req, res) => {

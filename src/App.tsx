@@ -661,7 +661,17 @@ function App() {
         });
       } catch (apiErr: any) {
         const status = apiErr?.status ?? 500;
+        const code = apiErr?.body?.code;
         const msg = apiErr?.body?.error || apiErr?.message;
+        if (status === 409 && code === 'balance_not_empty') {
+          // Бизнес-правило: balance > 0 — новую покупку не делаем, ведём в Studio.
+          const balance = apiErr?.body?.balance ?? 0;
+          if (typeof balance === 'number') setWalletBalance(balance);
+          setPaymentError(null);
+          setIsCreatingPayment(false);
+          navigateTo('studio');
+          return;
+        }
         if (status === 503) throw new Error(msg || 'Сервис временно перегружен. Попробуйте через несколько минут.');
         throw new Error(msg || 'Ошибка создания платежа');
       }
@@ -903,6 +913,8 @@ function App() {
             onBack={() => navigateTo('styles')}
             paymentError={paymentError}
             isProcessing={isCreatingPayment}
+            walletBalance={walletBalance}
+            onGoToStudio={() => navigateTo('studio')}
           />
         )}
         

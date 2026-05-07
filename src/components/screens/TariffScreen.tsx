@@ -20,6 +20,9 @@ interface TariffScreenProps {
   onBack: () => void;
   paymentError?: string | null;
   isProcessing?: boolean;
+  /** Если задан и > 0 — кнопка покупки блокируется, юзер уведомляется. */
+  walletBalance?: number;
+  onGoToStudio?: () => void;
 }
 
 function getCustomerKey(): string | null {
@@ -43,6 +46,8 @@ export default function TariffScreen({
   onBack,
   paymentError,
   isProcessing = false,
+  walletBalance,
+  onGoToStudio,
 }: TariffScreenProps) {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
@@ -63,7 +68,17 @@ export default function TariffScreen({
     localStorage.setItem('customer_email', val);
   }
 
-  const canSubmit = acceptedPrivacy && !!selectedTariff && !isProcessing && isValidEmail(email);
+  // Бизнес-правило: если на кошельке есть кредиты — новую покупку запрещаем,
+  // юзер сначала тратит существующий пакет.
+  const effectiveBalance = (walletBalance ?? creditBalance) ?? 0;
+  const hasActiveBalance = effectiveBalance > 0;
+
+  const canSubmit =
+    !hasActiveBalance &&
+    acceptedPrivacy &&
+    !!selectedTariff &&
+    !isProcessing &&
+    isValidEmail(email);
 
   const privacyUrl =
     "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
@@ -91,6 +106,29 @@ export default function TariffScreen({
       {paymentError && (
         <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 text-center">
           {paymentError}
+        </div>
+      )}
+
+      {/* Бизнес-правило: balance > 0 — новую покупку нельзя */}
+      {hasActiveBalance && (
+        <div className="mb-5 rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/10 p-5 text-center">
+          <div className="text-3xl mb-2">✨</div>
+          <p className="text-base font-bold text-emerald-300 mb-1">
+            У вас уже есть активный пакет
+          </p>
+          <p className="text-sm text-slate-200 leading-relaxed mb-4">
+            Сначала используйте оставшиеся{' '}
+            <strong className="text-white">{effectiveBalance} {pluralGen(effectiveBalance)}</strong>.
+            <br />
+            Когда баланс закончится — вернётесь сюда за новым пакетом.
+          </p>
+          {onGoToStudio && (
+            <button
+              onClick={onGoToStudio}
+              className="rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-5 py-3 text-sm shadow-lg active:scale-[0.98] transition">
+              → Перейти к генерации
+            </button>
+          )}
         </div>
       )}
 
@@ -229,7 +267,12 @@ export default function TariffScreen({
       </button>
 
       {/* Причина disabled — крупно и заметно, чтобы было ясно почему кнопка серая */}
-      {!selectedTariff && (
+      {hasActiveBalance && (
+        <p className="text-center text-sm mt-3 font-semibold text-emerald-300">
+          ↑ У вас активный пакет — сначала используйте генерации
+        </p>
+      )}
+      {!hasActiveBalance && !selectedTariff && (
         <p className="text-center text-sm mt-3 font-semibold text-yellow-300">
           ↑ Нажмите на карточку тарифа выше, чтобы выбрать
         </p>
