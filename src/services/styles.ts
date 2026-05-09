@@ -71,13 +71,29 @@ function bundlePreview(id: string): string {
   return fromBundle?.previewUrl ?? '';
 }
 
+// Маппинг русских маркетинговых категорий из БД → ASCII-ключи фронта.
+// Adult-стили имеют только legacy_category ('realistic'/'wild') — сюда не попадают.
+const RU_CATEGORY_TO_KEY: Record<string, StyleCategory> = {
+  'Детские': 'kids',
+};
+
 function adapt(api: ApiStyle): Style {
-  // category: новые маркетинговые из БД пусто → используем legacy (realistic/wild),
-  // если и его нет — приземляемся на 'realistic' как самый широкий.
+  // 1. Если есть новая category (русское имя из БД) — мапим её в ASCII-ключ фронта.
+  // 2. Иначе берём legacy_category (так живут все 13 adult-стилей).
+  // 3. Если и того нет — fallback 'realistic' как самый широкий.
+  const fromCategory = api.category && RU_CATEGORY_TO_KEY[api.category]
+    ? RU_CATEGORY_TO_KEY[api.category]
+    : null;
   const cat: StyleCategory =
-    (api.category as StyleCategory | null) ??
+    fromCategory ??
     (api.legacyCategory as StyleCategory | null) ??
     'realistic';
+
+  // Если в БД нет preview — берём из bundle (по id). Старые ассеты adult-стилей
+  // продолжают работать без миграции картинок в БД/CDN.
+  // Для kids preview приходит из БД ('/style-previews/kids/<id>.png'),
+  // отдаётся nginx-ом same-origin.
+  const previewUrl = api.previewUrl || bundlePreview(api.id);
 
   return {
     id: api.id,
@@ -85,9 +101,7 @@ function adapt(api: ApiStyle): Style {
     category: cat,
     description: api.description ?? '',
     prompt: api.prompt,
-    // Если в БД нет preview — берём из bundle (по id). Так старые ассеты
-    // продолжают работать без миграции картинок в БД/CDN.
-    previewUrl: api.previewUrl || bundlePreview(api.id),
+    previewUrl,
   };
 }
 

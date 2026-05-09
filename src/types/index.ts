@@ -5,7 +5,7 @@
    VIP = 'VIP'
  }
  
- export type StyleCategory = 'realistic' | 'artistic' | 'futuristic' | 'wild';
+ export type StyleCategory = 'realistic' | 'artistic' | 'futuristic' | 'wild' | 'kids';
  
  export interface User {
    id: string;
