@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { backend } from './services/backend';
-import { STYLES } from './lib/constants';
-import { StyleCategory, Job } from './types';
+import { StyleCategory, Job, Style } from './types';
 import { createLogger } from './utils/logger';
 import {
   createPayment,
@@ -9,6 +8,7 @@ import {
   findRecentOrder,
   getBalance as apiGetBalance,
 } from './services/api';
+import { fetchStyles, getStylesSync } from './services/styles';
 
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
@@ -91,6 +91,14 @@ async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string |
 
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
+  // Стили: сначала из cache/bundle (синхронно), затем фоном обновляем из /api/styles.
+  // Если API недоступен/пустой — остаётся bundle, юзер ничего не теряет.
+  const [styles, setStyles] = useState<Style[]>(() => getStylesSync());
+  useEffect(() => {
+    fetchStyles().then((items) => {
+      if (items.length > 0) setStyles(items);
+    }).catch(() => {/* bundle уже стоит */});
+  }, []);
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<StyleCategory>('realistic');
@@ -894,7 +902,7 @@ function App() {
         
         {screen === 'styles' && (
           <StylesScreen
-            styles={STYLES}
+            styles={styles}
             selectedStyles={selectedStyles}
             selectedGoal={selectedGoal}
             activeCategory={activeCategory}

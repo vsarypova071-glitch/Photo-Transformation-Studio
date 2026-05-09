@@ -6,6 +6,8 @@ import orderRouter from './routes/order';
 import creditsRouter from './routes/credits';
 import photosRouter from './routes/photos';
 import generationRouter from './routes/generation';
+import stylesRouter from './routes/styles';
+import { flags, summary as featureSummary } from './featureFlags';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -41,12 +43,21 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'beget-api', ts: new Date().toISOString() });
 });
 
+// Источник правды для фронта: какие фичи включены, лимиты.
+// Не зависит от feature flags — всегда доступен.
+app.get('/api/config', (_req, res) => {
+  res.json(featureSummary());
+});
+
 app.use('/api/payment', paymentRouter);
 app.use('/api/balance', balanceRouter);
 app.use('/api/order', orderRouter);
 app.use('/api/credits', creditsRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/generation', generationRouter);
+// Каталог стилей — читается всеми, не за feature flag.
+// Если миграция 002 ещё не применена, route сам деградирует в пустой список.
+app.use('/api/styles', stylesRouter);
 
 // 404
 app.use((req, res) => {
