@@ -1,45 +1,47 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReviewsSection from '../ReviewsSection';
-import demoBusinessImg from '@/assets/demo/demo-business.jpg';
-import demoLuxuryImg from '@/assets/demo/demo-luxury.jpg';
-import demoMinimalImg from '@/assets/demo/demo-minimal.jpg';
-import demoGoldenImg from '@/assets/demo/demo-golden.jpg';
 import demoElegantImg from '@/assets/demo/demo-elegant.jpg';
+import demoBalletImg from '@/assets/demo/demo-ballet.png';
+import demoBusinessSuitImg from '@/assets/demo/demo-business-suit.png';
+import demoAstronautImg from '@/assets/demo/demo-astronaut.png';
+import demoFuturisticImg from '@/assets/demo/demo-futuristic.png';
 
 interface WelcomeScreenProps {
   onStart: () => void;
 }
 
+// Hero slider: 5 слайдов в порядке для маркетинга.
+// Картинки lazy-load по требованию (Vite кладёт их в bundle как assets).
 const SLIDES = [
   {
-    img: demoBusinessImg,
-    title: 'Business Portrait',
-    sub: 'Профессиональный деловой образ',
-    accent: 'from-slate-900/80 via-slate-800/40',
-  },
-  {
     img: demoElegantImg,
-    title: 'Elegant Lifestyle',
+    title: 'Luxury Lifestyle',
     sub: 'Элегантный современный образ',
     accent: 'from-stone-900/80 via-stone-800/40',
   },
   {
-    img: demoLuxuryImg,
-    title: 'Luxury Editorial',
-    sub: 'Фотосессия как в модном журнале',
-    accent: 'from-neutral-900/80 via-neutral-800/40',
+    img: demoBalletImg,
+    title: 'Ballet',
+    sub: 'Нежные художественные портреты',
+    accent: 'from-rose-900/70 via-rose-800/30',
   },
   {
-    img: demoMinimalImg,
-    title: 'Minimal Portrait',
-    sub: 'Минималистичный студийный портрет',
-    accent: 'from-zinc-900/80 via-zinc-700/40',
+    img: demoBusinessSuitImg,
+    title: 'Business',
+    sub: 'Профессиональные деловые образы',
+    accent: 'from-slate-900/80 via-slate-800/40',
   },
   {
-    img: demoGoldenImg,
-    title: 'Golden Hour',
-    sub: 'Тёплый портрет на закате',
-    accent: 'from-amber-900/80 via-amber-800/30',
+    img: demoAstronautImg,
+    title: 'Cinematic',
+    sub: 'Фантастические AI-фотосессии',
+    accent: 'from-indigo-900/75 via-violet-800/35',
+  },
+  {
+    img: demoFuturisticImg,
+    title: 'Future',
+    sub: 'AI-образы будущего',
+    accent: 'from-zinc-900/75 via-zinc-700/35',
   },
 ];
 
