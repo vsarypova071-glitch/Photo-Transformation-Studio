@@ -184,7 +184,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             key={active}
             src={slide.img}
             alt={slide.title}
-            className="object-cover w-full h-full scale-105"
+            className="object-cover object-center w-full h-full scale-105"
             draggable={false}
           />
 
