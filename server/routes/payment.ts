@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { db } from '../db/pool';
 import { createPayment, getPayment, diagnoseCredentials } from '../services/yookassa';
+import { flags } from '../featureFlags';
+import { grantIfApplicable, isValidReferralCode } from '../services/referrals';
 
 const router = Router();
 
@@ -34,6 +36,7 @@ router.post('/create', async (req, res) => {
       originalImageUrl,
       customPrompt,
       isFullBody,
+      referralCode,
     } = req.body ?? {};
 
     if (!userSessionId) return res.status(400).json({ error: 'Missing userSessionId' });
@@ -52,6 +55,23 @@ router.post('/create', async (req, res) => {
     const safeCustomPrompt = typeof customPrompt === 'string' && customPrompt.trim() ? customPrompt.trim() : null;
     const safeIsFullBody = Boolean(isFullBody);
     const safeCustomerKey = typeof customerKey === 'string' && customerKey.trim() ? customerKey.trim() : null;
+
+    // Реферальный код принимаем, только если фича включена И код имеет валидный формат.
+    // Self-referral отсеиваем здесь же — сравниваем код с кодом самого юзера.
+    let safeReferralCode: string | null = null;
+    if (flags.enableReferrals && typeof referralCode === 'string') {
+      const candidate = referralCode.trim().toUpperCase();
+      if (isValidReferralCode(candidate) && safeCustomerKey) {
+        const { rows: selfCheck } = await db.query(
+          `SELECT 1 FROM credit_accounts WHERE customer_key = $1 AND referral_code = $2`,
+          [safeCustomerKey, candidate],
+        );
+        if (selfCheck.length === 0) {
+          safeReferralCode = candidate;
+        }
+        // self-referral: code просто игнорируется, payment продолжается
+      }
+    }
 
     // === BALANCE GUARD: если на кошельке есть кредиты — запрещаем новую покупку ===
     // Бизнес-правило: balance > 0 ⇒ юзер сначала тратит существующие генерации.
@@ -144,8 +164,8 @@ router.post('/create', async (req, res) => {
       `INSERT INTO orders
          (user_session_id, customer_key, tariff_id, photos_count, price,
           style_ids, original_image, custom_prompt, is_full_body,
-          payment_status, generation_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending','waiting')
+          payment_status, generation_status, referral_code)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending','waiting',$10)
        RETURNING id`,
       [
         userSessionId,
@@ -157,6 +177,7 @@ router.post('/create', async (req, res) => {
         safeOriginalImage,
         safeCustomPrompt,
         safeIsFullBody,
+        safeReferralCode,
       ],
     );
     const orderId: string = rows[0].id;
@@ -248,7 +269,8 @@ router.post('/webhook', async (req, res) => {
       await client.query('BEGIN');
 
       const { rows: orderRows } = await client.query(
-        `SELECT id, customer_key, photos_count, tariff_id, credits_purchased, payment_status, generation_status
+        `SELECT id, customer_key, photos_count, tariff_id, credits_purchased,
+                payment_status, generation_status, referral_code
            FROM orders WHERE id = $1 FOR UPDATE`,
         [orderIdMeta],
       );
@@ -320,6 +342,25 @@ router.post('/webhook', async (req, res) => {
 
       await client.query('COMMIT');
       console.log(`[webhook] order ${orderIdMeta}: credited ${photos} to ${customerKey}`);
+
+      // === REFERRAL BONUS (после COMMIT основной транзакции) ===
+      // Отдельная транзакция внутри grantIfApplicable. Если упадёт — не ломаем
+      // оплату, лог-предупреждение и идём дальше. Идемпотентность по
+      // idempotency_key='ref_bonus_<order_id>'.
+      if (flags.enableReferrals && order.referral_code) {
+        try {
+          const ref = await grantIfApplicable({
+            orderId: orderIdMeta,
+            refereeKey: customerKey,
+            referralCode: order.referral_code,
+          });
+          console.log(`[webhook] order ${orderIdMeta}: referral status=${ref.status}` +
+            (ref.referrerKey ? ` referrer=${ref.referrerKey}` : ''));
+        } catch (refErr) {
+          console.warn(`[webhook] order ${orderIdMeta}: referral grant failed`,
+            (refErr as Error).message);
+        }
+      }
     } catch (e) {
       await client.query('ROLLBACK');
       console.error('[webhook] tx failed', (e as Error).message);

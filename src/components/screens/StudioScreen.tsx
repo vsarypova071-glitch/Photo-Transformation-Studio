@@ -8,6 +8,7 @@ import { STYLES } from '@/lib/constants';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
 import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
+import ReferralBlock from '@/components/ReferralBlock';
 
 const log = createLogger('StudioScreen');
 
@@ -301,6 +302,11 @@ export default function StudioScreen({
           {error}
         </div>
       )}
+
+      {/* Phase 4 — Реферальный блок. Показывается только если flag включён
+          (внутри компонента + бэкенд). Для текущего prod (flag=false)
+          ReferralBlock рендерится null, ничего не меняется. */}
+      <ReferralBlock customerKey={customerKey} />
 
       {/* === ШАГ 1: ЗАГРУЗКА === */}
       {step === 'upload' && (

@@ -45,6 +45,8 @@ export interface CreatePaymentInput {
   originalImageUrl: string | null;
   customPrompt?: string;
   isFullBody: boolean;
+  /** Реферальный код, если юзер пришёл по ссылке (опционально, бэк его проверит). */
+  referralCode?: string | null;
 }
 
 export interface CreatePaymentResult {

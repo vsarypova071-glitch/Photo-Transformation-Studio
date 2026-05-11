@@ -9,6 +9,11 @@ import {
   getBalance as apiGetBalance,
 } from './services/api';
 import { fetchStyles, getStylesSync } from './services/styles';
+import {
+  readReferralFromUrl,
+  trackOnLanding,
+  getStoredReferralCode,
+} from './services/referrals';
 
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
@@ -98,6 +103,14 @@ function App() {
     fetchStyles().then((items) => {
       if (items.length > 0) setStyles(items);
     }).catch(() => {/* bundle уже стоит */});
+
+    // Phase 4 — referral landing: сохраняем ?ref= в localStorage и
+    // отправляем POST /api/referrals/track. Если фича на бэке выключена,
+    // endpoint вернёт 404 — функция спокойно проглотит это.
+    const refCode = readReferralFromUrl();
+    if (refCode) {
+      trackOnLanding(getCustomerKey()).catch(() => {/* ignore */});
+    }
   }, []);
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
@@ -666,6 +679,10 @@ function App() {
           originalImageUrl: imageStoragePath,
           customPrompt: '',
           isFullBody,
+          // Phase 4: реферальный код, если юзер пришёл по ?ref=...
+          // Бэк сам валидирует формат, отсеивает self-referral и игнорирует
+          // если ENABLE_REFERRALS=false.
+          referralCode: getStoredReferralCode() ?? undefined,
         });
       } catch (apiErr: any) {
         const status = apiErr?.status ?? 500;

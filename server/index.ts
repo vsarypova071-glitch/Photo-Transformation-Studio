@@ -7,6 +7,7 @@ import creditsRouter from './routes/credits';
 import photosRouter from './routes/photos';
 import generationRouter from './routes/generation';
 import stylesRouter from './routes/styles';
+import referralsRouter from './routes/referrals';
 import { flags, summary as featureSummary } from './featureFlags';
 
 const app = express();
@@ -58,6 +59,13 @@ app.use('/api/generation', generationRouter);
 // Каталог стилей — читается всеми, не за feature flag.
 // Если миграция 002 ещё не применена, route сам деградирует в пустой список.
 app.use('/api/styles', stylesRouter);
+
+// Referrals — за feature flag. При flag=false роуты не mount'ятся,
+// и /api/referrals/* возвращает 404 как будто endpoint'ов нет.
+if (flags.enableReferrals) {
+  app.use('/api/referrals', referralsRouter);
+  console.log('[api] referrals enabled');
+}
 
 // 404
 app.use((req, res) => {
