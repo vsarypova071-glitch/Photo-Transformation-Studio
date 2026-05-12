@@ -343,8 +343,19 @@ function App() {
       }
     }, 3000);
 
-    // Stop polling after 10 minutes
-    setTimeout(() => clearInterval(interval), 600000);
+    // Stop polling after 2 minutes; check balance in case webhook was slow
+    setTimeout(async () => {
+      clearInterval(interval);
+      try {
+        const ck = getCustomerKey();
+        const info = await studio.getBalance(ck);
+        if (info.balance > 0) {
+          await handleCreditsCredited(orderId, {});
+          return;
+        }
+      } catch (_) { /* ignore */ }
+      setProcessingError('Платёж получен, но начисление кредитов задерживается. Обновите страницу — ваши генерации уже ждут в Студии.');
+    }, 120000);
   }, [selectedStyles, isFullBody, uploadedImage, handleCreditsCredited]);
 
   // Restore order from localStorage on mount

@@ -4,7 +4,7 @@ import { getPayment } from '../services/yookassa';
 
 const router = Router();
 
-const STUCK_TIMEOUT_MS = 10 * 60 * 1000;
+const STUCK_TIMEOUT_MS = 3 * 60 * 1000;
 
 function paymentMethodFromId(paymentId?: string | null): 'rub' | 'credits' {
   return paymentId?.startsWith('credits_') ? 'credits' : 'rub';
