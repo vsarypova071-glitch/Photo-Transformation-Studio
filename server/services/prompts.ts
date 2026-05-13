@@ -67,7 +67,6 @@ export function buildNegativePrompt(): string {
 }
 
 export function buildPrompt(input: BuildPromptInput): string {
-  const garment = pickGarment();
   const fullBodyHint = input.isFullBody
     ? 'Full body composition: include subject from head to feet.'
     : 'Portrait composition: head and shoulders, magazine cover style.';
@@ -158,7 +157,7 @@ MOVEMENT & CANDID ENERGY:
     ...(isEditorial ? [editorialBlock, '', fashionBlock, '', candorBlock, ''] : []),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
-    `OUTFIT: ${garment}.`,
+    ...(isEditorial ? [`OUTFIT: ${pickGarment()}.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
