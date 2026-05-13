@@ -89,7 +89,12 @@ IDENTITY PRESERVATION (strict):
 - Do not alter facial structure, face shape, nose, lips, eyes, jawline, or cheekbones.
 - Do not change age, natural asymmetry, or distinguishing personal features.
 - Do not beautify, idealize, or make the person look like a model unless explicitly requested.
-- The person must be immediately recognizable as the same individual from the reference photo.`;
+- The person must be immediately recognizable as the same individual from the reference photo.
+- Preserve the subject's natural eye openness and alertness exactly as in the reference.
+- Do not add artificial eyelid heaviness, drooping, or tired-eye effect.
+- Preserve the natural energy and sharpness of the gaze — eyes should look open and alive.
+- Do not make the subject appear older, fatigued, or emotionally flattened.
+- Keep realistic anatomy without beautification or cosmetic enhancement.`;
 
   // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
   // Противодействует эффекту манекена и CGI-рендера.
