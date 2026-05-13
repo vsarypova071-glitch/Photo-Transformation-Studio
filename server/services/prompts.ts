@@ -141,9 +141,29 @@ MOVEMENT & CANDID ENERGY:
 - Confidence without stiffness. Elegance without rigidity. Alive without theatrics.
 - Avoid mannequin-like symmetry, stiff posture, and static fashion pose.`;
 
+  // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
+  // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
+  // на детскую спонтанность и семейную теплоту. Активен только если isEditorial = false.
+  const childLifestyleBlock = `\
+CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
+- Natural, candid, lifestyle photography feeling — not a studio session.
+- Children and family members should look alive, emotionally present, and in motion.
+- Posing: relaxed and spontaneous. Natural weight shift, playful movement,
+  organic body language. Children caught mid-laugh, mid-run, mid-interaction.
+- Expression: genuine curiosity, warmth, laughter, natural childhood energy.
+  No blank stare, no frozen smile, no formal sitting pose.
+- Composition: warm lifestyle framing. Soft rule-of-thirds, natural negative space.
+  Avoid symmetric centered school-portrait composition.
+- Lighting: soft natural daylight, golden hour, or warm indoor ambient light.
+  No flat harsh studio lighting.
+- Atmosphere: family-photo warmth and emotional authenticity.
+  Real moment — not a fashion shoot, not a commercial campaign.`;
+
   // [AVOID] — встроенный negative prompt. Gemini/OpenRouter не принимает
   // отдельное поле negative_prompt, поэтому список запретов идёт в текст.
-  const avoidBlock = `AVOID: ${buildNegativePrompt()}`;
+  // Lifestyle/kids добавляет свои специфичные термины поверх базового списка.
+  const lifestyleAvoidExtra = ', adult fashion pose, luxury glamour child model, stiff school portrait, mannequin child pose';
+  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}`;
 
   return [
     // ── Глобальные блоки ──────────────────────────────────────────────────────
@@ -154,7 +174,9 @@ MOVEMENT & CANDID ENERGY:
     realismBlock,
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
-    ...(isEditorial ? [editorialBlock, '', fashionBlock, '', candorBlock, ''] : []),
+    ...(isEditorial
+      ? [editorialBlock, '', fashionBlock, '', candorBlock, '']
+      : [childLifestyleBlock, '']),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
     ...(isEditorial ? [`OUTFIT: ${pickGarment()}.`] : []),
