@@ -94,7 +94,12 @@ IDENTITY PRESERVATION (strict):
 - Do not add artificial eyelid heaviness, drooping, or tired-eye effect.
 - Preserve the natural energy and sharpness of the gaze — eyes should look open and alive.
 - Do not make the subject appear older, fatigued, or emotionally flattened.
-- Keep realistic anatomy without beautification or cosmetic enhancement.`;
+- Keep realistic anatomy without beautification or cosmetic enhancement.
+- Preserve the exact face proportions and vertical facial structure.
+- Preserve the subject's natural face length and jawline shape.
+- Do not widen, shorten, soften, or round the face shape.
+- Preserve natural cheek volume distribution and facial proportions from the reference image.
+- Avoid artificial facial softening or generalized beauty-face geometry.`;
 
   // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
   // Противодействует эффекту манекена и CGI-рендера.
