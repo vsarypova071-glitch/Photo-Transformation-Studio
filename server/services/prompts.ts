@@ -25,17 +25,68 @@ export interface BuildPromptInput {
   aspectRatio?: string;
 }
 
+// [NEGATIVE PROMPT] — встраивается в конец buildPrompt() как раздел AVOID:.
+// Отдельной функцией, чтобы можно было переиспользовать или расширять независимо.
+export function buildNegativePrompt(): string {
+  return [
+    'plastic skin', 'wax face', 'mannequin', 'doll-like face', 'dead eyes',
+    'blank stare', 'CGI', '3D render', 'over-smoothed skin', 'airbrushed skin',
+    'flawless artificial face', 'beauty filter', 'fake face', 'altered identity',
+    'changed face structure', 'passport photo look', 'stiff pose',
+    'artificial smile', 'synthetic portrait', 'uncanny valley',
+    'overly glossy commercial retouching',
+  ].join(', ');
+}
+
 export function buildPrompt(input: BuildPromptInput): string {
   const garment = pickGarment();
   const fullBodyHint = input.isFullBody
     ? 'Full body composition: include subject from head to feet.'
     : 'Portrait composition: head and shoulders, magazine cover style.';
 
-  return `Ultra-photorealistic editorial portrait. Preserve the subject's exact facial identity, geometry of nose, lips, eyes and skin texture from the reference photo (no slimming, no reshaping). Eyes: vivid, with soft catchlights and subtle wet sheen, slight 5° downward gaze for elegance.
+  // [REFERENCE IMAGE] — напоминание модели использовать загруженное фото как
+  // первичный визуальный источник личности, а не только как текстовое описание.
+  const referenceBlock = `\
+Use the uploaded reference photo as the PRIMARY identity source. \
+The attached image defines who this person is — match their face exactly.`;
 
-${fullBodyHint}
-OUTFIT: ${garment}.
-${input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : ''}
-${input.stylePrompt ? `Style direction: ${input.stylePrompt}` : ''}
-${input.customPrompt ? `Additional note: ${input.customPrompt}` : ''}`.trim();
+  // [IDENTITY] — строгое сохранение лица, структуры, возраста и индивидуальности.
+  // Запрещает любую «улучшающую» обработку, которая убирает индивидуальность.
+  const identityBlock = `\
+IDENTITY PRESERVATION (strict):
+- Do not alter facial structure, face shape, nose, lips, eyes, jawline, or cheekbones.
+- Do not change age, natural asymmetry, or distinguishing personal features.
+- Do not beautify, idealize, or make the person look like a model unless explicitly requested.
+- The person must be immediately recognizable as the same individual from the reference photo.`;
+
+  // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
+  // Противодействует эффекту манекена и CGI-рендера.
+  const realismBlock = `\
+REALISM (natural photo):
+- Eyes must be expressive and alive: realistic catchlights, natural wet sheen, visible depth and iris detail.
+- Skin: keep natural micro-texture, subtle visible pores, soft realistic shadows. No airbrushing or smoothing.
+- Expression: natural, human, emotionally present. Avoid blank stare, static frozen face, or artificial smile.
+- Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
+- Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
+
+  // [AVOID] — встроенный negative prompt. Gemini/OpenRouter не принимает
+  // отдельное поле negative_prompt, поэтому список запретов идёт в текст.
+  const avoidBlock = `AVOID: ${buildNegativePrompt()}`;
+
+  return [
+    referenceBlock,
+    '',
+    identityBlock,
+    '',
+    realismBlock,
+    '',
+    fullBodyHint,
+    `OUTFIT: ${garment}.`,
+    input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
+    // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
+    input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
+    input.customPrompt ? `Additional note: ${input.customPrompt}` : '',
+    '',
+    avoidBlock,
+  ].filter(Boolean).join('\n');
 }
