@@ -108,7 +108,6 @@ class StudioService {
   async generateOne(params: {
     customerKey: string;
     styleId: string;
-    stylePrompt: string;
     sourcePhotoFilename: string;
     customPrompt?: string;
     isFullBody?: boolean;
@@ -120,7 +119,6 @@ class StudioService {
       const data = await apiGenerateSingle({
         customerKey: params.customerKey,
         styleId: params.styleId,
-        stylePrompt: params.stylePrompt,
         sourcePhotoFilename: params.sourcePhotoFilename,
         customPrompt: params.customPrompt,
         isFullBody: params.isFullBody,

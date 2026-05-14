@@ -152,8 +152,7 @@ export async function uploadPhoto(blob: Blob): Promise<UploadPhotoResult> {
 
 export interface GenerateSingleInput {
   customerKey: string;
-  styleId?: string;
-  stylePrompt?: string;
+  styleId: string;
   sourcePhotoFilename: string;
   customPrompt?: string;
   isFullBody?: boolean;

@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 
     const sql = `
       SELECT id, title, description, preview_url, category, legacy_category,
-             prompt, club_only, sort_order
+             club_only, sort_order
         FROM styles
        WHERE ${where.join(' AND ')}
        ORDER BY sort_order, title
@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
         previewUrl: r.preview_url,
         category: r.category,
         legacyCategory: r.legacy_category,
-        prompt: r.prompt,
+        // prompt intentionally omitted — server-side only
         clubOnly: r.club_only,
         sortOrder: r.sort_order,
       })),

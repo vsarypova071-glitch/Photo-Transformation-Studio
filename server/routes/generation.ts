@@ -14,7 +14,6 @@ const router = Router();
 interface SingleRequest {
   customerKey?: string;
   styleId?: string;
-  stylePrompt?: string;
   sourcePhotoFilename?: string;
   customPrompt?: string;
   isFullBody?: boolean;
@@ -44,15 +43,19 @@ async function refundCredit(accountId: string, generationId: string, reason: str
 }
 
 // POST /api/generation/single
-// body: { customerKey, styleId, stylePrompt, sourcePhotoFilename, customPrompt, isFullBody, originalDimensions }
+// body: { customerKey, styleId, sourcePhotoFilename, customPrompt, isFullBody, originalDimensions }
 router.post('/single', async (req, res) => {
   try {
     const body = (req.body ?? {}) as SingleRequest;
     const customerKey = (body.customerKey ?? '').trim();
+    const styleId = (body.styleId ?? '').trim();
     const sourcePhotoFilename = body.sourcePhotoFilename ?? '';
 
     if (!customerKey) {
       return res.status(400).json({ error: 'customerKey required', code: 'missing_customer_key' });
+    }
+    if (!styleId) {
+      return res.status(400).json({ error: 'styleId required', code: 'missing_style_id' });
     }
     if (!sourcePhotoFilename) {
       return res.status(400).json({ error: 'sourcePhotoFilename required', code: 'missing_source' });
@@ -81,7 +84,17 @@ router.post('/single', async (req, res) => {
       return res.status(404).json({ error: 'Source photo not found', code: 'source_missing' });
     }
 
-    // === 2. Atomic debit + create generation row ===
+    // === 2. Resolve style prompt server-side — never trust client ===
+    const { rows: styleRows } = await db.query(
+      `SELECT prompt FROM styles WHERE id = $1 AND active = true LIMIT 1`,
+      [styleId],
+    );
+    if (!styleRows[0]) {
+      return res.status(400).json({ error: 'Style not found', code: 'invalid_style_id' });
+    }
+    const stylePrompt = styleRows[0].prompt as string;
+
+    // === 3. Atomic debit + create generation row ===
     const generationId = crypto.randomUUID();
     const debitKey = `debit_gen_${generationId}`;
     let accountId: string;
@@ -137,7 +150,7 @@ router.post('/single', async (req, res) => {
     }
     client.release();
 
-    // === 3. Aspect ratio ===
+    // === 4. Aspect ratio ===
     let aspectRatio: string | undefined;
     const dim = body.originalDimensions;
     if (dim?.width && dim?.height) {
@@ -146,9 +159,9 @@ router.post('/single', async (req, res) => {
       aspectRatio = `${dim.width / d}:${dim.height / d}`;
     }
 
-    // === 4. Build prompt + call OpenRouter ===
+    // === 5. Build prompt + call OpenRouter ===
     const prompt = buildPrompt({
-      stylePrompt: body.stylePrompt ?? '',
+      stylePrompt,
       customPrompt: body.customPrompt,
       isFullBody: !!body.isFullBody,
       aspectRatio,
@@ -185,7 +198,7 @@ router.post('/single', async (req, res) => {
       });
     }
 
-    // === 5. Save result image to temp dir ===
+    // === 6. Save result image to temp dir ===
     const m = aiResult.imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
     if (!m) {
       const reason = 'ai_returned_non_image';
@@ -207,7 +220,7 @@ router.post('/single', async (req, res) => {
     const resultPath = path.join(TEMP_DIR, resultName);
     await fs.writeFile(resultPath, Buffer.from(m[2], 'base64'));
 
-    // === 6. Mark generation done + return ===
+    // === 7. Mark generation done + return ===
     const { rows: balRows } = await db.query(
       `SELECT balance FROM credit_accounts WHERE id = $1`,
       [accountId!],

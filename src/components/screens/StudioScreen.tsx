@@ -185,17 +185,6 @@ export default function StudioScreen({
     setError(null);
     setStep('generating');
 
-    console.log('GEN REQUEST', {
-      customerKey,
-      selectedStyleId,
-      uploadedUrl,
-      hasSelectedStyle: !!style,
-      stylePrompt: style.prompt,
-      isFullBody,
-      originalDimensions,
-      balance,
-    });
-
     if (!uploadedFilename) {
       setError('Сначала загрузите фото');
       setStep('upload');
@@ -206,7 +195,6 @@ export default function StudioScreen({
       const res = await studio.generateOne({
         customerKey,
         styleId: style.id,
-        stylePrompt: style.prompt,
         sourcePhotoFilename: uploadedFilename,
         isFullBody,
         originalDimensions,
