@@ -63,6 +63,8 @@ export function buildNegativePrompt(): string {
     'flat even studio lighting',
     'generic office shoes', 'stiff mannequin posture', 'static fashion pose',
     'influencer glamour aesthetic', 'over-styled CGI fashion',
+    'fashion model face', 'runway model transformation', 'beauty-face geometry',
+    'altered facial proportions', 'editorial face reinterpretation', 'stylized facial anatomy',
   ].join(', ');
 }
 
@@ -99,7 +101,16 @@ IDENTITY PRESERVATION (strict):
 - Preserve the subject's natural face length and jawline shape.
 - Do not widen, shorten, soften, or round the face shape.
 - Preserve natural cheek volume distribution and facial proportions from the reference image.
-- Avoid artificial facial softening or generalized beauty-face geometry.`;
+- Avoid artificial facial softening or generalized beauty-face geometry.
+FACIAL GEOMETRY LOCK:
+- Preserve exact inter-eye distance from reference image.
+- Preserve exact upper-face and lower-face proportions.
+- Preserve exact facial width-to-height ratio.
+- Preserve exact cheek structure and jaw proportions.
+- Preserve the natural oval facial silhouette from the reference.
+- Do not reinterpret facial anatomy for editorial aesthetics.
+- Do not transform the subject into a fashion-model facial structure.
+- Face identity accuracy is MORE important than cinematic styling.`;
 
   // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
   // Противодействует эффекту манекена и CGI-рендера.
@@ -140,16 +151,16 @@ FASHION CONSISTENCY:
 - Clothing and accessories must read as realistic and wearable, not hyper-stylized or costume-like.
   Premium but believable.`;
 
-  // [MOVEMENT & CANDID ENERGY] — живость позинга, органичность тела, ощущение момента.
-  // Противодействует статичным симметричным позам без уклона в theatrics.
+  // [NATURAL PORTRAIT PRESENCE] — уверенная осанка без runway/walking энергии.
+  // Walking motion провоцировал уход лица в "fashion campaign human" геометрию.
   const candorBlock = `\
-MOVEMENT & CANDID ENERGY:
-- The subject should feel caught mid-moment during a professional photoshoot,
-  not frozen in a posed position.
-- Natural body language: subtle walking motion, relaxed weight shift,
-  organic hand interaction with environment or clothing.
-- Confidence without stiffness. Elegance without rigidity. Alive without theatrics.
-- Avoid mannequin-like symmetry, stiff posture, and static fashion pose.`;
+NATURAL PORTRAIT PRESENCE:
+- Natural relaxed posture with subtle asymmetry.
+- Calm confident presence.
+- Realistic portrait-session body language.
+- Subject may stand naturally or interact subtly with environment,
+  but should NOT appear to walk, stride, or perform runway movement.
+- Avoid exaggerated editorial motion or fashion-walk energy.`;
 
   // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
   // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
