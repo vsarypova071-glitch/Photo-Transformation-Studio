@@ -14,129 +14,129 @@ import businessEliteImg from '@/assets/styles/business-elite.png';
 import royalPresenceImg from '@/assets/styles/royal-presence.png';
 
 const STYLES_RAW: Style[] = [
-  // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
-  { 
-    id: 'quiet_luxury', 
-    name: 'Quiet Luxury', 
+  // РЕАЛИЗМ - 12 стилей
+  {
+    id: 'old_money',
+    name: 'РОСКОШЬ',
     category: 'realistic',
-    description: 'Элегантный премиальный образ', 
-    prompt: 'Ultra photorealistic portrait photography. Style: Quiet Luxury intellectual minimalism. Natural soft window light, shallow depth of field. Designer neutral-tone clothing (cashmere, silk). Candid elegant pose. Shot on Sony A7R IV, 85mm f/1.4 lens. Magazine editorial quality.', 
-    previewUrl: quietLuxuryImg 
+    description: 'Роскошный premium-образ в стиле quiet luxury, дорогие интерьеры, элегантность, статус и мягкий cinematic свет.',
+    prompt: 'Quiet luxury interior portrait. Soft diffused natural window light with warm golden undertones. Premium fashion: tailored cashmere coat or silk blouse in ivory, warm camel or champagne tones. Realistic fabric texture — natural matte finish, authentic folds, quality weave. Relaxed aristocratic pose near classic furniture or architectural detail. Shot on Sony A7R V, 85mm f/1.4. Shallow depth of field, atmospheric cinematic depth. Natural skin texture, subtle imperfections. Color palette: ivory, warm camel, cognac, champagne, soft beige.',
+    previewUrl: oldMoneyImg
   },
-  { 
-    id: 'intellectual_elegance', 
-    name: 'Intellectual Elegance', 
+  {
+    id: 'business_elite',
+    name: 'ЛИДЕР',
     category: 'realistic',
-    description: 'Стиль европейской классики', 
-    prompt: 'Photorealistic European elegance portrait. Soft golden hour lighting. Classic tailored outfit in muted tones. Thoughtful pose with natural expression. Professional fashion photography. Leica SL2, 50mm Summilux. Vogue Italia aesthetic.', 
-    previewUrl: intellectualEleganceImg 
+    description: 'Сильный деловой образ с атмосферой власти, уверенности и современного успеха.',
+    prompt: 'Executive power portrait — authority, confidence, modern success. Directional professional lighting with natural cinematic shadows. Premium fashion: precision-tailored power suit or structured blazer in charcoal grey, deep navy or slate. Realistic wool texture — visible stitching, natural clothing fit, matte fabric finish. Confident commanding posture in a modern architectural setting. Shot on Canon EOS R5, 85mm f/1.2. Authentic portrait quality — real skin texture, natural expression. Color palette: charcoal, deep navy, steel grey, crisp white.',
+    previewUrl: businessEliteImg
   },
-  { 
-    id: 'luxe_editorial', 
-    name: 'Luxury Editorial', 
+  {
+    id: 'golden_hour_glow',
+    name: 'ДИКАЯ ПРИРОДА',
     category: 'realistic',
-    description: 'Фотосессия как в модном журнале', 
-    prompt: 'High-end fashion editorial photography. Dramatic studio lighting with soft shadows. Luxury designer clothing, unique textures. Dynamic confident pose. Shot on Phase One IQ4, Broncolor lighting. Harper\'s Bazaar quality.', 
-    previewUrl: luxuryEditorialImg 
+    description: 'Атмосфера свободы, природы и приключений. Лес, горы, натуральные ткани и естественный свет.',
+    prompt: 'Cinematic outdoor portrait in wild nature — forest, mountain or open landscape. Rich natural daylight, golden hour warmth or soft overcast. Premium outdoor fashion: tailored wool coat, quality knit sweater or leather jacket in earthy forest tones. Realistic wool and leather texture — natural fabric weight, authentic outdoor character. Strong natural expression — free, alive, grounded. Shot on Nikon Z9, 85mm f/1.4, natural available light only. Atmospheric depth, cinematic outdoor color grading. Color palette: forest green, cognac brown, warm ivory, deep earth, moss.',
+    previewUrl: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=800'
   },
-  { 
-    id: 'business_elite', 
-    name: 'Business Elite', 
+  {
+    id: 'scandinavian_minimal',
+    name: 'ЗИМНЯЯ СКАЗКА',
     category: 'realistic',
-    description: 'Деловой портрет уровня Forbes', 
-    prompt: 'Executive portrait photography. Clean professional lighting. Premium tailored business attire. Confident powerful stance. Modern office or neutral background. Canon EOS R5, 85mm f/1.2. Forbes cover quality.', 
-    previewUrl: businessEliteImg 
+    description: 'Снежная эстетика, холодный свет, зимняя элегантность и магическая атмосфера.',
+    prompt: 'Cinematic winter portrait with magical snow atmosphere. Soft cold natural light — overcast winter sky or gentle indoor warmth. Elegant winter fashion: long cashmere overcoat, fine knit turtleneck in white, pearl grey, ice blue or silver. Realistic cashmere and wool texture — natural fabric weight, subtle authentic folds, quality winter wear. Serene elegant expression, quiet inner strength. Shot on Hasselblad X2D, 90mm. Shallow depth of field, atmospheric winter depth. Natural skin, real hair. Color palette: white, pearl grey, ice blue, silver, champagne.',
+    previewUrl: scandinavianMinimalImg
   },
-  { 
-    id: 'old_money', 
-    name: 'Old Money', 
+  {
+    id: 'new_york_power',
+    name: 'СКОРОСТЬ',
     category: 'realistic',
-    description: 'Тихая роскошь старых денег', 
-    prompt: 'Old money aesthetic portrait. Soft natural light in elegant interior. Classic understated luxury clothing (Ralph Lauren, Brunello Cucinelli style). Relaxed aristocratic pose. Film-like color grading. Hasselblad X2D quality.', 
-    previewUrl: oldMoneyImg 
+    description: 'Динамичный cinematic-образ с энергией движения, ночного города и адреналина.',
+    prompt: 'Cinematic night city portrait with energy and adrenaline. Dark urban backdrop — bokeh streetlights, wet asphalt reflections, neon glow. Contemporary urban fashion: tailored dark coat, sleek leather jacket or structured blazer in black, deep navy or midnight. Realistic leather and fabric texture — matte finish, natural folds, authentic urban wear. Dynamic confident posture, alive and driven. Shot on Nikon Z9, 50mm f/1.2, available night light. Atmospheric cinematic depth, no CGI glow. Color palette: black, deep navy, electric neon blue, wet asphalt silver.',
+    previewUrl: newYorkPowerImg
   },
-  { 
-    id: 'milano_style', 
-    name: 'Milano Elegance', 
+  {
+    id: 'evening_glamour',
+    name: 'РОКОВАЯ',
     category: 'realistic',
-    description: 'Итальянская элегантная фотосессия', 
-    prompt: 'Milanese street style fashion photography. Beautiful Italian architecture background. Chic designer outfit with bold accessories. Effortlessly stylish pose. Warm Mediterranean light. Sony A1, Zeiss Batis 85mm.', 
-    previewUrl: milanoEleganceImg 
+    description: 'Драматичный женственный образ с атмосферой кино, загадочности и luxury glamour.',
+    prompt: 'Cinematic portrait with film noir elegance — mysterious, powerful, magnetic. Dramatic low-key lighting with deep sculpted shadows and precise cinematic highlights. Stunning evening fashion: sleek evening dress or luxurious structured ensemble in black, deep burgundy or midnight blue. Realistic silk and velvet texture — natural fabric drape, elegant folds, authentic weight. Mysterious confident expression. Shot on Hasselblad H6D, 80mm. Authentic photography — real skin, no overprocessed beauty. Color palette: black, deep burgundy, midnight blue, gold accent.',
+    previewUrl: eveningGlamourImg
   },
-  { 
-    id: 'parisian_chic', 
-    name: 'Parisian Chic', 
+  {
+    id: 'luxury_resort',
+    name: 'ЗАТЕРЯННЫЙ МИР',
     category: 'realistic',
-    description: 'Стильный образ в духе Парижа', 
-    prompt: 'Parisian effortless chic portrait. Soft diffused daylight. Classic French style clothing (Chanel, Dior inspired). Natural relaxed pose at café or street. Film photography aesthetic. Contax 645, Portra 400 look.', 
-    previewUrl: parisianChicImg 
+    description: 'Приключенческий стиль с атмосферой древнего мира, джунглей и cinematic expedition.',
+    prompt: 'Cinematic expedition portrait in lush ancient landscape — jungle, overgrown ruins or mystical forest. Dramatic natural light filtering through dense canopy. Sophisticated expedition fashion: structured field jacket, quality waxed canvas coat or tailored utility wear in khaki, forest green or deep earth. Realistic waxed canvas and cotton texture — natural fabric character, authentic outdoor wear. Adventurous confident expression — explorer energy. Shot on Sony A7R V, 85mm f/1.4. Atmospheric cinematic depth, real photography quality. Color palette: jungle green, khaki, amber, deep earth, shadow brown.',
+    previewUrl: luxuryResortImg
   },
-  { 
-    id: 'scandinavian_minimal', 
-    name: 'Scandinavian Minimal', 
+  {
+    id: 'milano_style',
+    name: 'БОЛЬШОЕ ПУТЕШЕСТВИЕ',
     category: 'realistic',
-    description: 'Минималистичный скандинавский портрет', 
-    prompt: 'Scandinavian minimalist portrait. Clean white and neutral tones. Simple elegant clothing in quality fabrics. Serene contemplative expression. Soft overcast lighting. Fujifilm GFX 100S. Kinfolk magazine aesthetic.', 
-    previewUrl: scandinavianMinimalImg 
+    description: 'Эстетика путешествий, свободы и красивых мест по всему миру.',
+    prompt: 'Cinematic travel portrait — authentic fashion photography in beautiful world destinations. European architecture, Mediterranean coastline or exotic landscape backdrop. Elevated travel fashion: tailored coat, quality linen or cashmere ensemble in terracotta, warm sand, ocean blue or olive. Realistic fabric texture — natural folds, authentic travel wear character. Effortlessly stylish, candid confident pose. Shot on Leica Q3, 28mm, natural available light. Atmospheric outdoor depth, cinematic travel color grading. Color palette: terracotta, warm sand, ocean blue, linen, sage olive.',
+    previewUrl: milanoEleganceImg
   },
-  { 
-    id: 'new_york_power', 
-    name: 'New York Power', 
+  {
+    id: 'parisian_chic',
+    name: 'РОМАНТИКА',
     category: 'realistic',
-    description: 'Мощный городской образ Нью-Йорка', 
-    prompt: 'New York power dressing portrait. Urban sophisticated backdrop. Sharp tailored power suit or structured dress. Confident commanding pose. Dynamic city lighting. Nikon Z9, 70-200mm f/2.8. WSJ Magazine style.', 
-    previewUrl: newYorkPowerImg 
+    description: 'Теплый романтический образ с мягким светом, нежностью и атмосферой love story.',
+    prompt: 'Cinematic romantic portrait — warmth, intimacy, love story atmosphere. Soft golden diffused light — window light or gentle outdoor warmth. Romantic feminine fashion: flowing midi dress or delicate blouse with fine fabric drape in blush, rose, ivory or champagne. Realistic silk and chiffon texture — natural fabric movement, soft elegant folds. Gentle warm expression, emotionally present. Shot on Canon R5, 85mm f/1.2. Authentic photography — real skin, subtle warmth, film-like color grading. Color palette: blush rose, ivory, champagne, warm peach, soft gold.',
+    previewUrl: parisianChicImg
   },
-  { 
-    id: 'golden_hour_glow', 
-    name: 'Golden Hour Glow', 
+  {
+    id: 'quiet_luxury',
+    name: 'МИР БУДУЩЕГО',
     category: 'realistic',
-    description: 'Тёплый романтический портрет', 
-    prompt: 'Golden hour portrait photography. Warm backlit sun creating rim light. Flowing elegant outfit in warm tones. Dreamy romantic atmosphere. Natural outdoor setting. Canon R5, 135mm f/1.8. Instagram influencer quality.', 
-    previewUrl: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=800' 
+    description: 'Футуристичный стиль с неоновым светом, технологичной атмосферой и sci-fi эстетикой.',
+    prompt: 'Cinematic sci-fi portrait with futuristic atmosphere. Dramatic neon and violet-blue lighting — architectural setting with technological depth. Forward contemporary fashion: structured technical ensemble, clean geometric silhouette in white, silver, deep midnight or ice blue. Realistic technical fabric texture — matte finish, precise construction, authentic futuristic wear. Calm powerful presence — evolved, visionary. Shot on Sony A7R V, 50mm f/1.2. Real photography quality — authentic skin, no CGI rendering. Color palette: deep midnight, neon blue, silver white, violet accent, dark steel.',
+    previewUrl: quietLuxuryImg
   },
-  { 
-    id: 'luxury_resort', 
-    name: 'Luxury Resort', 
+  {
+    id: 'luxe_editorial',
+    name: 'ВЫСОКАЯ МОДА',
     category: 'realistic',
-    description: 'Роскошный курортный образ', 
-    prompt: 'Luxury resort lifestyle portrait. Bright natural light, tropical or coastal setting. Elegant resort wear or summer couture. Relaxed sophisticated pose. Vibrant but refined colors. Sony A7 IV, Zeiss 55mm f/1.8Jean.', 
-    previewUrl: luxuryResortImg 
+    description: 'Fashion editorial в стиле глянцевого журнала и luxury fashion photography.',
+    prompt: 'High-end fashion editorial portrait — luxury magazine quality, Vogue / Harper\'s Bazaar aesthetic. Dramatic professional studio lighting with cinematic sculpted depth. Premium editorial fashion: couture-level silhouette in exceptional fabric — structured crepe, heavy silk or tailored precision. Realistic fabric texture — matte surface, visible construction detail, authentic fashion photography quality. Dynamic powerful editorial pose. Shot on Phase One IQ4, Broncolor studio. Real skin texture, no artificial beauty filter. Color palette: bold fashion statement — deep black, sculptural neutral or high-contrast editorial tones.',
+    previewUrl: luxuryEditorialImg
   },
-  { 
-    id: 'evening_glamour', 
-    name: 'Evening Glamour', 
+  {
+    id: 'intellectual_elegance',
+    name: 'БОГИНЯ',
     category: 'realistic',
-    description: 'Роскошный вечерний гламур', 
-    prompt: 'Evening glamour portrait. Sophisticated low-key lighting with sparkle. Stunning evening gown or cocktail dress. Elegant posed shot. Jewelry catching light beautifully. Hasselblad H6D. Red carpet quality photography.', 
-    previewUrl: eveningGlamourImg 
+    description: 'Величественный женственный образ с мягким сиянием, античной эстетикой и атмосферой силы.',
+    prompt: 'Cinematic portrait with timeless feminine power — goddess aesthetic. Soft luminous light — gentle diffused studio glow or natural daylight through sheer fabric. Flowing elegant fashion: draped silk dress, structured gown or refined ensemble in ivory, soft gold, sage or warm earth. Realistic silk and chiffon texture — natural drape, flowing folds, elegant fabric weight. Serene powerful expression — inner strength, quiet magnetism. Shot on Sony A1, 85mm f/1.4. Shallow depth of field, atmospheric glow. Authentic photography quality — natural skin, real hair. Color palette: ivory white, warm gold, sage green, luminous cream.',
+    previewUrl: intellectualEleganceImg
   },
-  
-  // ДИКИЙ СТИЛЬ - с животными
-  { 
-    id: 'royal_bear', 
-    name: 'Royal Presence', 
+
+  // ПРЕМИУМ - с природой
+  {
+    id: 'royal_bear',
+    name: 'ЦАРСКАЯ ОХОТА',
     category: 'wild',
-    description: 'Величественный образ королевской власти', 
-    prompt: 'Majestic portrait with polar bear. Photorealistic cinematic lighting. Luxurious winter couture. Powerful protective symbolism. Dramatic composition. High-end fantasy fashion photography.', 
-    previewUrl: royalPresenceImg 
+    description: 'Аристократический outdoor-стиль с лесной атмосферой, статусом и cinematic realism.',
+    prompt: 'Cinematic aristocratic outdoor portrait — royal hunting aesthetic, old European tradition. Dramatic natural light through ancient forest trees, golden hour or soft overcast. Classic aristocratic hunting fashion: structured waxed jacket, quality tweed coat or hunting blazer in forest green, cognac or deep brown. Realistic tweed and waxed canvas texture — authentic fabric character, natural outdoor wear, visible fabric detail. Powerful aristocratic presence, commanding and grounded. Shot on Leica SL2, 90mm Summicron, natural light. Authentic photography — real skin, no over-retouching. Color palette: deep forest green, cognac, dark brown, golden amber, autumn earth.',
+    previewUrl: royalPresenceImg
   }
 ];
 
-// Желаемый порядок отображения стилей realism (для повышения конверсии)
+// Порядок отображения стилей realism (соответствует sort_order в БД)
 const REALISTIC_ORDER = [
-  'business_elite',
-  'old_money',
-  'new_york_power',
-  'evening_glamour',
-  'luxe_editorial',
-  'intellectual_elegance',
-  'quiet_luxury',
-  'milano_style',
-  'parisian_chic',
-  'scandinavian_minimal',
-  'golden_hour_glow',
-  'luxury_resort',
+  'old_money',             // РОСКОШЬ
+  'business_elite',        // ЛИДЕР
+  'golden_hour_glow',      // ДИКАЯ ПРИРОДА
+  'scandinavian_minimal',  // ЗИМНЯЯ СКАЗКА
+  'new_york_power',        // СКОРОСТЬ
+  'evening_glamour',       // РОКОВАЯ
+  'luxury_resort',         // ЗАТЕРЯННЫЙ МИР
+  'milano_style',          // БОЛЬШОЕ ПУТЕШЕСТВИЕ
+  'parisian_chic',         // РОМАНТИКА
+  'quiet_luxury',          // МИР БУДУЩЕГО
+  'luxe_editorial',        // ВЫСОКАЯ МОДА
+  'intellectual_elegance', // БОГИНЯ
 ];
 
 const realisticOrdered = REALISTIC_ORDER
