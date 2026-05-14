@@ -124,36 +124,46 @@ REALISM (natural photo):
 
   // ── EDITORIAL БЛОКИ (только для взрослых business/luxury/fashion стилей) ──
 
-  // [LUXURY ADAPT] — анализ внешности из reference и адаптация стайлинга под конкретного человека.
-  // Инструктирует модель выбирать цвет, свет, среду и одежду под тип красоты субъекта.
-  // Не про identity preservation — про то, чтобы роскошь выглядела естественно ДЛЯ ЭТОЙ женщины.
+  // [AURA FIRST] — главная директива: эмоциональный приоритет над деталями.
+  // Устанавливает, что fashion/environment = инструменты ауры, а не цель сами по себе.
+  const auraBlock = `\
+LUXURY AURA FIRST (primary directive):
+The primary purpose of this image is to communicate luxury aura, status, and cinematic presence.
+Before the viewer notices any outfit detail, they must FEEL one of these:
+wealth, exclusivity, power, elegance, or desire.
+
+Fashion, environment, and color are instruments in service of this feeling — they are NOT the subject.
+
+Priority hierarchy:
+1. AURA & PRESENCE — the magnetic quality and status that radiates from this person
+2. CINEMATIC ATMOSPHERE — the world she inhabits feels rare, exclusive, expensive
+3. LIGHT & SHADOW — sculpts, elevates, and creates emotional depth
+4. FASHION & ENVIRONMENT — chosen to amplify the aura, never to compete with it
+
+If the viewer's first reaction is "beautiful outfit" — the image has failed.
+If their first reaction is "who IS this woman?" — the image has succeeded.`;
+
+  // [LUXURY ADAPT] — определяет luxury-архетип человека из reference, затем использует
+  // внешность как инструмент калибровки (цвет, свет, среда). Аура первична — детали вторичны.
   const luxuryAdaptBlock = `\
-LUXURY STYLING ADAPTATION (appearance-driven):
-Analyze the reference photo to understand this person's unique visual identity, then adapt ALL styling decisions so the result looks naturally expensive FOR THIS SPECIFIC WOMAN — not generic luxury.
+APPEARANCE-DRIVEN LUXURY ARCHETYPE:
+Identify this woman's natural luxury archetype from the reference photo.
+Then choose ALL styling instruments — color, light, environment, fashion — to amplify that specific archetype.
 
-Read from the reference image:
-- Hair color and tone (platinum, ash blonde, golden warm, brunette, dark, silver, red)
-- Facial beauty archetype (classic, modern, dramatic, romantic, ethereal, powerful)
-- Skin tone and undertone (warm golden / cool neutral / deep warm / fair cool)
-- Natural energy and aura (cool / warm, soft / sharp, quiet / electric, grounded / ethereal)
+Step 1 — Identify her aura archetype:
+- Power she projects (grace / authority / mystery / desire / freedom / intelligence / sensuality)
+- Luxury world she belongs to (old money / modern power / romantic / adventurous / avant-garde)
+- Emotional note the viewer should feel (awe / respect / desire / intrigue / warmth)
 
-Adapt accordingly:
-- COLOR PALETTE: Choose tones that harmonize with her natural coloring.
-  Warm skin / golden hair → camel, ivory, champagne, cognac, rust, warm earth.
-  Cool / fair skin → steel grey, ice blue, deep navy, white, silver, black.
-  Deep warm tones → chocolate, forest green, burgundy, amber, aged gold.
-  Dark hair on cool skin → midnight, black, ivory, silver read powerfully.
-- LIGHTING: Flatter her specific bone structure and skin tone.
-  Soft rounded features → gentle diffused light. Strong bone structure → directional shadow.
-  Warm coloring → golden warm light. Cool coloring → silver-blue cinematic light.
-- LUXURY ENVIRONMENT: Match her archetype to the setting.
-  Classic beauty → old money salon, European interior, parquet, high ceilings.
-  Modern power → architectural glass, executive minimal, city skyline.
-  Romantic → intimate Parisian, candlelight, warm interior, garden at dusk.
-  Dramatic → cinematic shadows, sculptural luxury setting, film noir atmosphere.
-- FASHION: Never impose a styling direction alien to her natural presence.
-  Every piece of clothing and every accessory must feel as if it was made for her.
-  Expensive looks different for every woman — find HER version of luxury.`;
+Step 2 — Use appearance as instrument calibration:
+- Hair color and tone → color palette that harmonizes, never forces conflict.
+  Warm golden → camel, ivory, champagne, cognac. Cool/fair → steel, ice, navy, white, silver.
+  Deep warm → chocolate, forest, burgundy, amber. Dark hair/cool → midnight, black, ivory, silver.
+- Skin tone and facial energy → lighting that sculpts and flatters her specific structure.
+  (Warm skin → golden light. Cool skin → silver-blue. Angular structure → directional shadow.)
+- Her archetype → environment she OWNS, not merely visits.
+
+Result: every visual element — light, fabric, room, shadow — says one coherent thing about this woman.`;
 
   // [EDITORIAL PHOTOGRAPHY] — cinematic posing, fashion-framing и editorial-энергия.
   // Все fashion-термины сопровождаются realistic-qualifier'ами, чтобы не спровоцировать
@@ -180,7 +190,8 @@ FASHION CONSISTENCY:
 - Full outfit styling should feel cohesive, intentional, and fashion-directed —
   as if curated by a stylist for a real luxury campaign.
 - Clothing and accessories must read as realistic and wearable, not hyper-stylized or costume-like.
-  Premium but believable.`;
+  Premium but believable.
+- Fashion serves the aura — the outfit should deepen the viewer's sense of WHO SHE IS, not distract from it.`;
 
   // [NATURAL PORTRAIT PRESENCE] — уверенная осанка без runway/walking энергии.
   // Walking motion провоцировал уход лица в "fashion campaign human" геометрию.
@@ -227,7 +238,7 @@ CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
     ...(isEditorial
-      ? [luxuryAdaptBlock, '', editorialBlock, '', fashionBlock, '', candorBlock, '']
+      ? [auraBlock, '', luxuryAdaptBlock, '', editorialBlock, '', fashionBlock, '', candorBlock, '']
       : [childLifestyleBlock, '']),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
