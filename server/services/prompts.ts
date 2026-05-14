@@ -124,6 +124,37 @@ REALISM (natural photo):
 
   // ── EDITORIAL БЛОКИ (только для взрослых business/luxury/fashion стилей) ──
 
+  // [LUXURY ADAPT] — анализ внешности из reference и адаптация стайлинга под конкретного человека.
+  // Инструктирует модель выбирать цвет, свет, среду и одежду под тип красоты субъекта.
+  // Не про identity preservation — про то, чтобы роскошь выглядела естественно ДЛЯ ЭТОЙ женщины.
+  const luxuryAdaptBlock = `\
+LUXURY STYLING ADAPTATION (appearance-driven):
+Analyze the reference photo to understand this person's unique visual identity, then adapt ALL styling decisions so the result looks naturally expensive FOR THIS SPECIFIC WOMAN — not generic luxury.
+
+Read from the reference image:
+- Hair color and tone (platinum, ash blonde, golden warm, brunette, dark, silver, red)
+- Facial beauty archetype (classic, modern, dramatic, romantic, ethereal, powerful)
+- Skin tone and undertone (warm golden / cool neutral / deep warm / fair cool)
+- Natural energy and aura (cool / warm, soft / sharp, quiet / electric, grounded / ethereal)
+
+Adapt accordingly:
+- COLOR PALETTE: Choose tones that harmonize with her natural coloring.
+  Warm skin / golden hair → camel, ivory, champagne, cognac, rust, warm earth.
+  Cool / fair skin → steel grey, ice blue, deep navy, white, silver, black.
+  Deep warm tones → chocolate, forest green, burgundy, amber, aged gold.
+  Dark hair on cool skin → midnight, black, ivory, silver read powerfully.
+- LIGHTING: Flatter her specific bone structure and skin tone.
+  Soft rounded features → gentle diffused light. Strong bone structure → directional shadow.
+  Warm coloring → golden warm light. Cool coloring → silver-blue cinematic light.
+- LUXURY ENVIRONMENT: Match her archetype to the setting.
+  Classic beauty → old money salon, European interior, parquet, high ceilings.
+  Modern power → architectural glass, executive minimal, city skyline.
+  Romantic → intimate Parisian, candlelight, warm interior, garden at dusk.
+  Dramatic → cinematic shadows, sculptural luxury setting, film noir atmosphere.
+- FASHION: Never impose a styling direction alien to her natural presence.
+  Every piece of clothing and every accessory must feel as if it was made for her.
+  Expensive looks different for every woman — find HER version of luxury.`;
+
   // [EDITORIAL PHOTOGRAPHY] — cinematic posing, fashion-framing и editorial-энергия.
   // Все fashion-термины сопровождаются realistic-qualifier'ами, чтобы не спровоцировать
   // возврат к airbrushed/mannequin результату.
@@ -196,11 +227,11 @@ CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
     ...(isEditorial
-      ? [editorialBlock, '', fashionBlock, '', candorBlock, '']
+      ? [luxuryAdaptBlock, '', editorialBlock, '', fashionBlock, '', candorBlock, '']
       : [childLifestyleBlock, '']),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
-    ...(isEditorial ? [`OUTFIT: ${pickGarment()}.`] : []),
+    ...(isEditorial ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',

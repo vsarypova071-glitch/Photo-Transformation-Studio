@@ -20,7 +20,7 @@ const STYLES_RAW: Style[] = [
     name: 'РОСКОШЬ',
     category: 'realistic',
     description: 'Роскошный premium-образ в стиле quiet luxury, дорогие интерьеры, элегантность, статус и мягкий cinematic свет.',
-    prompt: 'Quiet luxury interior portrait. Soft diffused natural window light with warm golden undertones. Premium fashion: tailored cashmere coat or silk blouse in ivory, warm camel or champagne tones. Realistic fabric texture — natural matte finish, authentic folds, quality weave. Relaxed aristocratic pose near classic furniture or architectural detail. Shot on Sony A7R V, 85mm f/1.4. Shallow depth of field, atmospheric cinematic depth. Natural skin texture, subtle imperfections. Color palette: ivory, warm camel, cognac, champagne, soft beige.',
+    prompt: '[OLD MONEY] Grand European interior — tall windows with sheer curtains, parquet floors, antique furniture, pale walls with museum-quality art. She is at home here, not visiting. Soft natural light through high windows with warm golden undertones on ivory walls. Fashion: quiet luxury precision — wide-leg trousers in ivory or warm camel, fine cashmere blazer or silk blouse, minimal real jewelry without statement pieces. Realistic matte fabric texture, natural authentic folds, quality fabric weight. Shallow depth of field, off-center cinematic framing. Direct calm eye contact — ownership, not performance. Color palette: ivory, warm camel, aged gold, cognac, cream marble. Camera: Leica SL2, 75mm Summicron APO.',
     previewUrl: oldMoneyImg
   },
   {
@@ -28,7 +28,7 @@ const STYLES_RAW: Style[] = [
     name: 'ЛИДЕР',
     category: 'realistic',
     description: 'Сильный деловой образ с атмосферой власти, уверенности и современного успеха.',
-    prompt: 'Executive power portrait — authority, confidence, modern success. Directional professional lighting with natural cinematic shadows. Premium fashion: precision-tailored power suit or structured blazer in charcoal grey, deep navy or slate. Realistic wool texture — visible stitching, natural clothing fit, matte fabric finish. Confident commanding posture in a modern architectural setting. Shot on Canon EOS R5, 85mm f/1.2. Authentic portrait quality — real skin texture, natural expression. Color palette: charcoal, deep navy, steel grey, crisp white.',
+    prompt: '[CEO POWER] Architectural glass tower — floor-to-ceiling windows with city skyline at dusk, clean geometric lines, premium minimal interior, polished stone or steel surfaces. She owns the room. Strong directional sculptural lighting — precise and powerful, like a spotlight on authority. Fashion: executive precision — sharp-tailored power suit or structured blazer in charcoal, deep navy or slate, luxury minimal accessories, refined footwear. Realistic wool texture, visible stitching, matte finish. Direct powerful eye contact, commanding confidence without aggression. Color palette: charcoal grey, deep navy, steel, crisp white, black. Camera: Canon EOS R5, 85mm f/1.2.',
     previewUrl: businessEliteImg
   },
   {
@@ -68,7 +68,7 @@ const STYLES_RAW: Style[] = [
     name: 'ЗАТЕРЯННЫЙ МИР',
     category: 'realistic',
     description: 'Приключенческий стиль с атмосферой древнего мира, джунглей и cinematic expedition.',
-    prompt: 'Cinematic expedition portrait in lush ancient landscape — jungle, overgrown ruins or mystical forest. Dramatic natural light filtering through dense canopy. Sophisticated expedition fashion: structured field jacket, quality waxed canvas coat or tailored utility wear in khaki, forest green or deep earth. Realistic waxed canvas and cotton texture — natural fabric character, authentic outdoor wear. Adventurous confident expression — explorer energy. Shot on Sony A7R V, 85mm f/1.4. Atmospheric cinematic depth, real photography quality. Color palette: jungle green, khaki, amber, deep earth, shadow brown.',
+    prompt: '[LUXURY EXPLORER] Ancient temple ruins half-reclaimed by lush jungle, mystical forest with golden shafts of light through dense canopy, or dramatic volcanic landscape at golden hour. She has been everywhere worth going. Natural dramatic light — warm amber shafts, deep shadow pockets, atmospheric cinematic depth. Fashion: elevated expedition — structured waxed field jacket in khaki or olive, quality canvas coat, leather accessories. Realistic matte waxed canvas and leather texture, authentic weathered character. Adventurous confident presence — explorer, not tourist. Color palette: amber, jungle green, deep earth, shadow brown, ancient gold. Camera: Sony A7R V, 85mm f/1.4.',
     previewUrl: luxuryResortImg
   },
   {
@@ -84,7 +84,7 @@ const STYLES_RAW: Style[] = [
     name: 'РОМАНТИКА',
     category: 'realistic',
     description: 'Теплый романтический образ с мягким светом, нежностью и атмосферой love story.',
-    prompt: 'Cinematic romantic portrait — warmth, intimacy, love story atmosphere. Soft golden diffused light — window light or gentle outdoor warmth. Romantic feminine fashion: flowing midi dress or delicate blouse with fine fabric drape in blush, rose, ivory or champagne. Realistic silk and chiffon texture — natural fabric movement, soft elegant folds. Gentle warm expression, emotionally present. Shot on Canon R5, 85mm f/1.2. Authentic photography — real skin, subtle warmth, film-like color grading. Color palette: blush rose, ivory, champagne, warm peach, soft gold.',
+    prompt: '[SENSUAL PARIS] An intimate Paris moment — private haussmann apartment with tall windows at dusk, warm-lit brasserie with golden interior glow, or garden terrace as the evening turns blue. The most interesting woman in the most beautiful city. Soft intimate lighting — warm candle glow, golden hour through glass, gentle diffused indoor warmth. Fashion: effortlessly feminine — flowing silk dress, fine knit with beautiful natural drape, delicate fabric in blush, ivory, dusty rose or champagne. Realistic silk and fine wool texture, natural fabric movement, soft authentic folds. Direct eye contact — knowing, present, magnetic. Color palette: blush, champagne, ivory, dusty rose, warm gold. Camera: Leica Q3, 28mm, film-like warmth.',
     previewUrl: parisianChicImg
   },
   {
@@ -92,7 +92,7 @@ const STYLES_RAW: Style[] = [
     name: 'МИР БУДУЩЕГО',
     category: 'realistic',
     description: 'Футуристичный стиль с неоновым светом, технологичной атмосферой и sci-fi эстетикой.',
-    prompt: 'Cinematic sci-fi portrait with futuristic atmosphere. Dramatic neon and violet-blue lighting — architectural setting with technological depth. Forward contemporary fashion: structured technical ensemble, clean geometric silhouette in white, silver, deep midnight or ice blue. Realistic technical fabric texture — matte finish, precise construction, authentic futuristic wear. Calm powerful presence — evolved, visionary. Shot on Sony A7R V, 50mm f/1.2. Real photography quality — authentic skin, no CGI rendering. Color palette: deep midnight, neon blue, silver white, violet accent, dark steel.',
+    prompt: '[FUTURE LUXURY] Avant-garde architectural interior — sculptural white-and-glass museum space, dramatic geometric lighting installation, high-design gallery or luxury hotel lobby. The future is already here. Dramatic cool neon-blue or silver-white architectural lighting with deep shadow architecture. Fashion: structural luxury minimalism — clean geometric silhouette in white, silver, deep midnight or ice blue, premium technical fabric. Realistic matte technical fabric texture, precise construction, sharp tailoring. Calm visionary presence, direct gaze — she is already where others are going. Color palette: deep midnight, silver white, ice blue, violet accent, architectural shadow. Camera: Sony A7R V, 50mm f/1.2.',
     previewUrl: quietLuxuryImg
   },
   {
