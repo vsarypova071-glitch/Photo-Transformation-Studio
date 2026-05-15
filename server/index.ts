@@ -12,6 +12,7 @@ import referralsRouter from './routes/referrals';
 import { flags, summary as featureSummary } from './featureFlags';
 
 const app = express();
+app.set('trust proxy', 1); // nginx reverse proxy — correct req.ip for rate-limiter
 const PORT = Number(process.env.PORT || 3000);
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://ai-fotosessia.ru,http://localhost:5173,http://localhost:8080')
