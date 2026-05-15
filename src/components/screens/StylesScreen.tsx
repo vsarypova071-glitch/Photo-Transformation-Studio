@@ -37,6 +37,9 @@ const CATEGORIES: {
 }, {
   id: 'wild',
   label: 'ПРЕМИУМ'
+}, {
+  id: 'kids',
+  label: 'ДЕТИ'
 }];
 export default function StylesScreen({
   styles,

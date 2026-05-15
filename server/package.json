@@ -5,11 +5,16 @@
   "scripts": {
     "dev": "tsx watch index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "node --env-file=tests/test-env --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/multer": "^2.1.0",
     "dotenv": "^16",
     "express": "^4",
+    "express-rate-limit": "^8.5.2",
+    "multer": "^2.1.1",
     "pg": "^8"
   },
   "devDependencies": {

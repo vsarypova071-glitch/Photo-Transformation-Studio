@@ -67,10 +67,10 @@ export default function ProcessingScreen({ errorMessage, retrying, onRetry, onAb
       </div>
       <p className="text-2xl mb-4">Оплата прошла ✅</p>
       <h2 className="text-4xl font-black mb-6 uppercase tracking-tight leading-tight text-foreground">
-        Мы уже создаём <br/> ваши фото
+        Начисляем <br/> кредиты на счёт
       </h2>
       <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest animate-pulse">
-        {status}
+        Переходим в Студию...
       </p>
     </section>
   );

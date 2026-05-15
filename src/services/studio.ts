@@ -1,16 +1,22 @@
-// 🟢 STAGE WALLET 1.4 — клиентский сервис для модели «кошелёк»
-// - Получает баланс из credit_accounts по customer_key
-// - Загружает фото в storage user-photos (как handlePayWithCredits)
-// - Дёргает edge функцию generate-one (по 1 фото = -1 кредит)
-// - НЕ сохраняет результат: возвращает base64 для скачивания юзером
-//
-// 152-ФЗ: фото нигде не оседают — только в ответе функции и в памяти браузера.
+// Studio: одиночная генерация на Beget VPS.
+// Phase 2 — Studio first: refine/full-body пока на Supabase (см. backend.ts).
+// Фото и результат хранятся 30 минут на VPS, потом cron их удаляет.
 
-import { supabase } from '@/integrations/supabase/client';
 import { createLogger } from '@/utils/logger';
-import { getBalance as apiGetBalance } from '@/services/api';
+import {
+  getBalance as apiGetBalance,
+  uploadPhoto as apiUploadPhoto,
+  generateSingle as apiGenerateSingle,
+} from '@/services/api';
 
 const log = createLogger('StudioService');
+
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
+
+function absolutize(maybeRelative: string): string {
+  if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative;
+  return `${API_BASE}${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`;
+}
 
 export interface BalanceInfo {
   accountId: string | null;
@@ -18,32 +24,41 @@ export interface BalanceInfo {
   exists: boolean;
 }
 
+export interface UploadResult {
+  /** Полный URL для рендера в <img src=...> и для скачивания */
+  url: string;
+  /** Имя файла на VPS — передавать в generateOne как sourcePhotoFilename */
+  filename: string;
+  dimensions?: { width: number; height: number };
+  ttlMinutes: number;
+}
+
 export interface GenerateOneResult {
   generationId: string;
-  imageUrl: string;       // data:image/...;base64,... — отдать юзеру и забыть
-  balance: number;        // обновлённый баланс
+  /** Полный URL результата (живёт 30 минут) */
+  imageUrl: string;
+  /** Сколько времени файл доступен (минут) */
+  ttlMinutes: number;
+  /** Обновлённый баланс */
+  balance: number;
 }
 
 export interface GenerateOneError {
   error: string;
   status: number;
+  code?: string;
   refunded?: boolean;
   balance?: number;
 }
 
 class StudioService {
-  /**
-   * Получить актуальный баланс кошелька по customer_key.
-   * Если аккаунта нет — вернёт { exists: false, balance: 0 }.
-   */
+  /** Баланс кошелька. */
   async getBalance(customerKey: string): Promise<BalanceInfo> {
     const key = customerKey.trim();
     log.info('Fetching balance', { customerKey: key });
     try {
       const data = await apiGetBalance(key);
       const balance = typeof data.balance === 'number' ? data.balance : 0;
-      // accountId/exists больше не возвращаем — фронт ими не пользуется.
-      // Сохраняем форму ответа для совместимости.
       return { accountId: null, balance, exists: balance > 0 };
     } catch (e) {
       log.error('getBalance failed', e);
@@ -52,13 +67,13 @@ class StudioService {
   }
 
   /**
-   * Загрузить фото юзера в storage user-photos.
-   * Возвращает публичный URL (бакет публичный).
+   * Загрузить фото юзера во временное хранилище VPS.
+   * TTL 30 минут — после этого фото и все результаты удаляются cron-ом.
    */
-  async uploadPhoto(base64DataUrl: string, sessionId: string): Promise<{ url: string; dimensions?: { width: number; height: number } }> {
-    log.info('Uploading photo to storage');
+  async uploadPhoto(base64DataUrl: string): Promise<UploadResult> {
+    log.info('Uploading photo to Beget /api/photos/upload');
 
-    // Размеры (для aspect ratio в генерации)
+    // dimensions для aspect ratio
     const dimensions = await new Promise<{ width: number; height: number } | undefined>((resolve) => {
       const img = new Image();
       img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
@@ -66,81 +81,68 @@ class StudioService {
       img.src = base64DataUrl;
     });
 
-    const base64 = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
-    const bytes = atob(base64);
+    // base64 → Blob
+    const m = base64DataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    const mime = m?.[1] ?? 'image/jpeg';
+    const b64 = m?.[2] ?? base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
+    const bytes = atob(b64);
     const arr = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    const blob = new Blob([arr], { type: 'image/jpeg' });
+    const blob = new Blob([arr], { type: mime });
 
-    const fileName = `${sessionId}/studio_${Date.now()}.jpg`;
-    const { error } = await supabase.storage
-      .from('user-photos')
-      .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+    const result = await apiUploadPhoto(blob);
+    log.info('Photo uploaded', { filename: result.filename, size: result.sizeBytes });
 
-    if (error) {
-      log.error('Upload failed', error);
-      throw new Error('Не удалось загрузить фото: ' + error.message);
-    }
-
-    const { data } = supabase.storage.from('user-photos').getPublicUrl(fileName);
-    log.info('Photo uploaded', { url: data.publicUrl });
-    return { url: data.publicUrl, dimensions };
+    return {
+      url: absolutize(result.url),
+      filename: result.filename,
+      dimensions,
+      ttlMinutes: result.ttlMinutes,
+    };
   }
 
   /**
-   * Сгенерить ОДНО фото за 1 кредит.
-   * Бросает GenerateOneError при провале (с пометкой refunded если кредит вернулся).
+   * Сгенерить одно фото за 1 кредит. Если AI упадёт — кредит вернётся
+   * (бэкенд сам делает refund). Бросает GenerateOneError.
    */
   async generateOne(params: {
     customerKey: string;
     styleId: string;
-    stylePrompt: string;
-    originalImageUrl: string;
+    sourcePhotoFilename: string;
     customPrompt?: string;
     isFullBody?: boolean;
     originalDimensions?: { width: number; height: number };
   }): Promise<GenerateOneResult> {
     log.info('generateOne start', { styleId: params.styleId });
 
-    const resp = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-one`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({
-          customer_key: params.customerKey,
-          style_id: params.styleId,
-          style_prompt: params.stylePrompt,
-          original_image_url: params.originalImageUrl,
-          custom_prompt: params.customPrompt,
-          is_full_body: params.isFullBody,
-          original_dimensions: params.originalDimensions,
-        }),
-      }
-    );
-
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      log.error('generateOne failed', { status: resp.status, data });
-      const err: GenerateOneError = {
-        error: data?.error || 'Ошибка генерации',
-        status: resp.status,
-        refunded: !!data?.refunded,
-        balance: typeof data?.balance === 'number' ? data.balance : undefined,
+    try {
+      const data = await apiGenerateSingle({
+        customerKey: params.customerKey,
+        styleId: params.styleId,
+        sourcePhotoFilename: params.sourcePhotoFilename,
+        customPrompt: params.customPrompt,
+        isFullBody: params.isFullBody,
+        originalDimensions: params.originalDimensions,
+      });
+      return {
+        generationId: data.generationId,
+        imageUrl: absolutize(data.imageUrl),
+        ttlMinutes: data.ttlMinutes,
+        balance: data.balance,
       };
+    } catch (e: any) {
+      const status = e?.status ?? 500;
+      const body = e?.body ?? {};
+      const err: GenerateOneError = {
+        error: body.error || e?.message || 'Ошибка генерации',
+        status,
+        code: body.code,
+        refunded: !!body.refunded,
+        balance: typeof body.balance === 'number' ? body.balance : undefined,
+      };
+      log.error('generateOne failed', err);
       throw err;
     }
-
-    return {
-      generationId: data.generation_id,
-      imageUrl: data.image_url,
-      balance: data.balance ?? 0,
-    };
   }
 }
 

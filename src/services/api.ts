@@ -45,6 +45,8 @@ export interface CreatePaymentInput {
   originalImageUrl: string | null;
   customPrompt?: string;
   isFullBody: boolean;
+  /** Реферальный код, если юзер пришёл по ссылке (опционально, бэк его проверит). */
+  referralCode?: string | null;
 }
 
 export interface CreatePaymentResult {
@@ -112,4 +114,62 @@ export interface BalanceResult {
 
 export function getBalance(customerKey: string): Promise<BalanceResult> {
   return request<BalanceResult>(`/api/balance?customer_key=${encodeURIComponent(customerKey)}`);
+}
+
+// === Photos (temp storage on VPS, TTL 30 min) ===
+
+export interface UploadPhotoResult {
+  filename: string;
+  url: string;        // относительный, использовать вместе с VITE_API_URL/origin
+  sizeBytes: number;
+  ttlMinutes: number;
+}
+
+export async function uploadPhoto(blob: Blob): Promise<UploadPhotoResult> {
+  const fd = new FormData();
+  // имя нужно multer'у только для extension hint; реальный файл сгенерирует UUID
+  const ext = blob.type === 'image/png' ? '.png'
+            : blob.type === 'image/webp' ? '.webp'
+            : '.jpg';
+  fd.append('photo', blob, `photo${ext}`);
+
+  const resp = await fetch(`${(import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '')}/api/photos/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  let data: any = null;
+  try { data = await resp.json(); } catch {}
+  if (!resp.ok) {
+    const err = new Error(data?.error || `HTTP ${resp.status}`);
+    (err as any).status = resp.status;
+    (err as any).body = data;
+    throw err;
+  }
+  return data as UploadPhotoResult;
+}
+
+// === Generation: Studio single ===
+
+export interface GenerateSingleInput {
+  customerKey: string;
+  styleId: string;
+  sourcePhotoFilename: string;
+  customPrompt?: string;
+  isFullBody?: boolean;
+  originalDimensions?: { width: number; height: number };
+}
+
+export interface GenerateSingleResult {
+  generationId: string;
+  imageUrl: string;       // относительный, /api/photos/<filename>
+  ttlMinutes: number;
+  balance: number;
+  modelUsed?: string;
+}
+
+export function generateSingle(input: GenerateSingleInput): Promise<GenerateSingleResult> {
+  return request<GenerateSingleResult>('/api/generation/single', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }

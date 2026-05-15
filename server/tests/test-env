@@ -1,0 +1,7 @@
+# Stub env for tests only — payment.test.ts injects mock db/yookassa via DI,
+# but db/pool.ts throws at module-load if DATABASE_URL is unset. Use a sentinel
+# value here; tests never actually open the pool.
+DATABASE_URL=postgres://test:test@127.0.0.1:5432/test
+YOOKASSA_SHOP_ID=000000
+YOOKASSA_SECRET_KEY=test_stub_key_not_used_in_tests
+NODE_ENV=test

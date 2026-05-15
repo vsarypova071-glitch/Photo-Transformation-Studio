@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { backend } from './services/backend';
-import { STYLES } from './lib/constants';
-import { StyleCategory, Job } from './types';
+import { StyleCategory, Job, Style } from './types';
 import { createLogger } from './utils/logger';
 import {
   createPayment,
@@ -9,6 +8,12 @@ import {
   findRecentOrder,
   getBalance as apiGetBalance,
 } from './services/api';
+import { fetchStyles, getStylesSync } from './services/styles';
+import {
+  readReferralFromUrl,
+  trackOnLanding,
+  getStoredReferralCode,
+} from './services/referrals';
 
 
 import WelcomeScreen from './components/screens/WelcomeScreen';
@@ -91,6 +96,22 @@ async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string |
 
 function App() {
   const [screen, setScreen] = useState<Screen>('welcome');
+  // Стили: сначала из cache/bundle (синхронно), затем фоном обновляем из /api/styles.
+  // Если API недоступен/пустой — остаётся bundle, юзер ничего не теряет.
+  const [styles, setStyles] = useState<Style[]>(() => getStylesSync());
+  useEffect(() => {
+    fetchStyles().then((items) => {
+      if (items.length > 0) setStyles(items);
+    }).catch(() => {/* bundle уже стоит */});
+
+    // Phase 4 — referral landing: сохраняем ?ref= в localStorage и
+    // отправляем POST /api/referrals/track. Если фича на бэке выключена,
+    // endpoint вернёт 404 — функция спокойно проглотит это.
+    const refCode = readReferralFromUrl();
+    if (refCode) {
+      trackOnLanding(getCustomerKey()).catch(() => {/* ignore */});
+    }
+  }, []);
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<StyleCategory>('realistic');
@@ -322,8 +343,19 @@ function App() {
       }
     }, 3000);
 
-    // Stop polling after 10 minutes
-    setTimeout(() => clearInterval(interval), 600000);
+    // Stop polling after 2 minutes; check balance in case webhook was slow
+    setTimeout(async () => {
+      clearInterval(interval);
+      try {
+        const ck = getCustomerKey();
+        const info = await studio.getBalance(ck);
+        if (info.balance > 0) {
+          await handleCreditsCredited(orderId, {});
+          return;
+        }
+      } catch (_) { /* ignore */ }
+      setProcessingError('Платёж получен, но начисление кредитов задерживается. Обновите страницу — ваши генерации уже ждут в Студии.');
+    }, 120000);
   }, [selectedStyles, isFullBody, uploadedImage, handleCreditsCredited]);
 
   // Restore order from localStorage on mount
@@ -658,6 +690,10 @@ function App() {
           originalImageUrl: imageStoragePath,
           customPrompt: '',
           isFullBody,
+          // Phase 4: реферальный код, если юзер пришёл по ?ref=...
+          // Бэк сам валидирует формат, отсеивает self-referral и игнорирует
+          // если ENABLE_REFERRALS=false.
+          referralCode: getStoredReferralCode() ?? undefined,
         });
       } catch (apiErr: any) {
         const status = apiErr?.status ?? 500;
@@ -894,7 +930,7 @@ function App() {
         
         {screen === 'styles' && (
           <StylesScreen
-            styles={STYLES}
+            styles={styles}
             selectedStyles={selectedStyles}
             selectedGoal={selectedGoal}
             activeCategory={activeCategory}

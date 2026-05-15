@@ -1,142 +1,143 @@
 import { PlanType, Style, Package } from '../types';
 
-import quietLuxuryImg from '@/assets/styles/quiet-luxury.png';
-import intellectualEleganceImg from '@/assets/styles/intellectual-elegance.png';
-import luxuryEditorialImg from '@/assets/styles/luxury-editorial.png';
-import oldMoneyImg from '@/assets/styles/old-money.png';
-import milanoEleganceImg from '@/assets/styles/milano-elegance.png';
-import parisianChicImg from '@/assets/styles/parisian-chic.png';
-import scandinavianMinimalImg from '@/assets/styles/scandinavian-minimal.png';
-import newYorkPowerImg from '@/assets/styles/new-york-power.png';
-import luxuryResortImg from '@/assets/styles/luxury-resort.png';
-import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
-import businessEliteImg from '@/assets/styles/business-elite.png';
-import royalPresenceImg from '@/assets/styles/royal-presence.png';
+import roskoshImg from '@/assets/styles/roskosh.png';
+import liderImg from '@/assets/styles/lider.png';
+import dikayaPrirodaImg from '@/assets/styles/dikaya-priroda.png';
+import zimnyayaSkazkaImg from '@/assets/styles/zimnyaya-skazka.png';
+import skorostImg from '@/assets/styles/skorost.png';
+import rokovayaImg from '@/assets/styles/rokovaya.png';
+import zateryanniyMirImg from '@/assets/styles/zateryanniy-mir.png';
+import bolshoePatheshestvieImg from '@/assets/styles/bolshoe-puteshestvie.png';
+import romantikaImg from '@/assets/styles/romantika.png';
+import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
+import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
+import boginyaImg from '@/assets/styles/boginya.png';
+import carskayaOhotaImg from '@/assets/styles/carskaya-ohota.png';
 
 const STYLES_RAW: Style[] = [
-  // РЕАЛИЗМ - 12 стилей для Instagram фотосессий
-  { 
-    id: 'quiet_luxury', 
-    name: 'Quiet Luxury', 
+  // РЕАЛИЗМ - 12 стилей
+  {
+    id: 'old_money',
+    name: 'РОСКОШЬ',
     category: 'realistic',
-    description: 'Элегантный премиальный образ', 
-    prompt: 'Ultra photorealistic portrait photography. Style: Quiet Luxury intellectual minimalism. Natural soft window light, shallow depth of field. Designer neutral-tone clothing (cashmere, silk). Candid elegant pose. Shot on Sony A7R IV, 85mm f/1.4 lens. Magazine editorial quality.', 
-    previewUrl: quietLuxuryImg 
+    description: 'Роскошный premium-образ в стиле quiet luxury, дорогие интерьеры, элегантность, статус и мягкий cinematic свет.',
+    prompt: '',
+    previewUrl: roskoshImg
   },
-  { 
-    id: 'intellectual_elegance', 
-    name: 'Intellectual Elegance', 
+  {
+    id: 'business_elite',
+    name: 'ЛИДЕР',
     category: 'realistic',
-    description: 'Стиль европейской классики', 
-    prompt: 'Photorealistic European elegance portrait. Soft golden hour lighting. Classic tailored outfit in muted tones. Thoughtful pose with natural expression. Professional fashion photography. Leica SL2, 50mm Summilux. Vogue Italia aesthetic.', 
-    previewUrl: intellectualEleganceImg 
+    description: 'Сильный деловой образ с атмосферой власти, уверенности и современного успеха.',
+    prompt: '',
+    previewUrl: liderImg
   },
-  { 
-    id: 'luxe_editorial', 
-    name: 'Luxury Editorial', 
+  {
+    id: 'golden_hour_glow',
+    name: 'ДИКАЯ ПРИРОДА',
     category: 'realistic',
-    description: 'Фотосессия как в модном журнале', 
-    prompt: 'High-end fashion editorial photography. Dramatic studio lighting with soft shadows. Luxury designer clothing, unique textures. Dynamic confident pose. Shot on Phase One IQ4, Broncolor lighting. Harper\'s Bazaar quality.', 
-    previewUrl: luxuryEditorialImg 
+    description: 'Атмосфера свободы, природы и приключений. Лес, горы, натуральные ткани и естественный свет.',
+    prompt: '',
+    previewUrl: dikayaPrirodaImg
   },
-  { 
-    id: 'business_elite', 
-    name: 'Business Elite', 
+  {
+    id: 'scandinavian_minimal',
+    name: 'ЗИМНЯЯ СКАЗКА',
     category: 'realistic',
-    description: 'Деловой портрет уровня Forbes', 
-    prompt: 'Executive portrait photography. Clean professional lighting. Premium tailored business attire. Confident powerful stance. Modern office or neutral background. Canon EOS R5, 85mm f/1.2. Forbes cover quality.', 
-    previewUrl: businessEliteImg 
+    description: 'Снежная эстетика, холодный свет, зимняя элегантность и магическая атмосфера.',
+    prompt: '',
+    previewUrl: zimnyayaSkazkaImg
   },
-  { 
-    id: 'old_money', 
-    name: 'Old Money', 
+  {
+    id: 'new_york_power',
+    name: 'СКОРОСТЬ',
     category: 'realistic',
-    description: 'Тихая роскошь старых денег', 
-    prompt: 'Old money aesthetic portrait. Soft natural light in elegant interior. Classic understated luxury clothing (Ralph Lauren, Brunello Cucinelli style). Relaxed aristocratic pose. Film-like color grading. Hasselblad X2D quality.', 
-    previewUrl: oldMoneyImg 
+    description: 'Динамичный cinematic-образ с энергией движения, ночного города и адреналина.',
+    prompt: '',
+    previewUrl: skorostImg
   },
-  { 
-    id: 'milano_style', 
-    name: 'Milano Elegance', 
+  {
+    id: 'evening_glamour',
+    name: 'РОКОВАЯ',
     category: 'realistic',
-    description: 'Итальянская элегантная фотосессия', 
-    prompt: 'Milanese street style fashion photography. Beautiful Italian architecture background. Chic designer outfit with bold accessories. Effortlessly stylish pose. Warm Mediterranean light. Sony A1, Zeiss Batis 85mm.', 
-    previewUrl: milanoEleganceImg 
+    description: 'Драматичный женственный образ с атмосферой кино, загадочности и luxury glamour.',
+    prompt: '',
+    previewUrl: rokovayaImg
   },
-  { 
-    id: 'parisian_chic', 
-    name: 'Parisian Chic', 
+  {
+    id: 'luxury_resort',
+    name: 'ЗАТЕРЯННЫЙ МИР',
     category: 'realistic',
-    description: 'Стильный образ в духе Парижа', 
-    prompt: 'Parisian effortless chic portrait. Soft diffused daylight. Classic French style clothing (Chanel, Dior inspired). Natural relaxed pose at café or street. Film photography aesthetic. Contax 645, Portra 400 look.', 
-    previewUrl: parisianChicImg 
+    description: 'Приключенческий стиль с атмосферой древнего мира, джунглей и cinematic expedition.',
+    prompt: '',
+    previewUrl: zateryanniyMirImg
   },
-  { 
-    id: 'scandinavian_minimal', 
-    name: 'Scandinavian Minimal', 
+  {
+    id: 'milano_style',
+    name: 'БОЛЬШОЕ ПУТЕШЕСТВИЕ',
     category: 'realistic',
-    description: 'Минималистичный скандинавский портрет', 
-    prompt: 'Scandinavian minimalist portrait. Clean white and neutral tones. Simple elegant clothing in quality fabrics. Serene contemplative expression. Soft overcast lighting. Fujifilm GFX 100S. Kinfolk magazine aesthetic.', 
-    previewUrl: scandinavianMinimalImg 
+    description: 'Эстетика путешествий, свободы и красивых мест по всему миру.',
+    prompt: '',
+    previewUrl: bolshoePatheshestvieImg
   },
-  { 
-    id: 'new_york_power', 
-    name: 'New York Power', 
+  {
+    id: 'parisian_chic',
+    name: 'РОМАНТИКА',
     category: 'realistic',
-    description: 'Мощный городской образ Нью-Йорка', 
-    prompt: 'New York power dressing portrait. Urban sophisticated backdrop. Sharp tailored power suit or structured dress. Confident commanding pose. Dynamic city lighting. Nikon Z9, 70-200mm f/2.8. WSJ Magazine style.', 
-    previewUrl: newYorkPowerImg 
+    description: 'Теплый романтический образ с мягким светом, нежностью и атмосферой love story.',
+    prompt: '',
+    previewUrl: romantikaImg
   },
-  { 
-    id: 'golden_hour_glow', 
-    name: 'Golden Hour Glow', 
+  {
+    id: 'quiet_luxury',
+    name: 'МИР БУДУЩЕГО',
     category: 'realistic',
-    description: 'Тёплый романтический портрет', 
-    prompt: 'Golden hour portrait photography. Warm backlit sun creating rim light. Flowing elegant outfit in warm tones. Dreamy romantic atmosphere. Natural outdoor setting. Canon R5, 135mm f/1.8. Instagram influencer quality.', 
-    previewUrl: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=800' 
+    description: 'Футуристичный стиль с неоновым светом, технологичной атмосферой и sci-fi эстетикой.',
+    prompt: '',
+    previewUrl: mirBudushchegoImg
   },
-  { 
-    id: 'luxury_resort', 
-    name: 'Luxury Resort', 
+  {
+    id: 'luxe_editorial',
+    name: 'ВЫСОКАЯ МОДА',
     category: 'realistic',
-    description: 'Роскошный курортный образ', 
-    prompt: 'Luxury resort lifestyle portrait. Bright natural light, tropical or coastal setting. Elegant resort wear or summer couture. Relaxed sophisticated pose. Vibrant but refined colors. Sony A7 IV, Zeiss 55mm f/1.8Jean.', 
-    previewUrl: luxuryResortImg 
+    description: 'Fashion editorial в стиле глянцевого журнала и luxury fashion photography.',
+    prompt: '',
+    previewUrl: vysokayaModaImg
   },
-  { 
-    id: 'evening_glamour', 
-    name: 'Evening Glamour', 
+  {
+    id: 'intellectual_elegance',
+    name: 'БОГИНЯ',
     category: 'realistic',
-    description: 'Роскошный вечерний гламур', 
-    prompt: 'Evening glamour portrait. Sophisticated low-key lighting with sparkle. Stunning evening gown or cocktail dress. Elegant posed shot. Jewelry catching light beautifully. Hasselblad H6D. Red carpet quality photography.', 
-    previewUrl: eveningGlamourImg 
+    description: 'Величественный женственный образ с мягким сиянием, античной эстетикой и атмосферой силы.',
+    prompt: '',
+    previewUrl: boginyaImg
   },
-  
-  // ДИКИЙ СТИЛЬ - с животными
-  { 
-    id: 'royal_bear', 
-    name: 'Royal Presence', 
+
+  // ПРЕМИУМ - с природой
+  {
+    id: 'royal_bear',
+    name: 'ЦАРСКАЯ ОХОТА',
     category: 'wild',
-    description: 'Величественный образ королевской власти', 
-    prompt: 'Majestic portrait with polar bear. Photorealistic cinematic lighting. Luxurious winter couture. Powerful protective symbolism. Dramatic composition. High-end fantasy fashion photography.', 
-    previewUrl: royalPresenceImg 
+    description: 'Аристократический outdoor-стиль с лесной атмосферой, статусом и cinematic realism.',
+    prompt: '',
+    previewUrl: carskayaOhotaImg
   }
 ];
 
-// Желаемый порядок отображения стилей realism (для повышения конверсии)
+// Порядок отображения стилей realism (соответствует sort_order в БД)
 const REALISTIC_ORDER = [
-  'business_elite',
-  'old_money',
-  'new_york_power',
-  'evening_glamour',
-  'luxe_editorial',
-  'intellectual_elegance',
-  'quiet_luxury',
-  'milano_style',
-  'parisian_chic',
-  'scandinavian_minimal',
-  'golden_hour_glow',
-  'luxury_resort',
+  'old_money',             // РОСКОШЬ
+  'business_elite',        // ЛИДЕР
+  'golden_hour_glow',      // ДИКАЯ ПРИРОДА
+  'scandinavian_minimal',  // ЗИМНЯЯ СКАЗКА
+  'new_york_power',        // СКОРОСТЬ
+  'evening_glamour',       // РОКОВАЯ
+  'luxury_resort',         // ЗАТЕРЯННЫЙ МИР
+  'milano_style',          // БОЛЬШОЕ ПУТЕШЕСТВИЕ
+  'parisian_chic',         // РОМАНТИКА
+  'quiet_luxury',          // МИР БУДУЩЕГО
+  'luxe_editorial',        // ВЫСОКАЯ МОДА
+  'intellectual_elegance', // БОГИНЯ
 ];
 
 const realisticOrdered = REALISTIC_ORDER

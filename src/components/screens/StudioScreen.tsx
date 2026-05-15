@@ -7,6 +7,8 @@ import { useState, useEffect, useRef } from 'react';
 import { STYLES } from '@/lib/constants';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
+import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
+import ReferralBlock from '@/components/ReferralBlock';
 
 const log = createLogger('StudioScreen');
 
@@ -45,10 +47,15 @@ export default function StudioScreen({
 
   // upload
   const [uploadedImage, setUploadedImage] = useState<string>(''); // base64 (для превью)
-  const [uploadedUrl, setUploadedUrl] = useState<string>('');     // URL в storage
+  const [uploadedUrl, setUploadedUrl] = useState<string>('');     // URL результата на VPS
+  const [uploadedFilename, setUploadedFilename] = useState<string>(''); // имя файла на VPS — для /api/generation/single
   const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | undefined>();
   const [biometryConsent, setBiometryConsent] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // popup о TTL результата
+  const [showTtlNotice, setShowTtlNotice] = useState(false);
+  const [resultTtlMinutes, setResultTtlMinutes] = useState(30);
 
   // choose
   const [selectedStyleId, setSelectedStyleId] = useState<string>('');
@@ -79,12 +86,37 @@ export default function StudioScreen({
     if (prefillConsumedRef.current) return;
     if (!prefillPhotoUrl) return;
     prefillConsumedRef.current = true;
-    console.log('PREFILL applied', { prefillPhotoUrl, prefillStyleId });
-    setUploadedUrl(prefillPhotoUrl);
-    setUploadedImage(prefillPhotoUrl); // публичный URL работает как src для <img>
-    setBiometryConsent(true); // юзер уже соглашался при оплате
-    if (prefillStyleId) setSelectedStyleId(prefillStyleId);
-    setStep('choose');
+    log.info('PREFILL applied', { prefillPhotoUrl, prefillStyleId });
+
+    // Фото юзера приходит сюда с Supabase Storage URL (legacy перед оплатой).
+    // Нужно скачать и заново залить в /api/photos чтобы получить filename для Beget.
+    (async () => {
+      try {
+        setIsUploading(true);
+        const r = await fetch(prefillPhotoUrl);
+        if (!r.ok) throw new Error(`prefill fetch failed: ${r.status}`);
+        const blob = await r.blob();
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = ev => resolve(ev.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        setUploadedImage(base64);
+        const up = await studio.uploadPhoto(base64);
+        setUploadedUrl(up.url);
+        setUploadedFilename(up.filename);
+        setOriginalDimensions(up.dimensions);
+        setBiometryConsent(true);
+        if (prefillStyleId) setSelectedStyleId(prefillStyleId);
+        setStep('choose');
+      } catch (e: any) {
+        log.warn('Prefill upload failed, falling back to manual upload', e);
+        // оставляем юзера на шаге upload с пустым полем
+      } finally {
+        setIsUploading(false);
+      }
+    })();
   }, [prefillPhotoUrl, prefillStyleId]);
 
   const sessionId = (() => {
@@ -119,9 +151,10 @@ export default function StudioScreen({
 
       setUploadedImage(base64);
 
-      const { url, dimensions } = await studio.uploadPhoto(base64, sessionId);
-      setUploadedUrl(url);
-      setOriginalDimensions(dimensions);
+      const up = await studio.uploadPhoto(base64);
+      setUploadedUrl(up.url);
+      setUploadedFilename(up.filename);
+      setOriginalDimensions(up.dimensions);
       setStep('choose');
     } catch (err: any) {
       log.error('Upload failed', err);
@@ -152,32 +185,28 @@ export default function StudioScreen({
     setError(null);
     setStep('generating');
 
-    console.log('GEN REQUEST', {
-      customerKey,
-      selectedStyleId,
-      uploadedUrl,
-      hasSelectedStyle: !!style,
-      stylePrompt: style.prompt,
-      isFullBody,
-      originalDimensions,
-      balance,
-    });
+    if (!uploadedFilename) {
+      setError('Сначала загрузите фото');
+      setStep('upload');
+      return;
+    }
 
     try {
       const res = await studio.generateOne({
         customerKey,
         styleId: style.id,
-        stylePrompt: style.prompt,
-        originalImageUrl: uploadedUrl,
+        sourcePhotoFilename: uploadedFilename,
         isFullBody,
         originalDimensions,
       });
 
       setResultImage(res.imageUrl);
       setResultStyleName(style.name);
+      setResultTtlMinutes(res.ttlMinutes ?? 30);
       setBalance(res.balance);
       onBalanceChange(res.balance);
       setStep('result');
+      setShowTtlNotice(true); // popup «Фото доступны 30 минут»
     } catch (err: any) {
       log.error('Generation failed', err);
       const msg = err?.error || err?.message || 'Ошибка генерации';
@@ -198,53 +227,36 @@ export default function StudioScreen({
   };
 
   // === Скачивание фото — приоритет на системное «Поделиться» ===
-  // Web Share API с файлом открывает родное меню Android/iOS, где есть
-  // «Сохранить в галерею». Это привычный путь — никаких «куда оно делось».
+  // Скачивание реализовано в utils/download.ts:
+  //   - desktop / Android  →  <a href="/api/photos/download/<file>" download>  (Content-Disposition: attachment)
+  //   - iOS                →  navigator.share с File (Save to Files / Photos),
+  //                           fallback на тот же download endpoint
+  // Сервер отдаёт правильный Content-Type, Content-Length и attachment-имя
+  // ai-fotosessia-result-YYYYMMDD-HHMM.jpg.
   const handleDownload = async () => {
     if (!resultImage || isDownloading) return;
-    const fileName = `ai-photo-${Date.now()}.jpg`;
     setIsDownloading(true);
     setIosHint(false);
     setSavedToast(false);
 
     try {
-      const res = await fetch(resultImage, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+      const res = await downloadGeneratedPhoto(resultImage);
+      log.info('Download triggered', res);
 
-      const nav = navigator as Navigator & {
-        canShare?: (data?: { files?: File[] }) => boolean;
-        share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>;
-      };
-
-      // 1. Системное окно «Поделиться» (Android Chrome/Yandex/Samsung, iOS Safari)
-      if (nav.share && nav.canShare?.({ files: [file] })) {
-        try {
-          await nav.share({ files: [file], title: 'AI фотосессия' });
-          return; // Юзер сам выбрал куда сохранить — ничего больше не надо
-        } catch (shareErr: any) {
-          // AbortError = юзер закрыл share sheet, это норма
-          if (shareErr?.name === 'AbortError') return;
-          // Иначе — падаем в fallback ниже
-        }
+      if (res.via === 'web-share') {
+        // iOS Share Sheet взял на себя — юзер сам выбрал «Сохранить в Фото»
+      } else if (res.via === 'anchor-download') {
+        // browser стал скачивать — показываем подтверждающий toast
+        setSavedToast(true);
+        setTimeout(() => setSavedToast(false), 4000);
+      } else {
+        // open-window: подсказываем что в открывшейся вкладке нажать сохранить
+        setIosHint(true);
+        setTimeout(() => setIosHint(false), 6000);
       }
-
-      // 2. Fallback: <a download> с явным тостом-подтверждением
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-
-      // Чтобы юзер видел что что-то произошло — а не «кнопка моргнула»
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 5000);
-    } catch {
-      // 3. Последний шанс: лайтбокс с понятной инструкцией «удерживайте фото»
+    } catch (err) {
+      log.error('Download failed', err);
+      // самый последний fallback — лайтбокс с long-press как ручной способ
       setLightboxOpen(true);
     } finally {
       setIsDownloading(false);
@@ -278,6 +290,11 @@ export default function StudioScreen({
           {error}
         </div>
       )}
+
+      {/* Phase 4 — Реферальный блок. Показывается только если flag включён
+          (внутри компонента + бэкенд). Для текущего prod (flag=false)
+          ReferralBlock рендерится null, ничего не меняется. */}
+      <ReferralBlock customerKey={customerKey} />
 
       {/* === ШАГ 1: ЗАГРУЗКА === */}
       {step === 'upload' && (
@@ -521,7 +538,41 @@ export default function StudioScreen({
             onClick={(e) => e.stopPropagation()}
             className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md shadow-xl text-center max-w-[90vw]"
           >
-            📲 Удерживайте фото → «Сохранить изображение»
+            Если кнопка не сработала: удерживайте фото → «Сохранить изображение»
+          </div>
+        </div>
+      )}
+
+      {/* Popup: фото живут 30 минут на VPS */}
+      {showTtlNotice && (
+        <div
+          className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          onClick={() => setShowTtlNotice(false)}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-sm rounded-3xl border-2 border-yellow-400/60 bg-card p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏳</div>
+              <h3 className="text-lg font-black text-yellow-300 mb-2">
+                Фото доступны {resultTtlMinutes} минут
+              </h3>
+              <p className="text-sm text-slate-200 leading-relaxed mb-5">
+                Скачайте сразу — после {resultTtlMinutes} минут файл будет автоматически удалён с сервера.
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  Это требование 152-ФЗ: фото нигде не хранится постоянно.
+                </span>
+              </p>
+              <button
+                onClick={() => setShowTtlNotice(false)}
+                className="w-full py-3 rounded-xl bg-yellow-400 text-black font-bold text-sm uppercase tracking-wider active:scale-[0.98] transition"
+              >
+                Понятно
+              </button>
+            </div>
           </div>
         </div>
       )}
