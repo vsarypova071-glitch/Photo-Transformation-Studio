@@ -1,17 +1,18 @@
 import { PlanType, Style, Package } from '../types';
 
-import quietLuxuryImg from '@/assets/styles/quiet-luxury.png';
-import intellectualEleganceImg from '@/assets/styles/intellectual-elegance.png';
-import luxuryEditorialImg from '@/assets/styles/luxury-editorial.png';
-import oldMoneyImg from '@/assets/styles/old-money.png';
-import milanoEleganceImg from '@/assets/styles/milano-elegance.png';
-import parisianChicImg from '@/assets/styles/parisian-chic.png';
-import scandinavianMinimalImg from '@/assets/styles/scandinavian-minimal.png';
-import newYorkPowerImg from '@/assets/styles/new-york-power.png';
-import luxuryResortImg from '@/assets/styles/luxury-resort.png';
-import eveningGlamourImg from '@/assets/styles/evening-glamour.png';
-import businessEliteImg from '@/assets/styles/business-elite.png';
-import royalPresenceImg from '@/assets/styles/royal-presence.png';
+import roskoshImg from '@/assets/styles/roskosh.png';
+import liderImg from '@/assets/styles/lider.png';
+import dikayaPrirodaImg from '@/assets/styles/dikaya-priroda.png';
+import zimnyayaSkazkaImg from '@/assets/styles/zimnyaya-skazka.png';
+import skorostImg from '@/assets/styles/skorost.png';
+import rokovayaImg from '@/assets/styles/rokovaya.png';
+import zateryanniyMirImg from '@/assets/styles/zateryanniy-mir.png';
+import bolshoePatheshestvieImg from '@/assets/styles/bolshoe-puteshestvie.png';
+import romantikaImg from '@/assets/styles/romantika.png';
+import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
+import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
+import boginyaImg from '@/assets/styles/boginya.png';
+import carskayaOhotaImg from '@/assets/styles/carskaya-ohota.png';
 
 const STYLES_RAW: Style[] = [
   // РЕАЛИЗМ - 12 стилей
@@ -21,7 +22,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Роскошный premium-образ в стиле quiet luxury, дорогие интерьеры, элегантность, статус и мягкий cinematic свет.',
     prompt: '',
-    previewUrl: oldMoneyImg
+    previewUrl: roskoshImg
   },
   {
     id: 'business_elite',
@@ -29,7 +30,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Сильный деловой образ с атмосферой власти, уверенности и современного успеха.',
     prompt: '',
-    previewUrl: businessEliteImg
+    previewUrl: liderImg
   },
   {
     id: 'golden_hour_glow',
@@ -37,7 +38,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Атмосфера свободы, природы и приключений. Лес, горы, натуральные ткани и естественный свет.',
     prompt: '',
-    previewUrl: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=800'
+    previewUrl: dikayaPrirodaImg
   },
   {
     id: 'scandinavian_minimal',
@@ -45,7 +46,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Снежная эстетика, холодный свет, зимняя элегантность и магическая атмосфера.',
     prompt: '',
-    previewUrl: scandinavianMinimalImg
+    previewUrl: zimnyayaSkazkaImg
   },
   {
     id: 'new_york_power',
@@ -53,7 +54,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Динамичный cinematic-образ с энергией движения, ночного города и адреналина.',
     prompt: '',
-    previewUrl: newYorkPowerImg
+    previewUrl: skorostImg
   },
   {
     id: 'evening_glamour',
@@ -61,7 +62,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Драматичный женственный образ с атмосферой кино, загадочности и luxury glamour.',
     prompt: '',
-    previewUrl: eveningGlamourImg
+    previewUrl: rokovayaImg
   },
   {
     id: 'luxury_resort',
@@ -69,7 +70,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Приключенческий стиль с атмосферой древнего мира, джунглей и cinematic expedition.',
     prompt: '',
-    previewUrl: luxuryResortImg
+    previewUrl: zateryanniyMirImg
   },
   {
     id: 'milano_style',
@@ -77,7 +78,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Эстетика путешествий, свободы и красивых мест по всему миру.',
     prompt: '',
-    previewUrl: milanoEleganceImg
+    previewUrl: bolshoePatheshestvieImg
   },
   {
     id: 'parisian_chic',
@@ -85,7 +86,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Теплый романтический образ с мягким светом, нежностью и атмосферой love story.',
     prompt: '',
-    previewUrl: parisianChicImg
+    previewUrl: romantikaImg
   },
   {
     id: 'quiet_luxury',
@@ -93,7 +94,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Футуристичный стиль с неоновым светом, технологичной атмосферой и sci-fi эстетикой.',
     prompt: '',
-    previewUrl: quietLuxuryImg
+    previewUrl: mirBudushchegoImg
   },
   {
     id: 'luxe_editorial',
@@ -101,7 +102,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Fashion editorial в стиле глянцевого журнала и luxury fashion photography.',
     prompt: '',
-    previewUrl: luxuryEditorialImg
+    previewUrl: vysokayaModaImg
   },
   {
     id: 'intellectual_elegance',
@@ -109,7 +110,7 @@ const STYLES_RAW: Style[] = [
     category: 'realistic',
     description: 'Величественный женственный образ с мягким сиянием, античной эстетикой и атмосферой силы.',
     prompt: '',
-    previewUrl: intellectualEleganceImg
+    previewUrl: boginyaImg
   },
 
   // ПРЕМИУМ - с природой
@@ -119,7 +120,7 @@ const STYLES_RAW: Style[] = [
     category: 'wild',
     description: 'Аристократический outdoor-стиль с лесной атмосферой, статусом и cinematic realism.',
     prompt: '',
-    previewUrl: royalPresenceImg
+    previewUrl: carskayaOhotaImg
   }
 ];
 
