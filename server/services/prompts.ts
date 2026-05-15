@@ -65,6 +65,16 @@ export function buildNegativePrompt(): string {
     'influencer glamour aesthetic', 'over-styled CGI fashion',
     'fashion model face', 'runway model transformation', 'beauty-face geometry',
     'altered facial proportions', 'editorial face reinterpretation', 'stylized facial anatomy',
+    // Magnetism / femininity
+    'duck lips', 'exaggerated seduction', 'artificial sexiness', 'emotionally empty posing',
+    'escort aesthetic', 'vulgar glamour', 'nightclub energy', 'cheap luxury',
+    // Anti-cheap luxury
+    'flashy rich aesthetic', 'fake billionaire visuals', 'gold overload', 'casino luxury',
+    'fast fashion energy', 'hypersexual styling',
+    // Eye contact
+    'empty model stare', 'constant side-looking editorial pose', 'emotionless beauty shot',
+    // Cinematic realism
+    'plastic beauty', 'fake perfection', 'synthetic lighting', 'AI glamour',
   ].join(', ');
 }
 
@@ -204,6 +214,68 @@ NATURAL PORTRAIT PRESENCE:
   but should NOT appear to walk, stride, or perform runway movement.
 - Avoid exaggerated editorial motion or fashion-walk energy.`;
 
+  // ── PREMIUM EMOTIONAL DIRECTION БЛОКИ (editorial-only) ──────────────────────
+
+  const magnetismBlock = `\
+MAGNETIC PRESENCE:
+The woman feels emotionally powerful, calm and magnetic.
+She does not try to attract attention aggressively — her presence naturally draws it.
+Expression: confident, emotionally composed, subtle mystery, calm sensuality, quiet power, elegant restraint.
+The magnetism comes from eye contact, posture, silence, confidence, and cinematic emotional depth.
+Avoid: exaggerated seduction, influencer facial expressions, duck lips, artificial sexiness, emotionally empty fashion posing.`;
+
+  const femininityBlock = `\
+HIGH VALUE FEMININITY:
+The woman feels expensive, emotionally unavailable, elegant, self-sufficient, desired but unattainable.
+Luxury femininity is expressed through restraint, confidence, subtle emotion, graceful body language, premium styling, calm emotional control.
+Avoid: escort aesthetic, vulgar glamour, cheap luxury, nightclub energy, explicit sexuality, excessive body exposure.`;
+
+  const eyeContactBlock = `\
+EYE CONTACT & EMOTION:
+Eyes must feel alive, intelligent and emotionally present.
+Use: direct eye contact, calm observational gaze, cinematic candid moments, subtle emotional tension.
+Avoid: mannequin expressions, empty model stare, constant side-looking editorial poses, emotionless beauty shots.
+The viewer should feel: "she has an inner world."`;
+
+  const cinematicRealismBlock = `\
+CINEMATIC REALISM:
+Every image must feel like a frame from a premium cinematic universe — not an AI-generated fashion render.
+Preferred: realistic skin texture, natural asymmetry, believable movement, cinematic light, emotional realism, Vogue / Netflix luxury atmosphere.
+Avoid: overprocessed skin, plastic beauty, fake perfection, synthetic lighting, AI glamour clichés.`;
+
+  const antiCheapBlock = `\
+ANTI-CHEAP LUXURY:
+Luxury must feel quiet, restrained, editorial, cinematic, emotionally intelligent, timeless.
+Avoid: flashy rich aesthetics, fake billionaire visuals, gold overload, casino luxury, cheap glamour, influencer posing, fast fashion energy, hypersexual styling.`;
+
+  const antiRepetitionBlock = `\
+ANTI-REPETITION:
+Avoid repeating identical poses, identical framing, identical facial expressions, identical outfit structures, repeated compositions, repeated lighting schemes.
+Each image should feel like a different moment from the same luxury cinematic universe.`;
+
+  // ── СТИЛЬ-СПЕЦИФИЧНЫЕ БЛОКИ (детектируются по ключевым словам в stylePrompt) ─
+
+  // FUTURE LUXURY — активируется для МИР БУДУЩЕГО и других sci-fi / future стилей.
+  const isFutureLuxury = isEditorial &&
+    /future|futurist|sci-fi|scifi|neon|cyberpunk|architectural.*tech|МИР БУДУЩЕГО/i.test(input.stylePrompt);
+
+  const futureLuxuryBlock = `\
+FUTURE LUXURY:
+Future aesthetics must feel elegant, architectural, wealthy, cinematic, emotionally sophisticated.
+Preferred inspiration: Dubai elite, chrome minimalism, luxury skyscrapers, sculptural fashion, future haute couture.
+Avoid: cyberpunk clichés, latex fetish aesthetics, gamer visuals, sci-fi cosplay, neon overload.`;
+
+  // WILD LUXURY — активируется для ЦАРСКАЯ ОХОТА, ДИКАЯ ПРИРОДА и wild/nature стилей.
+  const isWildLuxury = isEditorial &&
+    /wild|panther|wolf|lion|horse|royal.*bear|bear|forest|nature|охот|царск|WILD/i.test(input.stylePrompt);
+
+  const wildLuxuryBlock = `\
+WILD LUXURY:
+The environment feels exclusive, cinematic, expensive, emotionally powerful.
+Animals are symbolic presences: panther, wolf, lioness, horse — symbols of power and grace.
+The focus remains the woman and her luxury presence.
+Avoid: fantasy monsters, dinosaurs, survival aesthetics, chaos, adventure park energy.`;
+
   // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
   // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
   // на детскую спонтанность и семейную теплоту. Активен только если isEditorial = false.
@@ -238,7 +310,21 @@ CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
     ...(isEditorial
-      ? [auraBlock, '', luxuryAdaptBlock, '', editorialBlock, '', fashionBlock, '', candorBlock, '']
+      ? [
+          auraBlock, '',
+          luxuryAdaptBlock, '',
+          editorialBlock, '',
+          fashionBlock, '',
+          candorBlock, '',
+          magnetismBlock, '',
+          femininityBlock, '',
+          eyeContactBlock, '',
+          cinematicRealismBlock, '',
+          antiCheapBlock, '',
+          antiRepetitionBlock, '',
+          ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
+          ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
+        ]
       : [childLifestyleBlock, '']),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
