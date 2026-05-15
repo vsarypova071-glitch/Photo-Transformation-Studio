@@ -117,84 +117,25 @@ class BackendService {
     return newJob;
   }
 
-  private async processJob(jobId: string, intensity = 70, isRefinement = false) {
-    log.info('Processing job', { jobId, isRefinement });
+  // ⚠️ DEPRECATED — старый batch-путь отключён.
+  //
+  // Раньше processJob дёргал edge-функцию generate-photo с count=1 в рамках
+  // legacy-пакетной модели (5/15/50 фото подряд после оплаты). Это
+  // противоречит новой модели "кошелёк": одна генерация = одно нажатие
+  // кнопки в StudioScreen → studio.generateOne() → edge-функция generate-one.
+  //
+  // Чтобы не сломать импорты в App.tsx (createJob/refineJob/getJobs всё ещё
+  // вызываются из legacy-веток), оставляем публичный API нетронутым, но
+  // processJob больше НИКУДА не ходит и НИЧЕГО не генерирует — просто
+  // помечает job как error с пометкой deprecated.
+  private async processJob(jobId: string, _intensity = 70, _isRefinement = false) {
+    log.warn('processJob is deprecated — legacy batch generation disabled', { jobId });
     const jobs = this.getJobs();
     const jobIndex = jobs.findIndex(j => j.id === jobId);
     if (jobIndex === -1) return;
 
-    jobs[jobIndex].status = 'running';
+    jobs[jobIndex].status = 'error';
     this.saveJobs(jobs);
-
-    try {
-      const job = jobs[jobIndex];
-      
-      // Build style prompt from selected style IDs
-      const { STYLES } = await import('../lib/constants');
-      const selectedStylePrompts = job.styleIds
-        .map(id => STYLES.find(s => s.id === id)?.prompt)
-        .filter(Boolean)
-        .join('\n');
-      
-      const stylePrompt = selectedStylePrompts || 'Luxury fashion portrait photography';
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 300 sec
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-photo`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
-            imageBase64: job.originalImage,
-            stylePrompt,
-            isPremium: false,
-            customPrompt: job.customPrompt || '',
-            originalDimensions: job.originalDimensions,
-            count: 1,
-          }),
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-      const error = !response.ok ? data?.error : null;
-
-      const finalJobs = this.getJobs();
-      const finalIndex = finalJobs.findIndex(j => j.id === jobId);
-      if (finalIndex === -1) return;
-
-      if (error || (!data?.imageUrl && !data?.imageUrls?.length)) {
-        log.error('AI generation failed', { error, data });
-        finalJobs[finalIndex].status = 'error';
-        this.saveJobs(finalJobs);
-        return;
-      }
-
-      // Support both single and multi-variant responses
-      const results: string[] = data.imageUrls?.length
-        ? data.imageUrls
-        : [data.imageUrl];
-
-      finalJobs[finalIndex].results = results;
-      finalJobs[finalIndex].status = 'done';
-      this.saveJobs(finalJobs);
-      log.info('Job completed with AI generation', { jobId, variants: results.length });
-    } catch (err) {
-      log.error('processJob error', err);
-      const finalJobs = this.getJobs();
-      const finalIndex = finalJobs.findIndex(j => j.id === jobId);
-      if (finalIndex !== -1) {
-        finalJobs[finalIndex].status = 'error';
-        this.saveJobs(finalJobs);
-      }
-    }
   }
 
   getJobs(): Job[] {

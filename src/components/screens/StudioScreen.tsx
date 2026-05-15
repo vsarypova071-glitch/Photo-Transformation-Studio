@@ -236,8 +236,6 @@ export default function StudioScreen({
   const handleDownload = async () => {
     if (!resultImage || isDownloading) return;
     setIsDownloading(true);
-    setIosHint(false);
-    setSavedToast(false);
 
     try {
       const res = await downloadGeneratedPhoto(resultImage);
@@ -315,8 +313,7 @@ export default function StudioScreen({
               className="mt-1 w-4 h-4 accent-primary cursor-pointer flex-shrink-0"
             />
             <span className="text-xs text-foreground/80 leading-relaxed">
-              Я даю согласие на обработку биометрических персональных данных (фото лица) для AI‑генерации в соответствии со ст. 11 152‑ФЗ.
-              Сгенерированные фотографии <strong>не сохраняются на сервере</strong> — отдаются вам в браузер для скачивания.
+              Я даю согласие на обработку фото лица для AI‑генерации
             </span>
           </label>
 
