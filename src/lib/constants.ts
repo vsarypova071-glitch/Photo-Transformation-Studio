@@ -14,6 +14,9 @@ import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
 import boginyaImg from '@/assets/styles/boginya.png';
 import tikhayaRoskoshImg from '@/assets/styles/quiet-luxury.png';
 import idealnyj_kadrImg from '@/assets/styles/idealnyj-kadr.png';
+// TODO: заменить на реальные превью после готовности изображений
+import creativestudioImg from '@/assets/styles/romantika.png';
+import bwportraitImg from '@/assets/styles/lider.png';
 
 // Порядок отображения в табах: hero-стили идут первыми внутри своей категории.
 // Категории — эмоциональные, не жанровые. Пользователь выбирает lifestyle fantasy.
@@ -140,6 +143,24 @@ export const STYLES: Style[] = [
     description: 'Futuristic luxury — архитектурный неон, cyber premium.',
     prompt: '',
     previewUrl: vysokayaModaImg,
+  },
+  {
+    id: 'creative_studio',
+    name: 'ТВОРЧЕСКАЯ СТУДИЯ',
+    category: 'bright',
+    description: 'Арт-лофт, богемность, тепло — premium creative aesthetic.',
+    prompt: '',
+    previewUrl: creativestudioImg,
+  },
+
+  // ── БИЗНЕС (дополнительно) ────────────────────────────────────────────────
+  {
+    id: 'bw_portrait',
+    name: 'ЧЁРНО-БЕЛЫЙ ПОРТРЕТ',
+    category: 'business',
+    description: 'Timeless monochrome — классический журнальный портрет в ч/б.',
+    prompt: '',
+    previewUrl: bwportraitImg,
   },
 ];
 

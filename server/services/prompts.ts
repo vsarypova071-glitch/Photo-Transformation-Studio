@@ -505,6 +505,15 @@ WHAT TO AVOID:
   const isSocialPortrait = isEditorial &&
     /PREMIUM INFLUENCER PORTRAIT|ОБРАЗ ДЛЯ СОЦСЕТЕЙ|social.portrait|ИДЕАЛЬНЫЙ КАДР|clean.authentic.portrait|personal.brand.*portrait/i.test(input.stylePrompt);
 
+  // ЧЁРНО-БЕЛЫЙ ПОРТРЕТ — timeless monochrome studio portrait.
+  // Как social portrait: отключает тяжёлые luxury-блоки.
+  // Дополнительно: вставляет блок принудительного B&W вывода.
+  const isBWPortrait = isEditorial &&
+    /TIMELESS PORTRAIT|ЧЁРНО-БЕЛЫЙ|bw.portrait|monochrome.*portrait|grayscale.*portrait/i.test(input.stylePrompt);
+
+  // Общий флаг: оба portrait-режима отключают одни и те же luxury-блоки.
+  const isCleanPortrait = isSocialPortrait || isBWPortrait;
+
   const socialPortraitBlock = `\
 CLEAN AUTHENTIC PORTRAIT:
 Natural soft light — window light, overcast daylight, or soft studio glow.
@@ -519,6 +528,18 @@ not in a luxury magazine campaign.
 FORBIDDEN: Vogue aesthetic, fashion editorial energy, luxury campaign styling,
 dramatic lighting, evening glamour, yacht or luxury interior backgrounds,
 AI doll look, exaggerated beauty, over-retouching, fantasy costume, cosplay.`;
+
+  const bwPortraitBlock = `\
+BLACK & WHITE PORTRAIT (critical output requirement):
+RENDER THE ENTIRE IMAGE IN PURE BLACK AND WHITE — full grayscale, zero color, no tint.
+This is a premium monochrome studio portrait: Vogue / Harper's Bazaar editorial level.
+Rich tonal range — luminous skin tones in grayscale, clean beautiful contrast without harsh shadows.
+Studio portrait lighting: soft directional key light, gentle fill, minimal shadow play.
+Background: simple, clean, minimal — plain studio or soft gradient grey.
+Fashion: simple elegant dark jacket or structured blouse, minimal jewelry — no patterns, no bright colors.
+Expression: strong, characterful, intelligent, composed. Timeless editorial presence.
+FORBIDDEN: any color tint (warm or cool), sepia effect, horror aesthetic, noir darkness,
+heavy film grain, harsh dramatic shadows, cheap black-and-white filter effect.`;
 
   // LITTLE CEO GIRL — детский luxury cinematic portrait. Активен только если isEditorial = false.
   const isLittleCeoGirl = !isEditorial &&
@@ -603,16 +624,16 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     ...(isEditorial
       ? [
           // isSocialPortrait отключает тяжёлые luxury блоки — они противоречат clean portrait
-          ...(!isSocialPortrait ? [auraBlock, ''] : []),
-          ...(!isSocialPortrait ? [luxuryAdaptBlock, ''] : []),
+          ...(!isCleanPortrait ? [auraBlock, ''] : []),
+          ...(!isCleanPortrait ? [luxuryAdaptBlock, ''] : []),
           editorialBlock, '',
-          ...(!isSocialPortrait ? [fashionBlock, ''] : []),
+          ...(!isCleanPortrait ? [fashionBlock, ''] : []),
           candorBlock, '',
-          ...(!isSocialPortrait ? [magnetismBlock, ''] : []),
-          ...(!isSocialPortrait ? [femininityBlock, ''] : []),
+          ...(!isCleanPortrait ? [magnetismBlock, ''] : []),
+          ...(!isCleanPortrait ? [femininityBlock, ''] : []),
           eyeContactBlock, '',
           cinematicRealismBlock, '',
-          ...(!isSocialPortrait ? [antiCheapBlock, ''] : []),
+          ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
           antiRepetitionBlock, '',
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
@@ -620,12 +641,13 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
           ...(isGoddess ? [goddessBlock, ''] : []),
           ...(isEliteSport ? [eliteSportBlock, ''] : []),
           ...(isSocialPortrait ? [socialPortraitBlock, ''] : []),
+          ...(isBWPortrait ? [bwPortraitBlock, ''] : []),
         ]
       : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
     // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
-    ...(isEditorial && !isSocialPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
+    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
