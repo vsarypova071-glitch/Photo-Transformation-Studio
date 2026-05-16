@@ -65,6 +65,8 @@ export function buildNegativePrompt(): string {
     'influencer glamour aesthetic', 'over-styled CGI fashion',
     'fashion model face', 'runway model transformation', 'beauty-face geometry',
     'altered facial proportions', 'editorial face reinterpretation', 'stylized facial anatomy',
+    'different person', 'generic AI face', 'changed facial proportions', 'wrong eye spacing',
+    'distorted face', 'AI doll face',
     // Magnetism / femininity
     'duck lips', 'exaggerated seduction', 'artificial sexiness', 'emotionally empty posing',
     'escort aesthetic', 'vulgar glamour', 'nightclub energy', 'cheap luxury',
@@ -100,7 +102,7 @@ The attached image defines who this person is — match their face exactly.`;
 IDENTITY PRESERVATION (strict):
 - Do not alter facial structure, face shape, nose, lips, eyes, jawline, or cheekbones.
 - Do not change age, natural asymmetry, or distinguishing personal features.
-- Do not beautify, idealize, or make the person look like a model unless explicitly requested.
+- Do not beautify, idealize, or transform the person into a fashion-model archetype.
 - The person must be immediately recognizable as the same individual from the reference photo.
 - Preserve the subject's natural eye openness and alertness exactly as in the reference.
 - Do not add artificial eyelid heaviness, drooping, or tired-eye effect.
@@ -112,15 +114,29 @@ IDENTITY PRESERVATION (strict):
 - Do not widen, shorten, soften, or round the face shape.
 - Preserve natural cheek volume distribution and facial proportions from the reference image.
 - Avoid artificial facial softening or generalized beauty-face geometry.
-FACIAL GEOMETRY LOCK:
-- Preserve exact inter-eye distance from reference image.
-- Preserve exact upper-face and lower-face proportions.
-- Preserve exact facial width-to-height ratio.
-- Preserve exact cheek structure and jaw proportions.
-- Preserve the natural oval facial silhouette from the reference.
-- Do not reinterpret facial anatomy for editorial aesthetics.
-- Do not transform the subject into a fashion-model facial structure.
-- Face identity accuracy is MORE important than cinematic styling.`;
+FACE GEOMETRY LOCK (copy exactly from reference — every item):
+- Inter-eye distance: exact same spacing as in the reference image.
+- Eye shape: exact eyelid contour, eye size, natural openness.
+- Eye color: preserve natural iris color and pattern exactly.
+- Eye placement: exact vertical and horizontal position within face.
+- Brow shape, thickness, arch, and position — identical to reference.
+- Nose shape, nose width, bridge height, and tip form — identical to reference.
+- Lip shape, fullness, cupid's bow, and mouth width — identical to reference.
+- Cheekbone position and volume — identical to reference.
+- Facial oval and face silhouette — preserve natural contour.
+- Jawline shape and definition — identical to reference.
+- Chin shape and projection — identical to reference.
+- Age: preserve the subject's exact visible age — do not rejuvenate or age the face.
+- Ethnicity and natural skin undertone — do not generalize or Westernize features.
+- Natural face proportions — do not reinterpret for editorial aesthetics.
+- Face identity accuracy is MORE important than cinematic styling.
+ALLOWED grooming (enhances without altering the person):
+- Style-appropriate makeup applied naturally over the real face.
+- Neat, styled hairstyle matching the editorial direction.
+- Beautiful realistic skin — natural texture, healthy glow, no plastic smoothing.
+FORBIDDEN: changing facial anatomy, creating a fashion-model version of this face,
+smoothing away natural asymmetry, generalizing ethnic features,
+replacing the face with a different-looking person.`;
 
   // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
   // Противодействует эффекту манекена и CGI-рендера.
@@ -131,6 +147,51 @@ REALISM (natural photo):
 - Expression: natural, human, emotionally present. Avoid blank stare, static frozen face, or artificial smile.
 - Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
 - Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
+
+  // [FULL BODY FACE LOCK] — усиленный блок при full-body режиме.
+  // При дальней дистанции кадра лица дрейфуют к generic/doll. Этот блок предотвращает это.
+  const fullBodyFaceLockBlock = `\
+FULL BODY FACE IDENTITY LOCK (reinforced):
+In full-body framing, faces are rendered smaller and drift toward generic or doll-like appearance.
+This MUST be prevented. The face in full-body must be the same person as the reference photo.
+
+FACE AT FULL-BODY DISTANCE:
+- High facial consistency: the face must be recognizable as the exact same person from the reference.
+- Preserve exact eye spacing — inter-eye distance must match the reference at any frame scale.
+- Preserve exact eye shape, eye color, iris pattern — do not simplify or generalize.
+- Preserve exact eye placement within the face — vertical and horizontal position.
+- Preserve brow shape, arch, thickness, position — identical to reference.
+- Preserve nose shape, width, bridge, tip — do not soften at any size.
+- Preserve lip shape, fullness, cupid's bow — identical to reference.
+- Preserve cheekbone position and volume — identical to reference.
+- Preserve jaw shape and chin form — no softening at full-body scale.
+- Preserve face oval and facial silhouette — natural contour from reference.
+- Preserve the subject's exact age — do not rejuvenate the face.
+- Preserve ethnicity and natural skin undertone — do not generalize features.
+- Do not switch to a generic editorial-model face because the face is smaller in frame.
+
+BODY TYPE PRESERVATION:
+- Preserve the subject's natural body type and proportions from the reference photo.
+- Preserve realistic body structure — do not alter the person's actual build.
+- Preserve natural weight appearance — do not slim down or enlarge the body.
+- Head size: anatomically correct relative to body — standard human head-to-body ratio.
+- Shoulder width, waist, hip proportions: natural — do not distort or idealize.
+- Leg and torso proportions: realistic — no fashion-model elongation.
+- Body language: natural, elegant, grounded — not mannequin-stiff or doll-posed.
+
+ALLOWED:
+- Beautiful realistic skin, natural cinematic glow.
+- Style-appropriate makeup, elegant hairstyle.
+- Cinematic lighting that flatters without distorting.
+
+FORBIDDEN in full-body mode:
+- Tiny head: head rendered too small relative to body.
+- Face replacement: different-looking person's face due to smaller face size in frame.
+- Body slimming or body enlargement — preserve the real person's body type.
+- Unrealistic skinny waist, exaggerated slim body, oversized curves, fitness-model body swap.
+- Doll anatomy: plastic proportions, fake silhouette, porcelain skin.
+- Limb distortion: elongated legs, impossibly narrow waist, altered anatomy.
+- Mannequin appearance, body distortion, doll posture.`;
 
   // ── EDITORIAL БЛОКИ (только для взрослых business/luxury/fashion стилей) ──
 
@@ -503,7 +564,10 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
   // отдельное поле negative_prompt, поэтому список запретов идёт в текст.
   // Lifestyle/kids добавляет свои специфичные термины поверх базового списка.
   const lifestyleAvoidExtra = ', adult fashion pose, luxury glamour child model, stiff school portrait, mannequin child pose, horror atmosphere, creepy fantasy, plastic AI children, cheap carnival costume, dark scary atmosphere, repetitive compositions, empty expression, dead eyes';
-  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}`;
+  const fullBodyAvoidExtra = input.isFullBody
+    ? ', tiny head, elongated limbs, unrealistic skinny body, body slimming, body enlargement, fake curves, fitness model body replacement, doll anatomy, body distortion, body type change, wrong body proportions'
+    : '';
+  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}`;
 
   return [
     // ── Глобальные блоки ──────────────────────────────────────────────────────
@@ -511,6 +575,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     '',
     identityBlock,
     '',
+    ...(input.isFullBody ? [fullBodyFaceLockBlock, ''] : []),
     realismBlock,
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
