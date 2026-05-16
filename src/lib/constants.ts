@@ -13,6 +13,7 @@ import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
 import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
 import boginyaImg from '@/assets/styles/boginya.png';
 import tikhayaRoskoshImg from '@/assets/styles/quiet-luxury.png';
+import idealnyj_kadrImg from '@/assets/styles/idealnyj-kadr.png';
 
 const STYLES_RAW: Style[] = [
   // РЕАЛИЗМ - 12 стилей
@@ -113,6 +114,15 @@ const STYLES_RAW: Style[] = [
     previewUrl: boginyaImg
   },
 
+  {
+    id: 'social_portrait',
+    name: 'ИДЕАЛЬНЫЙ КАДР',
+    category: 'realistic',
+    description: 'Естественный premium-портрет для соцсетей, работы и личного бренда.',
+    prompt: '',
+    previewUrl: idealnyj_kadrImg
+  },
+
   // ТИХАЯ РОСКОШЬ — old money lifestyle, quiet luxury
   {
     id: 'royal_bear',
@@ -138,6 +148,7 @@ const REALISTIC_ORDER = [
   'quiet_luxury',          // МИР БУДУЩЕГО
   'luxe_editorial',        // ВЫСОКАЯ МОДА
   'intellectual_elegance', // БОГИНЯ
+  'social_portrait',       // ИДЕАЛЬНЫЙ КАДР
 ];
 
 const realisticOrdered = REALISTIC_ORDER
