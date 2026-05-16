@@ -20,7 +20,7 @@ import { createLogger } from '@/utils/logger';
 
 const log = createLogger('StylesService');
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
-const CACHE_KEY = 'poto.styles.cache.v1';
+const CACHE_KEY = 'poto.styles.cache.v2';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 час
 
 interface ApiStyle {
@@ -78,13 +78,16 @@ const RU_CATEGORY_TO_KEY: Record<string, StyleCategory> = {
 };
 
 function adapt(api: ApiStyle): Style {
-  // 1. Если есть новая category (русское имя из БД) — мапим её в ASCII-ключ фронта.
-  // 2. Иначе берём legacy_category (так живут все 13 adult-стилей).
-  // 3. Если и того нет — fallback 'realistic' как самый широкий.
+  // 1. Если стиль известен в bundle — берём его UI-категорию (новые табы).
+  // 2. Если есть новая category из БД (русское имя) — мапим в ASCII-ключ.
+  // 3. Иначе берём legacy_category.
+  // 4. Fallback — 'realistic' (широкий).
+  const bundleStyle = BUNDLED_STYLES.find((s) => s.id === api.id);
   const fromCategory = api.category && RU_CATEGORY_TO_KEY[api.category]
     ? RU_CATEGORY_TO_KEY[api.category]
     : null;
   const cat: StyleCategory =
+    bundleStyle?.category ??
     fromCategory ??
     (api.legacyCategory as StyleCategory | null) ??
     'realistic';

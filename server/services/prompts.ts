@@ -316,9 +316,9 @@ Each image should feel like a different moment from the same luxury cinematic un
 
   // ── СТИЛЬ-СПЕЦИФИЧНЫЕ БЛОКИ (детектируются по ключевым словам в stylePrompt) ─
 
-  // FUTURE LUXURY — активируется для МИР БУДУЩЕГО и других sci-fi / future стилей.
+  // FUTURE LUXURY — активируется для НЕОНОВЫЙ ГОРОД и других sci-fi / future стилей.
   const isFutureLuxury = isEditorial &&
-    /future|futurist|sci-fi|scifi|neon|cyberpunk|architectural.*tech|МИР БУДУЩЕГО/i.test(input.stylePrompt);
+    /CYBER LUXURY|НЕОНОВЫЙ ГОРОД|future|futurist|sci-fi|scifi|cyberpunk|architectural.*tech/i.test(input.stylePrompt);
 
   const futureLuxuryBlock = `\
 FUTURE LUXURY:
@@ -330,10 +330,10 @@ Avoid: cyberpunk clichés, latex fetish aesthetics, gamer visuals, sci-fi cospla
   const isOldMoneyEstate = isEditorial &&
     /ТИХАЯ РОСКОШЬ|тихая.*роскошь|quiet.*luxury.*lifestyle|old.*money.*lifestyle/i.test(input.stylePrompt);
 
-  // WILD LUXURY — активируется для ДИКАЯ ПРИРОДА и wild/nature стилей.
-  // Не активируется для ТИХАЯ РОСКОШЬ (old money lifestyle).
+  // WILD LUXURY — активируется только для стилей с явными животными (волк, пантера и т.д.).
+  // Намеренно НЕ срабатывает на ДИКАЯ ПРИРОДА / FRESH WILDERNESS (там нет животных).
   const isWildLuxury = isEditorial && !isOldMoneyEstate &&
-    /wild|panther|wolf|lion|horse|royal.*bear|bear|forest|nature|охот|царск|WILD/i.test(input.stylePrompt);
+    /WILD LUXURY|panther|wolf|lion|royal.*bear/i.test(input.stylePrompt);
 
   const wildLuxuryBlock = `\
 CINEMATIC WILD LUXURY:
@@ -408,7 +408,7 @@ WHAT TO AVOID:
 
   // БОГИНЯ / GODDESS — luxury cinematic goddess aesthetic. Активен для editorial стилей.
   const isGoddess = isEditorial &&
-    /БОГИНЯ|богин|goddess|GODDESS|intellectual.*elegance/i.test(input.stylePrompt);
+    /DIVINE CINEMATIC|БОГИНЯ|богин|goddess|GODDESS|intellectual.*elegance/i.test(input.stylePrompt);
 
   const goddessBlock = `\
 GODDESS LUXURY EDITORIAL:
@@ -459,9 +459,9 @@ WHAT TO AVOID:
 - Generic white-column temple backgrounds
 - Theatrical "goddess pose" frozen stiffness`;
 
-  // ELITE SPORT — активируется для ЭЛИТНЫЙ СПОРТ и luxury fitness стилей.
+  // ELITE SPORT — активируется для СПОРТ и luxury fitness стилей.
   const isEliteSport = isEditorial &&
-    /elite.sport|ЭЛИТНЫЙ СПОРТ|luxury.*fitness|luxury.*gym|luxury.*sport|fitness.*luxury|sport.*luxury|athletic.*luxury|luxury.*wellness|luxury.*tennis|luxury.*pilates/i.test(input.stylePrompt);
+    /PREMIUM ATHLETIC|elite.sport|ЭЛИТНЫЙ СПОРТ|СПОРТ|luxury.*fitness|luxury.*gym|luxury.*sport|fitness.*luxury|sport.*luxury|athletic.*luxury|luxury.*wellness|luxury.*tennis|luxury.*pilates/i.test(input.stylePrompt);
 
   const eliteSportBlock = `\
 LUXURY SPORT EDITORIAL:
@@ -499,11 +499,11 @@ WHAT TO AVOID:
 - Aggressive macho gym mood
 - Glossy fitness magazine cheese`;
 
-  // SOCIAL PORTRAIT / ИДЕАЛЬНЫЙ КАДР — чистый authentic portrait для соцсетей и личного бренда.
+  // SOCIAL PORTRAIT / ОБРАЗ ДЛЯ СОЦСЕТЕЙ — чистый authentic portrait для соцсетей и личного бренда.
   // Отключает тяжёлые luxury-editorial блоки (aura, fashion, magnetism, femininity, antiCheap).
   // Сохраняет: identity, realism, editorialBlock (композиция), candorBlock, eyeContact, cinematicRealism.
   const isSocialPortrait = isEditorial &&
-    /social.portrait|ИДЕАЛЬНЫЙ КАДР|clean.authentic.portrait|personal.brand.*portrait|LinkedIn.*portrait|social.media.*portrait/i.test(input.stylePrompt);
+    /PREMIUM INFLUENCER PORTRAIT|ОБРАЗ ДЛЯ СОЦСЕТЕЙ|social.portrait|ИДЕАЛЬНЫЙ КАДР|clean.authentic.portrait|personal.brand.*portrait/i.test(input.stylePrompt);
 
   const socialPortraitBlock = `\
 CLEAN AUTHENTIC PORTRAIT:
