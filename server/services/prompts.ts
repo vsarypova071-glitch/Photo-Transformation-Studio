@@ -499,6 +499,27 @@ WHAT TO AVOID:
 - Aggressive macho gym mood
 - Glossy fitness magazine cheese`;
 
+  // SOCIAL PORTRAIT / ИДЕАЛЬНЫЙ КАДР — чистый authentic portrait для соцсетей и личного бренда.
+  // Отключает тяжёлые luxury-editorial блоки (aura, fashion, magnetism, femininity, antiCheap).
+  // Сохраняет: identity, realism, editorialBlock (композиция), candorBlock, eyeContact, cinematicRealism.
+  const isSocialPortrait = isEditorial &&
+    /social.portrait|ИДЕАЛЬНЫЙ КАДР|clean.authentic.portrait|personal.brand.*portrait|LinkedIn.*portrait|social.media.*portrait/i.test(input.stylePrompt);
+
+  const socialPortraitBlock = `\
+CLEAN AUTHENTIC PORTRAIT:
+Natural soft light — window light, overcast daylight, or soft studio glow.
+No dramatic shadows, no cinematic mood lighting, no fashion campaign atmosphere.
+Clean neutral or softly blurred background. No expensive interiors, no luxury environments.
+Realistic proportions — preserve the subject's real body, no elongation, no slimming.
+Styling: business casual or smart casual — wearable, real, not curated by a stylist.
+Natural makeup, natural hair — neat and polished but not editorial.
+Expression: warm, approachable, confident, authentic. Not model-blank, not performative.
+Result: the best real version of this person — as they would appear in a premium real-life photo,
+not in a luxury magazine campaign.
+FORBIDDEN: Vogue aesthetic, fashion editorial energy, luxury campaign styling,
+dramatic lighting, evening glamour, yacht or luxury interior backgrounds,
+AI doll look, exaggerated beauty, over-retouching, fantasy costume, cosplay.`;
+
   // LITTLE CEO GIRL — детский luxury cinematic portrait. Активен только если isEditorial = false.
   const isLittleCeoGirl = !isEditorial &&
     /little.ceo|LITTLE CEO|МАЛЕНЬКАЯ ЛЕДИ|little.*boss.*girl|ceo.*girl|child.*executive/i.test(input.stylePrompt);
@@ -581,27 +602,30 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
     ...(isEditorial
       ? [
-          auraBlock, '',
-          luxuryAdaptBlock, '',
+          // isSocialPortrait отключает тяжёлые luxury блоки — они противоречат clean portrait
+          ...(!isSocialPortrait ? [auraBlock, ''] : []),
+          ...(!isSocialPortrait ? [luxuryAdaptBlock, ''] : []),
           editorialBlock, '',
-          fashionBlock, '',
+          ...(!isSocialPortrait ? [fashionBlock, ''] : []),
           candorBlock, '',
-          magnetismBlock, '',
-          femininityBlock, '',
+          ...(!isSocialPortrait ? [magnetismBlock, ''] : []),
+          ...(!isSocialPortrait ? [femininityBlock, ''] : []),
           eyeContactBlock, '',
           cinematicRealismBlock, '',
-          antiCheapBlock, '',
+          ...(!isSocialPortrait ? [antiCheapBlock, ''] : []),
           antiRepetitionBlock, '',
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
           ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),
           ...(isGoddess ? [goddessBlock, ''] : []),
           ...(isEliteSport ? [eliteSportBlock, ''] : []),
+          ...(isSocialPortrait ? [socialPortraitBlock, ''] : []),
         ]
       : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
-    ...(isEditorial ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
+    // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
+    ...(isEditorial && !isSocialPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
