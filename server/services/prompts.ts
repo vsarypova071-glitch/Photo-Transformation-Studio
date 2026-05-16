@@ -345,6 +345,59 @@ WHAT TO AVOID:
 - Flashy logos, nouveau riche aesthetic, gold overload
 - Fitness model energy, fashion editorial overload`;
 
+  // БОГИНЯ / GODDESS — luxury cinematic goddess aesthetic. Активен для editorial стилей.
+  const isGoddess = isEditorial &&
+    /БОГИНЯ|богин|goddess|GODDESS|intellectual.*elegance/i.test(input.stylePrompt);
+
+  const goddessBlock = `\
+GODDESS LUXURY EDITORIAL:
+CONCEPT: A powerful, feminine, cinematic presence in luxury settings.
+Not a temple goddess — a real woman who embodies divine feminine energy
+through quiet luxury, editorial composition, and cinematic atmosphere.
+
+SCENE VARIETY (must change across every generation — never repeat):
+- Sea villa terrace with Mediterranean light
+- Luxury yacht deck, golden sea horizon
+- Marble terrace of a luxury resort
+- Infinity pool overlooking Mediterranean coast
+- European luxury hotel interior, architectural hallway
+- Private mansion salon with tall windows and soft light
+- Sunset on a luxury estate terrace
+- Coastal cliffside with flowing fabrics and warm wind
+- Luxury resort garden, blooming flowers, premium architecture
+- Interior of a luxury suite — mirrors, candles, rich textures
+
+WARDROBE:
+- Flowing silk dresses in white, cream, ivory, gold, soft beige
+- Couture-inspired silhouettes — draped, elegant, sculptural
+- Minimal luxury jewelry: fine gold, diamonds, delicate chains
+- Premium neutral palette — no fast fashion, no streetwear, no costume look
+- Every outfit must feel like a luxury fashion campaign editorial
+
+VISUAL ATMOSPHERE:
+- Rich warm golden-hour light, Mediterranean sunset glow
+- Soft cinematic wind through flowing fabric
+- Premium color grading — warm tones, cinematic depth, rich shadows
+- Natural realistic skin texture — no plastic, no airbrushing
+- Shallow depth of field, luxury fashion photography composition
+- Expensive architecture framing the subject
+
+WOMAN'S ENERGY:
+- Powerful, elegant, emotionally composed
+- Natural confident posing — never stiff or theatrical
+- Gaze: intense, intelligent, quietly magnetic
+- She owns the space she inhabits — effortlessly, not performatively
+
+WHAT TO AVOID:
+- Ancient temples or ruins dominating the frame
+- Medieval fantasy, game aesthetic, cosplay, armor
+- Cheap princess look or fairytale fantasy
+- Plastic AI skin, wax face, synthetic beauty
+- Same location repeated across images
+- Same dress silhouette repeated
+- Generic white-column temple backgrounds
+- Theatrical "goddess pose" frozen stiffness`;
+
   // ELITE SPORT — активируется для ЭЛИТНЫЙ СПОРТ и luxury fitness стилей.
   const isEliteSport = isEditorial &&
     /elite.sport|ЭЛИТНЫЙ СПОРТ|luxury.*fitness|luxury.*gym|luxury.*sport|fitness.*luxury|sport.*luxury|athletic.*luxury|luxury.*wellness|luxury.*tennis|luxury.*pilates/i.test(input.stylePrompt);
@@ -477,6 +530,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
           ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),
+          ...(isGoddess ? [goddessBlock, ''] : []),
           ...(isEliteSport ? [eliteSportBlock, ''] : []),
         ]
       : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
