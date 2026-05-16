@@ -265,8 +265,13 @@ Future aesthetics must feel elegant, architectural, wealthy, cinematic, emotiona
 Preferred inspiration: Dubai elite, chrome minimalism, luxury skyscrapers, sculptural fashion, future haute couture.
 Avoid: cyberpunk clichés, latex fetish aesthetics, gamer visuals, sci-fi cosplay, neon overload.`;
 
-  // WILD LUXURY — активируется для ЦАРСКАЯ ОХОТА, ДИКАЯ ПРИРОДА и wild/nature стилей.
-  const isWildLuxury = isEditorial &&
+  // ТИХАЯ РОСКОШЬ / OLD MONEY LIFESTYLE — quiet luxury, old money estate. Активен для editorial стилей.
+  const isOldMoneyEstate = isEditorial &&
+    /ТИХАЯ РОСКОШЬ|тихая.*роскошь|quiet.*luxury.*lifestyle|old.*money.*lifestyle/i.test(input.stylePrompt);
+
+  // WILD LUXURY — активируется для ДИКАЯ ПРИРОДА и wild/nature стилей.
+  // Не активируется для ТИХАЯ РОСКОШЬ (old money lifestyle).
+  const isWildLuxury = isEditorial && !isOldMoneyEstate &&
     /wild|panther|wolf|lion|horse|royal.*bear|bear|forest|nature|охот|царск|WILD/i.test(input.stylePrompt);
 
   const wildLuxuryBlock = `\
@@ -297,6 +302,48 @@ WHAT TO AVOID:
 - Cheap jungle look, chaotic action scenes.
 - Aggressive attack postures or dangerous compositions.
 - Cosplay, fantasy warrior aesthetic.`;
+
+  const oldMoneyEstateBlock = `\
+QUIET LUXURY LIFESTYLE:
+CONCEPT: Modern old money aesthetic — calm, expensive, naturally elegant.
+Not flashy, not performative. Quietly wealthy. Effortlessly cinematic.
+The woman embodies European luxury lifestyle: intelligent, composed, expensive.
+
+SCENE VARIETY (vary across generations):
+- Luxury countryside hotel exterior and golden terrace
+- European streets with warm autumn light
+- Premium breakfast terrace, morning coffee moment
+- Countryside weekend — horses, labradors, golden retrievers as elegant companions
+- Golf club or horse club atmosphere
+- Luxury car moment (Range Rover, countryside road)
+- Dog walking in elegant park or estate grounds
+- Cashmere coat, countryside walk, golden hour light
+- Luxury travel lifestyle, premium hotel lounge
+
+WARDROBE:
+- Cashmere, wool, premium tailoring, luxury casual elegance
+- Quiet luxury palette: cream, camel, espresso, olive, ivory, beige, dark brown, soft black
+- No visible logos, no streetwear, no party dressing
+- Expensive simplicity — Ralph Lauren / Loro Piana / Armani countryside mood
+
+VISUAL ATMOSPHERE:
+- Soft golden-hour light, morning mist, warm autumn tones
+- Realistic catchlight in eyes, natural skin tones, cinematic natural shadows
+- Expensive calm atmosphere — real wealth, not Instagram lifestyle performance
+- Premium editorial composition, luxury magazine visual language
+
+WOMAN'S ENERGY:
+- Naturally elegant, emotionally composed, subtle confidence
+- Intellectual warmth, alive eyes — not empty AI stare
+- No influencer posing, no performative luxury, no fashion-walk energy
+
+WHAT TO AVOID:
+- Castles dominating the frame, historical costumes, royal cosplay
+- Hunting weapons, trophies, fantasy aristocracy
+- Cheap glamour, influencer posing, oversexualized styling
+- AI mannequin face, plastic skin
+- Flashy logos, nouveau riche aesthetic, gold overload
+- Fitness model energy, fashion editorial overload`;
 
   // ELITE SPORT — активируется для ЭЛИТНЫЙ СПОРТ и luxury fitness стилей.
   const isEliteSport = isEditorial &&
@@ -429,6 +476,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
           antiRepetitionBlock, '',
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
+          ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),
           ...(isEliteSport ? [eliteSportBlock, ''] : []),
         ]
       : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),

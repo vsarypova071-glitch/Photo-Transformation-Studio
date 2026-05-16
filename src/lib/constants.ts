@@ -12,7 +12,7 @@ import romantikaImg from '@/assets/styles/romantika.png';
 import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
 import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
 import boginyaImg from '@/assets/styles/boginya.png';
-import carskayaOhotaImg from '@/assets/styles/carskaya-ohota.png';
+import tikhayaRoskoshImg from '@/assets/styles/quiet-luxury.png';
 
 const STYLES_RAW: Style[] = [
   // РЕАЛИЗМ - 12 стилей
@@ -113,14 +113,14 @@ const STYLES_RAW: Style[] = [
     previewUrl: boginyaImg
   },
 
-  // ПРЕМИУМ - с природой
+  // ТИХАЯ РОСКОШЬ — old money lifestyle, quiet luxury
   {
     id: 'royal_bear',
-    name: 'ЦАРСКАЯ ОХОТА',
+    name: 'ТИХАЯ РОСКОШЬ',
     category: 'wild',
-    description: 'Аристократический outdoor-стиль с лесной атмосферой, статусом и cinematic realism.',
+    description: 'Дорогая спокойная жизнь в стиле old money: luxury lifestyle, европейские локации и cinematic quiet luxury.',
     prompt: '',
-    previewUrl: carskayaOhotaImg
+    previewUrl: tikhayaRoskoshImg
   }
 ];
 
