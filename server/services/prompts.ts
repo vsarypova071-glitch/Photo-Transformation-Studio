@@ -338,28 +338,71 @@ WHAT TO AVOID:
 - Aggressive macho gym mood
 - Glossy fitness magazine cheese`;
 
-  // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
-  // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
-  // на детскую спонтанность и семейную теплоту. Активен только если isEditorial = false.
+  // LITTLE CEO GIRL — детский luxury cinematic portrait. Активен только если isEditorial = false.
+  const isLittleCeoGirl = !isEditorial &&
+    /little.ceo|LITTLE CEO|МАЛЕНЬКАЯ ЛЕДИ|little.*boss.*girl|ceo.*girl|child.*executive/i.test(input.stylePrompt);
+
+  const littleCeoGirlBlock = `\
+LITTLE CEO GIRL:
+Luxury cinematic portrait of a confident young girl in an elegant tailored business suit.
+Modern executive office with panoramic skyline windows, premium architecture,
+warm natural daylight, expensive cinematic atmosphere.
+
+The child should look intelligent, charismatic, calm and naturally confident.
+She is not posing like an adult fashion model.
+She looks like a future leader with authentic child energy.
+
+Quiet luxury aesthetic:
+tailored blazer, white shirt, premium fabrics, minimal elegant styling,
+clean executive fashion, natural hairstyle, soft expensive textures.
+
+Scenes may include:
+executive office, modern desk, city skyline, luxury library,
+conference room, architectural interior, business lounge, creative workspace.
+
+Emotion:
+confidence, curiosity, intelligence, warmth, focus, dream-big energy.
+
+Visual direction:
+cinematic realism, Netflix-level photography, editorial luxury portrait,
+soft sunlight, beautiful reflections, depth, natural skin texture, alive expressive eyes.
+
+No exaggerated glamour. No heavy makeup. No sexualized styling.
+No plastic AI beauty. No adult businesswoman posing. No fashion runway energy.
+The child must remain natural, realistic, emotionally alive and age-appropriate.`;
+
+  // [CHILD EMOTION & CINEMATIC LIFE] — живые эмоции, cinematic energy, Disney/Netflix-уровень.
+  // Заменяет старый family-lifestyle блок. Активен только если isEditorial = false.
   const childLifestyleBlock = `\
-CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
-- Natural, candid, lifestyle photography feeling — not a studio session.
-- Children and family members should look alive, emotionally present, and in motion.
-- Posing: relaxed and spontaneous. Natural weight shift, playful movement,
-  organic body language. Children caught mid-laugh, mid-run, mid-interaction.
-- Expression: genuine curiosity, warmth, laughter, natural childhood energy.
-  No blank stare, no frozen smile, no formal sitting pose.
-- Composition: warm lifestyle framing. Soft rule-of-thirds, natural negative space.
-  Avoid symmetric centered school-portrait composition.
-- Lighting: soft natural daylight, golden hour, or warm indoor ambient light.
-  No flat harsh studio lighting.
-- Atmosphere: family-photo warmth and emotional authenticity.
-  Real moment — not a fashion shoot, not a commercial campaign.`;
+CHILD EMOTION & CINEMATIC LIFE:
+Children must look alive, emotional, natural and cinematic.
+Real happiness, curiosity, confidence, wonder, playful energy, warm genuine smiles.
+No empty AI stare, no frozen mannequin expression, no adult-like posing.
+
+Every scene should feel like a real movie moment:
+running, laughing, exploring, dreaming, performing, discovering, interacting with the world.
+
+Bright elegant wardrobe with premium cinematic styling:
+soft luxury fabrics, cozy textures, refined children fashion, natural colors, light tones, rich visual depth.
+
+Locations must feel magical, immersive and varied:
+snow landscapes, modern cities, libraries, elegant offices, nature, studios,
+luxury interiors, cinematic fantasy realism.
+
+Avoid repetition:
+different camera angles, different lighting, different emotions,
+different environments, different poses, different compositions in every generation.
+
+Soft cinematic lighting, emotional storytelling, realistic skin texture,
+natural child proportions, premium Disney/Netflix-level visual atmosphere.
+
+NO: empty expression, cheap costume look, plastic skin, adult glamour makeup,
+AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
 
   // [AVOID] — встроенный negative prompt. Gemini/OpenRouter не принимает
   // отдельное поле negative_prompt, поэтому список запретов идёт в текст.
   // Lifestyle/kids добавляет свои специфичные термины поверх базового списка.
-  const lifestyleAvoidExtra = ', adult fashion pose, luxury glamour child model, stiff school portrait, mannequin child pose';
+  const lifestyleAvoidExtra = ', adult fashion pose, luxury glamour child model, stiff school portrait, mannequin child pose, horror atmosphere, creepy fantasy, plastic AI children, cheap carnival costume, dark scary atmosphere, repetitive compositions, empty expression, dead eyes';
   const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}`;
 
   return [
@@ -388,7 +431,7 @@ CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
           ...(isEliteSport ? [eliteSportBlock, ''] : []),
         ]
-      : [childLifestyleBlock, '']),
+      : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
     ...(isEditorial ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
