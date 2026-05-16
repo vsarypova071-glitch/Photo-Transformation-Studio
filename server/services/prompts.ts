@@ -270,11 +270,33 @@ Avoid: cyberpunk clichés, latex fetish aesthetics, gamer visuals, sci-fi cospla
     /wild|panther|wolf|lion|horse|royal.*bear|bear|forest|nature|охот|царск|WILD/i.test(input.stylePrompt);
 
   const wildLuxuryBlock = `\
-WILD LUXURY:
-The environment feels exclusive, cinematic, expensive, emotionally powerful.
-Animals are symbolic presences: panther, wolf, lioness, horse — symbols of power and grace.
-The focus remains the woman and her luxury presence.
-Avoid: fantasy monsters, dinosaurs, survival aesthetics, chaos, adventure park energy.`;
+CINEMATIC WILD LUXURY:
+CONCEPT: A woman beside the enormous power of nature — not fantasy, not survival, but emotional mastery.
+The subject is elegant, expensive, emotionally composed, magnetic, cinematic.
+The animal is a cinematic presence: giant white wolf, majestic black panther, powerful lion,
+cinematic horse, elegant luxury dogs, or other symbolic wild animal.
+
+ANIMAL DIRECTION:
+- Animals must appear large, majestic, emotionally present, cinematic, realistic.
+- They are symbols of power and freedom — not pets, not zoo animals, not props.
+- The connection between woman and animal feels authentic, calm, emotionally powerful.
+- Animals must be rendered with premium photographic realism — no cartoon or fantasy rendering.
+
+VISUAL ATMOSPHERE:
+- Golden hour light, cinematic fog, luxury safari landscape, mountain wilderness,
+  northern forests, expensive nature aesthetic.
+- Flowing fabrics catching natural wind. Calm emotional power.
+- Premium fashion photography quality: composition, lighting, depth of field.
+- Nature feels expensive — remote, untouched, cinematic.
+
+WHAT TO AVOID:
+- Dinosaurs, fantasy monsters, mythological creatures.
+- Zoo aesthetic, cage, enclosure backgrounds.
+- Cartoon or illustrated animal rendering.
+- Survival aesthetic, adventure-camp energy.
+- Cheap jungle look, chaotic action scenes.
+- Aggressive attack postures or dangerous compositions.
+- Cosplay, fantasy warrior aesthetic.`;
 
   // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
   // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
