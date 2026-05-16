@@ -6,7 +6,7 @@ import dikayaPrirodaImg from '@/assets/styles/dikaya-priroda.png';
 import zimnyayaSkazkaImg from '@/assets/styles/zimnyaya-skazka.png';
 import skorostImg from '@/assets/styles/skorost.png';
 import rokovayaImg from '@/assets/styles/rokovaya.png';
-import zateryanniyMirImg from '@/assets/styles/zateryanniy-mir.png';
+import eliteSportImg from '@/assets/styles/elite-sport.png';
 import bolshoePatheshestvieImg from '@/assets/styles/bolshoe-puteshestvie.png';
 import romantikaImg from '@/assets/styles/romantika.png';
 import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
@@ -65,12 +65,12 @@ const STYLES_RAW: Style[] = [
     previewUrl: rokovayaImg
   },
   {
-    id: 'luxury_resort',
-    name: 'ЗАТЕРЯННЫЙ МИР',
+    id: 'elite_sport',
+    name: 'ЭЛИТНЫЙ СПОРТ',
     category: 'realistic',
-    description: 'Приключенческий стиль с атмосферой древнего мира, джунглей и cinematic expedition.',
+    description: 'Luxury cinematic fitness lifestyle. Elite performance, luxury wellness и powerful femininity.',
     prompt: '',
-    previewUrl: zateryanniyMirImg
+    previewUrl: eliteSportImg
   },
   {
     id: 'milano_style',
@@ -132,7 +132,7 @@ const REALISTIC_ORDER = [
   'scandinavian_minimal',  // ЗИМНЯЯ СКАЗКА
   'new_york_power',        // СКОРОСТЬ
   'evening_glamour',       // РОКОВАЯ
-  'luxury_resort',         // ЗАТЕРЯННЫЙ МИР
+  'elite_sport',           // ЭЛИТНЫЙ СПОРТ
   'milano_style',          // БОЛЬШОЕ ПУТЕШЕСТВИЕ
   'parisian_chic',         // РОМАНТИКА
   'quiet_luxury',          // МИР БУДУЩЕГО

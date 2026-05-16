@@ -298,6 +298,46 @@ WHAT TO AVOID:
 - Aggressive attack postures or dangerous compositions.
 - Cosplay, fantasy warrior aesthetic.`;
 
+  // ELITE SPORT — активируется для ЭЛИТНЫЙ СПОРТ и luxury fitness стилей.
+  const isEliteSport = isEditorial &&
+    /elite.sport|ЭЛИТНЫЙ СПОРТ|luxury.*fitness|luxury.*gym|luxury.*sport|fitness.*luxury|sport.*luxury|athletic.*luxury|luxury.*wellness|luxury.*tennis|luxury.*pilates/i.test(input.stylePrompt);
+
+  const eliteSportBlock = `\
+LUXURY SPORT EDITORIAL:
+CONCEPT: Elite performance lifestyle — not fitness influencer, not gym selfie, but luxury athletic culture.
+The woman feels expensive, disciplined, powerful, feminine, cinematic.
+
+SCENE VARIETY (use different scenarios across images):
+- Workout in panoramic luxury gym with city views
+- Tennis club elegant portrait
+- Pilates in marble wellness studio
+- Yoga in luxury light-filled space
+- Boxing with elegance and composure
+- Treadmill by floor-to-ceiling windows
+- Stretching in luxury wellness lounge
+- Sporty editorial portrait in premium activewear
+
+ENVIRONMENT:
+- Luxury gyms, marble interiors, panoramic city views
+- Private fitness clubs, tennis club aesthetic
+- Premium wellness spaces with cinematic light
+- Calm, expensive, architectural spaces
+
+WOMAN'S ENERGY:
+- Athletic luxury: strong but elegant, confident but composed
+- Feminine but powerful — discipline expressed through calm control
+- Premium activewear — Armani sport aesthetic, luxury sportswear
+- Cinematic emotional presence — not performing for camera, just living her life
+
+WHAT TO AVOID:
+- Cheap fitness influencer aesthetic
+- Neon gym lighting
+- Selfie vibe or social media fitness energy
+- Instagram fitness model expressions
+- Vulgar sportswear or bodybuilding aesthetic
+- Aggressive macho gym mood
+- Glossy fitness magazine cheese`;
+
   // [CHILD LIFESTYLE PHOTOGRAPHY] — candid energy для детских и семейных стилей.
   // Зеркалит editorial-layer по назначению, но без luxury/fashion и с акцентом
   // на детскую спонтанность и семейную теплоту. Активен только если isEditorial = false.
@@ -346,6 +386,7 @@ CHILD & FAMILY LIFESTYLE PHOTOGRAPHY:
           antiRepetitionBlock, '',
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
+          ...(isEliteSport ? [eliteSportBlock, ''] : []),
         ]
       : [childLifestyleBlock, '']),
     // ── Состав и технические параметры ───────────────────────────────────────
