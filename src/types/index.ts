@@ -5,7 +5,7 @@
    VIP = 'VIP'
  }
  
- export type StyleCategory = 'all' | 'business' | 'women' | 'travel' | 'nature' | 'sport' | 'bright' | 'kids' | 'realistic' | 'wild';
+ export type StyleCategory = 'realistic' | 'premium' | 'kids';
  
  export interface User {
    id: string;

@@ -316,8 +316,21 @@ Each image should feel like a different moment from the same luxury cinematic un
 
   // ── СТИЛЬ-СПЕЦИФИЧНЫЕ БЛОКИ (детектируются по ключевым словам в stylePrompt) ─
 
+  // ЛЕТНИЙ ГОРОД (quiet_luxury) — bright daylight summer urban. Строго до isFutureLuxury,
+  // чтобы не пересекаться с neon/cyber блоком.
+  const isSummerCity = isEditorial &&
+    /SUMMER ENERGY|ЛЕТНИЙ ГОРОД/i.test(input.stylePrompt);
+
+  const summerCityBlock = `\
+SUMMER CITY (mandatory output requirements):
+BRIGHT DAYLIGHT ONLY — warm orange-golden afternoon sunlight flooding the scene. No dark, moody or neon lighting.
+Setting: sun-drenched rooftop terrace with panoramic city views, vivid southern European street cafe, or bright beach promenade — open sky, warm air, summer energy.
+Color palette: warm orange, turquoise, coral, bright white, summer blue sky. Saturated, joyful, vibrant.
+Fashion: lightweight summer dress, casual chic in bright warm tones — orange, white, turquoise, coral.
+FORBIDDEN: neon lights, dark backgrounds, cyberpunk / sci-fi aesthetics, moody / low-key lighting, night scenes, dark color palette.`;
+
   // FUTURE LUXURY — активируется для НЕОНОВЫЙ ГОРОД и других sci-fi / future стилей.
-  const isFutureLuxury = isEditorial &&
+  const isFutureLuxury = isEditorial && !isSummerCity &&
     /CYBER LUXURY|НЕОНОВЫЙ ГОРОД|future|futurist|sci-fi|scifi|cyberpunk|architectural.*tech/i.test(input.stylePrompt);
 
   const futureLuxuryBlock = `\
@@ -635,6 +648,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
           cinematicRealismBlock, '',
           ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
           antiRepetitionBlock, '',
+          ...(isSummerCity ? [summerCityBlock, ''] : []),
           ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
           ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
           ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),

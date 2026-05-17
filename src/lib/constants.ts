@@ -14,18 +14,22 @@ import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
 import boginyaImg from '@/assets/styles/boginya.png';
 import tikhayaRoskoshImg from '@/assets/styles/quiet-luxury.png';
 import idealnyj_kadrImg from '@/assets/styles/idealnyj-kadr.png';
-// TODO: заменить на реальные превью после готовности изображений
-import creativestudioImg from '@/assets/styles/romantika.png';
 import bwportraitImg from '@/assets/styles/lider.png';
 
-// Порядок отображения в табах: hero-стили идут первыми внутри своей категории.
-// Категории — эмоциональные, не жанровые. Пользователь выбирает lifestyle fantasy.
 export const STYLES: Style[] = [
-  // ── БИЗНЕС: успех, статус, личный бренд ─────────────────────────────────────
+  // ── РЕАЛИЗМ: premium lifestyle для массового пользователя ───────────────────
+  {
+    id: 'social_portrait',
+    name: 'ОБРАЗ ДЛЯ СОЦСЕТЕЙ',
+    category: 'realistic',
+    description: 'Premium influencer aesthetic — естественный, чистый, дорогой.',
+    prompt: '',
+    previewUrl: idealnyj_kadrImg,
+  },
   {
     id: 'business_elite',
     name: 'ЛИДЕР',
-    category: 'business',
+    category: 'realistic',
     description: 'CEO, успех, статус — чистый дорогой офисный образ.',
     prompt: '',
     previewUrl: liderImg,
@@ -33,33 +37,15 @@ export const STYLES: Style[] = [
   {
     id: 'old_money',
     name: 'РОСКОШЬ',
-    category: 'business',
+    category: 'realistic',
     description: 'Тепло, дорого, спокойно — luxury lifestyle в европейском свете.',
     prompt: '',
     previewUrl: roskoshImg,
   },
   {
-    id: 'social_portrait',
-    name: 'ОБРАЗ ДЛЯ СОЦСЕТЕЙ',
-    category: 'business',
-    description: 'Premium influencer aesthetic — естественный, чистый, дорогой.',
-    prompt: '',
-    previewUrl: idealnyj_kadrImg,
-  },
-
-  // ── ЖЕНСКИЕ: сила, романтика, элегантность ───────────────────────────────────
-  {
-    id: 'intellectual_elegance',
-    name: 'БОГИНЯ',
-    category: 'women',
-    description: 'Эпичная женская сила — море, скалы, закат, cinematic.',
-    prompt: '',
-    previewUrl: boginyaImg,
-  },
-  {
     id: 'parisian_chic',
     name: 'РОМАНТИКА',
-    category: 'women',
+    category: 'realistic',
     description: 'Красивая жизнь, цветы, лето — Pinterest luxury lifestyle.',
     prompt: '',
     previewUrl: romantikaImg,
@@ -67,25 +53,15 @@ export const STYLES: Style[] = [
   {
     id: 'evening_glamour',
     name: 'РОКОВАЯ',
-    category: 'women',
+    category: 'realistic',
     description: 'Дорогая элегантность вечера — luxury restaurant, premium glamour.',
     prompt: '',
     previewUrl: rokovayaImg,
   },
-
-  // ── ПУТЕШЕСТВИЯ: яхты, Европа, тропики, горы ────────────────────────────────
-  {
-    id: 'new_york_power',
-    name: 'МОНАКО',
-    category: 'travel',
-    description: 'Яхты, Монако, дорогая динамичная жизнь.',
-    prompt: '',
-    previewUrl: skorostImg,
-  },
   {
     id: 'milano_style',
     name: 'БОЛЬШОЕ ПУТЕШЕСТВИЕ',
-    category: 'travel',
+    category: 'realistic',
     description: 'Luxury travel lifestyle — Италия, Испания, Средиземноморье.',
     prompt: '',
     previewUrl: bolshoePatheshestvieImg,
@@ -93,74 +69,76 @@ export const STYLES: Style[] = [
   {
     id: 'scandinavian_minimal',
     name: 'АЛЬПИЙСКАЯ СКАЗКА',
-    category: 'travel',
+    category: 'realistic',
     description: 'Winter luxury — шале, Альпы, снег, тепло и уют.',
     prompt: '',
     previewUrl: zimnyayaSkazkaImg,
   },
   {
-    id: 'royal_bear',
-    name: 'ТРОПИКИ',
-    category: 'travel',
-    description: 'Luxury vacation — пляж, бирюза, tropical villa, ocean.',
-    prompt: '',
-    previewUrl: tikhayaRoskoshImg,
-  },
-
-  // ── ПРИРОДА: воздух, свобода, северная эстетика ─────────────────────────────
-  {
     id: 'golden_hour_glow',
     name: 'ДИКАЯ ПРИРОДА',
-    category: 'nature',
+    category: 'realistic',
     description: 'Свобода, свежесть, северная эстетика — лес, горы, природа.',
     prompt: '',
     previewUrl: dikayaPrirodaImg,
   },
-
-  // ── СПОРТ ────────────────────────────────────────────────────────────────────
   {
     id: 'elite_sport',
     name: 'СПОРТ',
-    category: 'sport',
+    category: 'realistic',
     description: 'Athletic lifestyle — premium sport editorial, энергия, сила.',
     prompt: '',
     previewUrl: eliteSportImg,
   },
-
-  // ── ЯРКИЕ ────────────────────────────────────────────────────────────────────
   {
     id: 'quiet_luxury',
     name: 'ЛЕТНИЙ ГОРОД',
-    category: 'bright',
-    description: 'Лето, энергия, яркость — rooftop, летние улицы, пляж-кафе.',
+    category: 'realistic',
+    description: 'Лето, воздух, яркость — rooftop, оранж и бирюза, sunlight.',
     prompt: '',
     previewUrl: mirBudushchegoImg,
   },
   {
-    id: 'luxe_editorial',
-    name: 'НЕОНОВЫЙ ГОРОД',
-    category: 'bright',
-    description: 'Futuristic luxury — архитектурный неон, cyber premium.',
-    prompt: '',
-    previewUrl: vysokayaModaImg,
-  },
-  {
-    id: 'creative_studio',
-    name: 'ТВОРЧЕСКАЯ СТУДИЯ',
-    category: 'bright',
-    description: 'Арт-лофт, богемность, тепло — premium creative aesthetic.',
-    prompt: '',
-    previewUrl: creativestudioImg,
-  },
-
-  // ── БИЗНЕС (дополнительно) ────────────────────────────────────────────────
-  {
     id: 'bw_portrait',
     name: 'ЧЁРНО-БЕЛЫЙ ПОРТРЕТ',
-    category: 'business',
+    category: 'realistic',
     description: 'Timeless monochrome — классический журнальный портрет в ч/б.',
     prompt: '',
     previewUrl: bwportraitImg,
+  },
+
+  // ── ПРЕМИУМ: cinematic / luxury / fantasy ───────────────────────────────────
+  {
+    id: 'intellectual_elegance',
+    name: 'БОГИНЯ',
+    category: 'premium',
+    description: 'Эпичная женская сила — море, скалы, закат, cinematic.',
+    prompt: '',
+    previewUrl: boginyaImg,
+  },
+  {
+    id: 'new_york_power',
+    name: 'МОНАКО',
+    category: 'premium',
+    description: 'Яхты, Монако, дорогая динамичная жизнь.',
+    prompt: '',
+    previewUrl: skorostImg,
+  },
+  {
+    id: 'royal_bear',
+    name: 'ТРОПИКИ',
+    category: 'premium',
+    description: 'Luxury vacation — пляж, бирюза, tropical villa, ocean.',
+    prompt: '',
+    previewUrl: tikhayaRoskoshImg,
+  },
+  {
+    id: 'luxe_editorial',
+    name: 'НЕОНОВЫЙ ГОРОД',
+    category: 'premium',
+    description: 'Futuristic luxury — архитектурный неон, cyber premium.',
+    prompt: '',
+    previewUrl: vysokayaModaImg,
   },
 ];
 

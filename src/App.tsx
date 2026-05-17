@@ -114,7 +114,7 @@ function App() {
   }, []);
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [activeCategory, setActiveCategory] = useState<StyleCategory>('all');
+  const [activeCategory, setActiveCategory] = useState<StyleCategory>('realistic');
   const [intensity, setIntensity] = useState(70);
   const [isFullBody, setIsFullBody] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
