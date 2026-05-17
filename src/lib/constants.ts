@@ -35,6 +35,14 @@ export const STYLES: Style[] = [
     previewUrl: liderImg,
   },
   {
+    id: 'bw_portrait',
+    name: 'ЧЁРНО-БЕЛЫЙ ПОРТРЕТ',
+    category: 'realistic',
+    description: 'Timeless monochrome — классический журнальный портрет в ч/б.',
+    prompt: '',
+    previewUrl: bwportraitImg,
+  },
+  {
     id: 'old_money',
     name: 'РОСКОШЬ',
     category: 'realistic',
@@ -75,6 +83,14 @@ export const STYLES: Style[] = [
     previewUrl: zimnyayaSkazkaImg,
   },
   {
+    id: 'quiet_luxury',
+    name: 'ЛЕТНИЙ ГОРОД',
+    category: 'realistic',
+    description: 'Лето, воздух, яркость — rooftop, оранж и бирюза, sunlight.',
+    prompt: '',
+    previewUrl: mirBudushchegoImg,
+  },
+  {
     id: 'golden_hour_glow',
     name: 'ДИКАЯ ПРИРОДА',
     category: 'realistic',
@@ -89,22 +105,6 @@ export const STYLES: Style[] = [
     description: 'Athletic lifestyle — premium sport editorial, энергия, сила.',
     prompt: '',
     previewUrl: eliteSportImg,
-  },
-  {
-    id: 'quiet_luxury',
-    name: 'ЛЕТНИЙ ГОРОД',
-    category: 'realistic',
-    description: 'Лето, воздух, яркость — rooftop, оранж и бирюза, sunlight.',
-    prompt: '',
-    previewUrl: mirBudushchegoImg,
-  },
-  {
-    id: 'bw_portrait',
-    name: 'ЧЁРНО-БЕЛЫЙ ПОРТРЕТ',
-    category: 'realistic',
-    description: 'Timeless monochrome — классический журнальный портрет в ч/б.',
-    prompt: '',
-    previewUrl: bwportraitImg,
   },
 
   // ── ПРЕМИУМ: cinematic / luxury / fantasy ───────────────────────────────────
