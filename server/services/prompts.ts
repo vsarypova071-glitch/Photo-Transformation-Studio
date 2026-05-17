@@ -2,16 +2,23 @@
 // чтобы у Beget single-generation был такой же визуальный стиль, как сейчас.
 
 const WARDROBE: readonly string[] = [
-  'custom tailored minimalist wool suit in deep navy',
-  'bespoke structured blazer in forest green premium cashmere',
-  'silk blouse in ivory with high-waist charcoal trousers',
-  'architectural couture coat in camel',
-  'luxury power suit in slate gray, precision tailoring',
-  'oversized cashmere coat in off-white, The Row aesthetic',
-  'structured leather blazer in cognac brown',
-  'silk midi dress in deep burgundy with architectural draping',
-  'wide-leg trousers in charcoal with ivory cashmere turtleneck',
-  'blazer dress in midnight blue, sharp structured shoulders',
+  // Платья — разные характеры
+  'flowing silk midi dress in warm terracotta with gentle drape',
+  'structured blazer dress in cobalt blue, sharp feminine silhouette',
+  'elegant wrap dress in deep emerald green, soft luxurious fabric',
+  'sculptural midi dress in rich burgundy wine, premium fabric',
+  'minimalist slip dress in warm champagne with delicate lace detail',
+  'tailored shirt dress in powder blue, clean modern cut',
+  'dramatic gown in midnight navy with architectural skirt volume',
+  'soft cashmere knit dress in warm camel, effortless luxury',
+  // Костюмы и образы
+  'custom tailored suit in warm ivory, relaxed precision cut',
+  'bespoke power suit in deep forest green premium cashmere',
+  'precision blazer in warm coral with tailored wide-leg trousers',
+  'oversized cashmere coat in off-white over silk blouse in dusty rose',
+  'silk blouse in warm peach with high-waist camel trousers',
+  'structured leather blazer in cognac brown over cream turtleneck',
+  'blazer in lavender blue with matching wide-leg trousers',
 ];
 
 function pickGarment(): string {
@@ -73,7 +80,9 @@ export function buildNegativePrompt(): string {
     // Anti-cheap luxury
     'flashy rich aesthetic', 'fake billionaire visuals', 'gold overload', 'casino luxury',
     'fast fashion energy', 'hypersexual styling',
-    // Eye contact
+    // Eye contact & eyewear
+    'sunglasses', 'wearing sunglasses', 'tinted glasses', 'eyewear covering eyes',
+    'looking away from camera', 'side glance', 'averted gaze',
     'empty model stare', 'constant side-looking editorial pose', 'emotionless beauty shot',
     // Cinematic realism
     'plastic beauty', 'fake perfection', 'synthetic lighting', 'AI glamour',
@@ -143,8 +152,10 @@ replacing the face with a different-looking person.`;
   const realismBlock = `\
 REALISM (natural photo):
 - Eyes must be expressive and alive: realistic catchlights, natural wet sheen, visible depth and iris detail.
+- EYE CONTACT: subject looks directly into the camera with natural confident gaze. No looking away, no side glance.
+- NO SUNGLASSES OR EYEWEAR — eyes and gaze must be fully visible at all times.
 - Skin: keep natural micro-texture, subtle visible pores, soft realistic shadows. No airbrushing or smoothing.
-- Expression: natural, human, emotionally present. Avoid blank stare, static frozen face, or artificial smile.
+- Expression: natural, human, emotionally present. Warm confident energy — not blank stare, not artificial smile.
 - Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
 - Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
 
@@ -255,14 +266,18 @@ EDITORIAL PHOTOGRAPHY (realistic):
   // [FASHION CONSISTENCY] — когерентность образа: обувь, аксессуары, стайлинг.
   // Не усиливает glamour — требует реалистичного, носибельного премиум-образа.
   const fashionBlock = `\
-FASHION CONSISTENCY:
-- Footwear must match the premium editorial styling: elegant modern shoes with refined silhouette.
-  No generic office shoes, flat casual loafers, or low-detail random footwear.
-- Full outfit styling should feel cohesive, intentional, and fashion-directed —
-  as if curated by a stylist for a real luxury campaign.
-- Clothing and accessories must read as realistic and wearable, not hyper-stylized or costume-like.
-  Premium but believable.
-- Fashion serves the aura — the outfit should deepen the viewer's sense of WHO SHE IS, not distract from it.`;
+FASHION & INDIVIDUAL STYLE:
+- The outfit color must be chosen to flatter THIS specific person's natural skin tone, hair color, and overall coloring.
+  Warm skin tones → terracotta, camel, warm coral, gold, olive green, burgundy.
+  Cool skin tones → cobalt blue, lavender, emerald, dusty rose, icy white, deep navy.
+  Neutral/medium tones → any rich saturated color — forest green, warm amber, dusty mauve, teal.
+- COLOR DIVERSITY: every image should feel like a different, considered color story. Avoid repeating the same palette.
+- The outfit must express who SHE IS — her personality, her individuality, her character — not generic editorial fashion.
+- Clothing silhouette must flatter her natural body type: tailored where structure helps, flowing where softness suits.
+- NO SUNGLASSES. Eyes must always be visible and expressive.
+- Footwear must match the premium editorial styling: elegant refined shoes appropriate to the setting.
+- Full outfit should feel curated by a personal stylist — cohesive, intentional, beautifully chosen.
+- Premium but believable: real clothes, real person, real moment.`;
 
   // [NATURAL PORTRAIT PRESENCE] — уверенная осанка без runway/walking энергии.
   // Walking motion провоцировал уход лица в "fashion campaign human" геометрию.
@@ -661,7 +676,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
     // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
-    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — adapt colorway and silhouette to harmonize with the subject's natural coloring and the style direction.`] : []),
+    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — choose a colorway that specifically flatters THIS person's natural skin tone and hair. The outfit must feel personally chosen for her, not generic. It should express her individuality and enhance her natural beauty. Subject looks directly at camera, no sunglasses.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',

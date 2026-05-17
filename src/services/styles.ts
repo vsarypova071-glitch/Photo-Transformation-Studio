@@ -20,7 +20,7 @@ import { createLogger } from '@/utils/logger';
 
 const log = createLogger('StylesService');
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
-const CACHE_KEY = 'poto.styles.cache.v2';
+const CACHE_KEY = 'poto.styles.cache.v3';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 час
 
 interface ApiStyle {
