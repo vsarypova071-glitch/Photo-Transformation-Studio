@@ -126,8 +126,12 @@ export async function fetchStyles(opts?: { includeClub?: boolean }): Promise<Sty
       return BUNDLED_STYLES;
     }
     const adapted = data.items.map(adapt);
-    writeCache(adapted);
-    return adapted;
+    // Добавляем bundle-стили, которых нет в API (новые стили до применения миграции).
+    const apiIds = new Set(adapted.map((s) => s.id));
+    const bundleOnly = BUNDLED_STYLES.filter((s) => !apiIds.has(s.id));
+    const merged = [...adapted, ...bundleOnly];
+    writeCache(merged);
+    return merged;
   } catch (e: any) {
     log.warn('fetch /api/styles failed, using cache or bundle', e?.message);
     const cached = readCache();
