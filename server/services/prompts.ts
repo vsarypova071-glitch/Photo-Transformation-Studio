@@ -1,28 +1,41 @@
 // Wardrobe + buildPrompt — взяты из supabase/functions/generate-one/index.ts
 // чтобы у Beget single-generation был такой же визуальный стиль, как сейчас.
 
-const WARDROBE: readonly string[] = [
-  // Платья — разные характеры
+const WARDROBE_FEMALE: readonly string[] = [
   'flowing silk midi dress in warm terracotta with gentle drape',
   'structured blazer dress in cobalt blue, sharp feminine silhouette',
   'elegant wrap dress in deep emerald green, soft luxurious fabric',
   'sculptural midi dress in rich burgundy wine, premium fabric',
   'minimalist slip dress in warm champagne with delicate lace detail',
   'tailored shirt dress in powder blue, clean modern cut',
-  'dramatic gown in midnight navy with architectural skirt volume',
+  'dramatic floor-length gown in midnight navy with sculptural silhouette',
   'soft cashmere knit dress in warm camel, effortless luxury',
-  // Костюмы и образы
-  'custom tailored suit in warm ivory, relaxed precision cut',
   'bespoke power suit in deep forest green premium cashmere',
   'precision blazer in warm coral with tailored wide-leg trousers',
   'oversized cashmere coat in off-white over silk blouse in dusty rose',
   'silk blouse in warm peach with high-waist camel trousers',
-  'structured leather blazer in cognac brown over cream turtleneck',
   'blazer in lavender blue with matching wide-leg trousers',
+  'luxury cocktail dress in deep plum with elegant draping',
 ];
 
-function pickGarment(): string {
-  return WARDROBE[Math.floor(Math.random() * WARDROBE.length)];
+const WARDROBE_MALE: readonly string[] = [
+  'bespoke tailored suit in deep navy with subtle texture',
+  'precision charcoal suit with crisp white dress shirt, no tie',
+  'luxury cashmere blazer in camel over white shirt and dark trousers',
+  'structured double-breasted suit in midnight blue, premium fabric',
+  'smart casual: tailored jacket in forest green, slim trousers',
+  'luxury turtleneck in cream cashmere under structured blazer',
+  'crisp white dress shirt with tailored dark trousers, luxury watch',
+  'classic black suit with fine white shirt, timeless elegance',
+  'premium overcoat in warm camel over dark slim-fit trousers',
+  'relaxed luxury: linen blazer in sand with premium white shirt',
+  'tailored suit in warm burgundy, modern masculine silhouette',
+  'structured blazer in deep emerald, dark premium trousers',
+];
+
+function pickGarment(genderMode?: 'female' | 'male'): string {
+  const wardrobe = genderMode === 'male' ? WARDROBE_MALE : WARDROBE_FEMALE;
+  return wardrobe[Math.floor(Math.random() * wardrobe.length)];
 }
 
 // Ключевые слова lifestyle/kids стилей. Совпадение → editorial-блоки отключаются.
@@ -51,8 +64,8 @@ export interface BuildPromptInput {
   customPrompt?: string;
   isFullBody?: boolean;
   aspectRatio?: string;
+  genderMode?: 'female' | 'male';
   // Необязательный override категории. Если не передан — auto-detect по stylePrompt.
-  // Шаг B (позже): generation.ts будет слать это поле явно.
   styleCategory?: 'editorial' | 'lifestyle';
 }
 
@@ -96,6 +109,27 @@ export function buildPrompt(input: BuildPromptInput): string {
 
   // Определяем режим один раз — используется для условных блоков ниже.
   const isEditorial = detectIsEditorial(input.stylePrompt, input.styleCategory);
+  const isMale = input.genderMode === 'male';
+
+  // ── GENDER MODIFIER BLOCKS ──────────────────────────────────────────────────
+
+  const genderPositiveBlock = isMale
+    ? `\
+MASCULINE STYLING (required):
+This is a male portrait. The subject is a man. Generate exclusively masculine presentation.
+Styling: elegant menswear — tailored suit, structured blazer, luxury shirt, premium jacket, smart coat.
+Grooming: clean masculine grooming — neat hair, clean shave or light stubble. No makeup, no feminine styling.
+Pose: confident, grounded, masculine energy. Direct eye contact with camera.
+FORBIDDEN: any dress, skirt, blouse, feminine jewelry, feminine makeup, lipstick, exposed shoulders,
+feminine silhouette, female body proportions, evening gown, feminine accessories.`
+    : `\
+FEMININE STYLING (required):
+This is a female portrait. The subject is a woman. Generate exclusively feminine presentation.
+Styling: elegant feminine outfit — beautiful dress, luxury blouse, tailored feminine suit,
+soft fabrics, refined silhouette. Refined makeup applied naturally. Elegant jewelry if appropriate.
+Pose: graceful, feminine, confident. Direct eye contact with camera.
+FORBIDDEN: masculine suit cut, menswear styling, beard, mustache, overly broad masculine shoulders,
+male body proportions, generic gender-neutral presentation.`;
 
   // ── ГЛОБАЛЬНЫЕ БЛОКИ (применяются ко всем стилям) ─────────────────────────
 
@@ -158,6 +192,33 @@ REALISM (natural photo):
 - Expression: natural, human, emotionally present. Warm confident energy — not blank stare, not artificial smile.
 - Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
 - Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
+
+  // [REAL PHOTOGRAPHY FEEL] — глобальная директива: ощущение настоящей дорогой фотосессии.
+  // Применяется ко всем стилям без исключения.
+  const realPhotographyBlock = `\
+REAL PHOTOGRAPHY FEEL (mandatory global directive):
+This image must feel like it was captured by a real professional photographer on a real photoshoot — not generated by AI.
+The viewer must sense: a real human being was photographed in a real moment.
+
+WHAT MUST BE PRESENT:
+- Captured candid moment: the subject feels caught mid-breath, mid-thought — alive and present.
+- Natural body tension: authentic weight distribution, relaxed muscles, subtle human asymmetry.
+- Breathing realism: the body feels like it exhales — no frozen stiffness, no mannequin rigidity.
+- Authentic posture: natural spine alignment, organic weight shift, a real person standing in a real space.
+- Natural skin response to lighting: realistic subsurface glow, gentle micro-shadows, visible skin texture — not airbrushed plastic.
+- Emotional realism: inner life radiates from the expression — a real emotional state, not a posed performance.
+- Imperfect human beauty: natural asymmetry, subtle life in the features — not hyper-corrected CGI.
+- Cinematic human depth: the subject has interiority, personality, presence beyond the frame.
+- Luxury magazine photography: Vogue / Harper's Bazaar / Condé Nast real photoshoot aesthetic.
+
+THE VIEWER MUST FEEL: "This was shot by an expensive real photographer — not generated by AI."
+
+FORBIDDEN:
+- Mannequin stiffness, doll-like frozen posture, AI doll energy.
+- Hyper-symmetrical hyper-smooth artificial perfection — looks generated, not photographed.
+- Fashion render energy: 3D CGI model aesthetic instead of a real human being.
+- Plastic skin without texture, airbrushed face without natural detail.
+- Empty eyes with no soul, no depth, no inner world.`;
 
   // [FULL BODY FACE LOCK] — усиленный блок при full-body режиме.
   // При дальней дистанции кадра лица дрейфуют к generic/doll. Этот блок предотвращает это.
@@ -637,7 +698,10 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
   const fullBodyAvoidExtra = input.isFullBody
     ? ', tiny head, elongated limbs, unrealistic skinny body, body slimming, body enlargement, fake curves, fitness model body replacement, doll anatomy, body distortion, body type change, wrong body proportions'
     : '';
-  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}`;
+  const genderAvoidExtra = isMale
+    ? ', dress, skirt, blouse, feminine makeup, lipstick, long eyelashes, female body, feminine jewelry, exposed shoulders, evening gown, feminine silhouette, woman\'s clothing'
+    : ', masculine suit cut, menswear, beard, mustache, overly broad masculine shoulders, male body proportions, male clothing';
+  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}${genderAvoidExtra}`;
 
   return [
     // ── Глобальные блоки ──────────────────────────────────────────────────────
@@ -645,8 +709,12 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     '',
     identityBlock,
     '',
+    genderPositiveBlock,
+    '',
     ...(input.isFullBody ? [fullBodyFaceLockBlock, ''] : []),
     realismBlock,
+    '',
+    realPhotographyBlock,
     '',
     // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
     ...(isEditorial
@@ -658,7 +726,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
           ...(!isCleanPortrait ? [fashionBlock, ''] : []),
           candorBlock, '',
           ...(!isCleanPortrait ? [magnetismBlock, ''] : []),
-          ...(!isCleanPortrait ? [femininityBlock, ''] : []),
+          ...(!isCleanPortrait && !isMale ? [femininityBlock, ''] : []),
           eyeContactBlock, '',
           cinematicRealismBlock, '',
           ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
@@ -676,7 +744,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     // ── Состав и технические параметры ───────────────────────────────────────
     fullBodyHint,
     // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
-    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment()} — choose a colorway that specifically flatters THIS person's natural skin tone and hair. The outfit must feel personally chosen for her, not generic. It should express her individuality and enhance her natural beauty. Subject looks directly at camera, no sunglasses.`] : []),
+    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment(input.genderMode)} — choose a colorway that specifically flatters THIS person's natural skin tone and hair. The outfit must feel personally chosen for them, not generic. It should express their individuality and enhance their natural appearance. Subject looks directly at camera, no sunglasses.`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
