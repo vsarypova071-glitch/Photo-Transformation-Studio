@@ -38,6 +38,49 @@ function pickGarment(genderMode?: 'female' | 'male'): string {
   return wardrobe[Math.floor(Math.random() * wardrobe.length)];
 }
 
+// Позы для портретного кадра (голова + плечи / поясной).
+const POSES_PORTRAIT: readonly string[] = [
+  'three-quarter turn, weight shifted to one hip, relaxed shoulder drop — candid editorial',
+  'leaning lightly against surface, arms naturally relaxed, genuine unstaged energy',
+  'slight head tilt, direct confident gaze, subtle natural asymmetry in posture',
+  'caught mid-moment — body relaxed, natural breath, not posed for camera',
+  'shoulders at slight angle to camera, grounded confident stance, direct eye contact',
+  'natural hand near face or collar — organic gesture, not staged or forced',
+  'body lightly turned, strong editorial angle — like a working photographer caught the moment',
+  'glancing back toward camera — candid luxury editorial moment, genuine personality',
+];
+
+// Позы для full-body кадра.
+const POSES_FULLBODY: readonly string[] = [
+  'walking naturally toward camera — caught mid-step, body in real motion',
+  'leaning against wall or surface, weight on one leg, arms naturally at sides',
+  'standing at slight angle, body language open and grounded, direct gaze',
+  'pausing mid-movement, looking into camera — candid luxury lifestyle moment',
+  'elegant natural stride — confident forward motion, not a runway walk',
+  'one hand in pocket, weight shifted, relaxed powerful presence in open space',
+  'three-quarter turn, weight on back leg, looking over shoulder toward camera',
+];
+
+// Схемы освещения — каждая создаёт отдельный атмосферный мир.
+const LIGHTINGS: readonly string[] = [
+  'golden hour sidelight from left — warm directional sun, long soft shadows, rich amber glow on skin',
+  'overcast diffused daylight — soft even natural light, no harsh shadows, clean editorial clarity',
+  'soft window light from right — gentle key light, natural shadow falloff on opposite side, indoor warmth',
+  'blue hour ambient exterior — cool soft dusk light, cinematic atmosphere, moody natural tones',
+  'morning golden frontlight — gentle warm illumination, delicate skin glow, fresh alive energy',
+  'dramatic soft sidelight — strong directional light sculpting the face, deep cinematic shadow',
+  'open midday shade — bright reflected outdoor light, even clean illumination, summer freshness',
+];
+
+function pickPose(isFullBody?: boolean): string {
+  const library = isFullBody ? POSES_FULLBODY : POSES_PORTRAIT;
+  return library[Math.floor(Math.random() * library.length)];
+}
+
+function pickLighting(): string {
+  return LIGHTINGS[Math.floor(Math.random() * LIGHTINGS.length)];
+}
+
 // Ключевые слова lifestyle/kids стилей. Совпадение → editorial-блоки отключаются.
 // Список намеренно консервативный: неизвестные стили получают editorial по умолчанию.
 const LIFESTYLE_KEYWORDS: readonly string[] = [
@@ -745,6 +788,10 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     fullBodyHint,
     // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
     ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment(input.genderMode)} — choose a colorway that specifically flatters THIS person's natural skin tone and hair. The outfit must feel personally chosen for them, not generic. It should express their individuality and enhance their natural appearance. Subject looks directly at camera, no sunglasses.`] : []),
+    // POSE: случайная поза из библиотеки. Не для clean portrait — там своя жёсткая композиция.
+    ...(isEditorial && !isCleanPortrait ? [`POSE: ${pickPose(input.isFullBody)} — feel candid, alive, editorial. Not stiff, not staged, not runway.`] : []),
+    // LIGHTING: случайная схема. Не для BW portrait — там строгий studio lighting в своём блоке.
+    ...(isEditorial && !isBWPortrait ? [`LIGHTING: ${pickLighting()}`] : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
