@@ -67,6 +67,53 @@ const compositionBlock = `\
 - Both subjects occupy appropriate space in the frame, neither hidden nor cropped awkwardly.`;
 
 // ---------------------------------------------------------------------------
+// GAZE & EMOTIONAL ENERGY — прямой взгляд в камеру + эмоциональная искра
+// ---------------------------------------------------------------------------
+const gazeEnergyBlock = `\
+== GAZE & EMOTIONAL ENERGY ==
+- BOTH Person A and Person B look DIRECTLY into the camera lens.
+- Both pairs of eyes must be clearly visible, open, and in sharp focus.
+- Eyes convey genuine positive energy: warmth, joy, confidence, or connection — appropriate to the selected style.
+- Authentic natural expression: real smile, genuine calm confidence, or warm emotional presence.
+- Expression must not be forced, exaggerated, blank, frozen, or lifeless.
+- NO sunglasses.
+- NO hair covering eyes.
+- NO heavy shadows obscuring eyes.
+- NO turned-away faces.
+- NO looking at each other instead of camera unless the style explicitly requires it.
+- The emotional spark in both pairs of eyes is one of the main subjects of the photo.`;
+
+// ---------------------------------------------------------------------------
+// STYLE VARIATION & UNIQUENESS — уникальность каждой генерации
+// ---------------------------------------------------------------------------
+const variationBlock = `\
+== STYLE VARIATION & UNIQUENESS ==
+- Do NOT repeat the same location, pose, framing, or body arrangement across generations.
+- Each generation must create a fresh interpretation of the selected style.
+- Vary the environment, distance, camera angle, background depth, body position, and interaction.
+- Keep the same style mood, but change the visual scene and pose logic.
+- Avoid default rooftop, default empty street, default shoulder-to-shoulder standing, and default centered symmetrical pose.
+- Avoid making every photo look like the same template with different clothes.
+- The result must feel like a new premium photoshoot concept, not a duplicate generation.
+- Preserve the selected style identity, but make the visual execution unique each time.`;
+
+// ---------------------------------------------------------------------------
+// POSE & INTERACTION VARIATION — разнообразие поз и взаимодействий
+// ---------------------------------------------------------------------------
+const poseVariationBlock = `\
+== POSE & INTERACTION VARIATION ==
+- Create a natural but intentional pose appropriate to the selected style.
+- Vary how Person A and Person B interact: standing close, walking, leaning, seated, slightly angled,
+  one slightly behind the other, casual movement, editorial stance, relaxed connection, or confident partnership presence.
+- Do NOT always place both people front-facing in the same rigid pose.
+- Do NOT always use simple shoulder-to-shoulder composition.
+- Maintain clear visibility of both faces and both eyes.
+- Both people must remain recognizable as separate individuals.
+- No merged bodies, no fused limbs, no duplicated faces, no distorted hands.
+- The pose must look like a real professional photoshoot, not a random snapshot or accidental candid.
+- The interaction should feel emotionally believable and suitable for the chosen style.`;
+
+// ---------------------------------------------------------------------------
 // NEGATIVE PROMPT для парных генераций
 // ---------------------------------------------------------------------------
 function buildPairNegativePrompt(): string {
@@ -86,8 +133,13 @@ function buildPairNegativePrompt(): string {
     // Technical quality issues
     'deformed faces', 'distorted features', 'mismatched eye sizes',
     'floating limbs', 'extra limbs', 'blurry faces',
-    // Style issues specific to pairs
-    'sunglasses obscuring faces',
+    'merged people', 'fused bodies', 'duplicated face', 'distorted hands', 'broken fingers',
+    // Gaze and eye quality
+    'blank eyes', 'hidden eyes', 'eyes closed', 'sunglasses', 'hair covering eyes',
+    'looking away from camera', 'faces obscured', 'heavy shadows on eyes',
+    // Composition repetition
+    'repeated identical pose', 'repeated identical location', 'same template composition',
+    'default shoulder-to-shoulder pose', 'random snapshot', 'accidental candid photo',
   ];
   return `AVOID: ${terms.join(', ')}.`;
 }
@@ -114,6 +166,12 @@ export function buildPairPrompt(input: BuildPairPromptInput): string {
     identityBlockB,
     '',
     compositionBlock,
+    '',
+    gazeEnergyBlock,
+    '',
+    variationBlock,
+    '',
+    poseVariationBlock,
     '',
     stylePrompt.trim(),
     '',
