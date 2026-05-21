@@ -428,7 +428,15 @@ export default function StudioScreen({
             <div>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Ваше фото</p>
               <button
-                onClick={() => { setUploadedImage(''); setUploadedUrl(''); setStep('upload'); }}
+                onClick={() => {
+                  setUploadedImage('');
+                  setUploadedUrl('');
+                  // При замене фото A сбрасываем и фото B:
+                  // оно принадлежит этой паре и больше не актуально
+                  setUploadedImageB('');
+                  setUploadedFilenameB('');
+                  setStep('upload');
+                }}
                 className="text-xs text-primary hover:underline mt-1"
               >
                 Заменить фото
