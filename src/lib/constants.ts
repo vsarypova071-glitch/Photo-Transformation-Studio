@@ -16,11 +16,15 @@ import tikhayaRoskoshImg from '@/assets/styles/tropics.png';
 import idealnyj_kadrImg from '@/assets/styles/social_profile.png';
 import bwportraitImg from '@/assets/styles/bw_portrait.png';
 
-// ── ПАРНЫЕ ФОТО: временные preview-заглушки. ─────────────────────────────────
-// TODO: заменить на собственные preview-изображения для каждого pair-стиля.
-// Pair-стили используют category: 'together' — отображаются в отдельной вкладке.
+// ── ПАРНЫЕ ФОТО: превью-изображения ─────────────────────────────────────────
+// Реальные карточки парных стилей (загружены в assets/styles/).
 // Prompt в этих записях пустой: реальный prompt хранится только в БД и
 // оборачивается server-side через buildPairPrompt() → не доверяем клиенту.
+import pairLoveStoryImg from '@/assets/styles/LOVE STORY.png';
+import pairMotherChildImg from '@/assets/styles/MOTHER AND CHILD.png';
+import pairDadBabyImg from '@/assets/styles/DAD AND BABY.png';
+import pairBestFriendsImg from '@/assets/styles/best friends.png';
+import pairBusinessDuoImg from '@/assets/styles/BUSINESS DUO.png';
 
 export const STYLES: Style[] = [
   // ── РЕАЛИЗМ: premium lifestyle для массового пользователя ───────────────────
@@ -114,46 +118,45 @@ export const STYLES: Style[] = [
   },
 
   // ── ПАРНЫЕ ФОТО ─────────────────────────────────────────────────────────────
-  // Превью-заглушки — заменить на собственные изображения (TODO).
   {
     id: 'couple_love_story',
-    name: 'LOVE STORY',
+    name: 'ИСТОРИЯ ЛЮБВИ',
     category: 'together',
-    description: 'Cinematic romantic portrait — двое в атмосфере тёплого кино.',
+    description: 'Романтичная фотосессия для пары с теплом, близостью и красивой эмоцией.',
     prompt: '',
-    previewUrl: romantikaImg,        // TODO: заменить на пару-preview
+    previewUrl: pairLoveStoryImg,
   },
   {
     id: 'mother_child',
     name: 'МАМА И РЕБЁНОК',
     category: 'together',
-    description: 'Тёплая семейная фотосессия — настоящий момент близости.',
+    description: 'Нежный кадр мамы и ребёнка: любовь, мягкий свет и семейное тепло.',
     prompt: '',
-    previewUrl: boginyaImg,          // TODO: заменить на пару-preview
+    previewUrl: pairMotherChildImg,
   },
   {
     id: 'father_child',
     name: 'ПАПА И РЕБЁНОК',
     category: 'together',
-    description: 'Сильный и тёплый семейный образ — отец и ребёнок.',
+    description: 'Тёплая фотосессия папы и ребёнка: радость, защита и настоящая эмоция.',
     prompt: '',
-    previewUrl: liderImg,            // TODO: заменить на пару-preview
+    previewUrl: pairDadBabyImg,
   },
   {
     id: 'best_friends',
     name: 'ЛУЧШИЕ ДРУЗЬЯ',
     category: 'together',
-    description: 'Lifestyle editorial двух людей — настоящая дружба в кадре.',
+    description: 'Живая съёмка для друзей: смех, энергия, настоящая связь и стильный кадр.',
     prompt: '',
-    previewUrl: mirBudushchegoImg,   // TODO: заменить на пару-preview
+    previewUrl: pairBestFriendsImg,
   },
   {
     id: 'business_duo',
     name: 'ДЕЛОВОЙ ДУЭТ',
     category: 'together',
-    description: 'Premium business portrait двух людей — партнёрство, успех, статус.',
+    description: 'Статусный деловой портрет для партнёров, команды или совместного бренда.',
     prompt: '',
-    previewUrl: liderImg,            // TODO: заменить на пару-preview
+    previewUrl: pairBusinessDuoImg,
   },
 
   // ── ПРЕМИУМ: cinematic / luxury / fantasy ───────────────────────────────────
