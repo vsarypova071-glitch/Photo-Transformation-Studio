@@ -1,9 +1,10 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_SUPABASE_URL: string
-  readonly VITE_SUPABASE_PUBLISHABLE_KEY: string
-  readonly VITE_SUPABASE_PROJECT_ID: string
+  /** Базовый URL Beget VPS API (например, https://ai-fotosessia.ru или пусто для относительных путей) */
+  readonly VITE_API_URL: string
+  /** Feature flag: включить реферальную систему */
+  readonly VITE_ENABLE_REFERRALS: string
 }
 
 interface ImportMeta {

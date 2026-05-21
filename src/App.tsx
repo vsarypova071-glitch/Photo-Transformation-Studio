@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { backend } from './services/backend';
-import { StyleCategory, Job, Style } from './types';
+import { StyleCategory, GenderMode, Job, Style } from './types';
 import { createLogger } from './utils/logger';
 import {
   createPayment,
   checkOrder,
   findRecentOrder,
   getBalance as apiGetBalance,
+  uploadPhoto,
 } from './services/api';
 import { fetchStyles, getStylesSync } from './services/styles';
 import {
@@ -55,42 +56,17 @@ function getCustomerKey(): string {
   return key;
 }
 
-// Загрузка фото в Supabase Storage (legacy — будет заменено в Phase 2 на Beget storage).
-// Возвращает public URL или null если хранилище недоступно (например, кривой VITE_SUPABASE_URL).
-// Падение здесь НЕ должно ломать оплату: фронт может отправить originalImageUrl=null,
-// бэкенд это разрешает, юзер потом сгенерит из своего фото в Studio.
-async function uploadPhotoDirect(fileName: string, blob: Blob): Promise<string | null> {
-  const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
-  const anon = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '').trim();
-  if (!supabaseUrl || !anon || /\s/.test(supabaseUrl)) {
-    log.warn('Supabase storage URL/key not configured — skipping upload, payment will proceed without photo URL');
-    return null;
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+// Предзагрузка фото на VPS перед оплатой. URL сохраняется в заказе,
+// чтобы после оплаты StudioScreen мог сразу перейти на шаг выбора стиля.
+// TTL фото на VPS — 30 минут. Если загрузка упала — оплата всё равно проходит:
+// пользователь просто загрузит фото снова в Studio.
+async function uploadPhotoBeforePayment(blob: Blob): Promise<string | null> {
   try {
-    const resp = await fetch(`${supabaseUrl}/storage/v1/object/user-photos/${fileName}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${anon}`,
-        'apikey': anon,
-        'Content-Type': blob.type || 'image/jpeg',
-        'x-upsert': 'true',
-      },
-      body: blob,
-      signal: controller.signal,
-    });
-    if (!resp.ok) {
-      log.warn('Storage upload non-ok, continuing without photo URL', { status: resp.status });
-      return null;
-    }
-    return `${supabaseUrl}/storage/v1/object/public/user-photos/${fileName}`;
+    const result = await uploadPhoto(blob);
+    return result.url;
   } catch (e: any) {
-    log.warn('Storage upload failed, continuing without photo URL', { error: e?.message });
+    log.warn('Pre-payment photo upload failed, continuing without photo URL', { error: e?.message });
     return null;
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
 
@@ -115,6 +91,7 @@ function App() {
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<StyleCategory>('realistic');
+  const [genderMode, setGenderMode] = useState<GenderMode>('female');
   const [intensity, setIntensity] = useState(70);
   const [isFullBody, setIsFullBody] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -631,9 +608,9 @@ function App() {
 
     try {
       const sessionId = getSessionId();
-      const fileName = `${sessionId}/${Date.now()}.jpg`;
-      
-      // Convert base64 to blob
+
+      // Upload photo to VPS so order records the URL.
+      // After payment, StudioScreen uses it to skip the re-upload step (prefill).
       const base64Data = uploadedImage.replace(/^data:image\/\w+;base64,/, '');
       const byteCharacters = atob(base64Data);
       const byteArray = new Uint8Array(byteCharacters.length);
@@ -642,8 +619,8 @@ function App() {
       }
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const imageStoragePath: string | null = await uploadPhotoDirect(fileName, blob);
-      log.info('Image upload result', { path: fileName, success: !!imageStoragePath });
+      const imageStoragePath: string | null = await uploadPhotoBeforePayment(blob);
+      log.info('Pre-payment photo upload', { success: !!imageStoragePath });
 
       let data;
       try {
@@ -804,32 +781,22 @@ function App() {
   // На текущем этапе пакетная генерация на бэкенде отключена: оплата → начисление кредитов →
   // юзер генерирует по одному фото в Studio. Если он попал на этот хендлер,
   // это означает заказ в статусе error. Ведём в Studio с актуальным балансом.
+  // Retry-обработчик: проверяем статус заказа через VPS API и,
+  // если кредиты уже начислены, ведём в Studio. Никаких Supabase Edge Functions.
   const handleRetryGeneration = async () => {
     setRetrying(true);
     setProcessingError(null);
     try {
       const customerKey = getCustomerKey();
 
-      // Resolve orderId: state -> localStorage -> server lookup of recent paid order
+      // Resolve orderId: state → localStorage → VPS lookup
       let orderIdToRetry = currentOrderId || localStorage.getItem('current_order_id');
 
       if (!orderIdToRetry) {
         try {
-          const findResp = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/find-recent-order?customer_key=${encodeURIComponent(customerKey)}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
-            }
-          );
-          const findData = await findResp.json();
+          const findData = await findRecentOrder(customerKey);
           if (findData?.found && findData?.generationStatus === 'credits_credited' && findData?.orderId) {
-            await handleCreditsCredited(findData.orderId, {
-              photoUrl: findData.originalImage,
-              styleId: Array.isArray(findData.styleIds) ? findData.styleIds[0] : undefined,
-            });
+            await handleCreditsCredited(findData.orderId, {});
             return;
           }
           if (
@@ -850,16 +817,8 @@ function App() {
         return;
       }
 
-      const statusResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-order?order_id=${orderIdToRetry}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-        }
-      );
-      const statusData = await statusResponse.json();
+      // Проверяем статус заказа через VPS
+      const statusData = await checkOrder(orderIdToRetry);
       if (statusData?.generationStatus === 'credits_credited') {
         await handleCreditsCredited(orderIdToRetry, {
           photoUrl: statusData.originalImage,
@@ -868,42 +827,27 @@ function App() {
         return;
       }
 
-      // Sync state + storage so polling and further retries use the same id
+      // Sync state + storage
       if (orderIdToRetry !== currentOrderId) {
         setCurrentOrderId(orderIdToRetry);
       }
       localStorage.setItem('current_order_id', orderIdToRetry);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/retry-generation`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ orderId: orderIdToRetry, customerKey }),
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Не удалось перезапустить генерацию');
-      }
-      if (data.creditsCredited) {
-        // Кредиты уже начислены — этот заказ кредитный, пакетная генерация не нужна.
-        // Идём в Studio, баланс актуализируем через getBalance.
-        localStorage.removeItem('current_order_id');
-        setCurrentOrderId(null);
-        setProcessingError(null);
-        try {
-          const info = await studio.getBalance(getCustomerKey());
+      // Проверяем баланс напрямую — вебхук мог начислить кредиты,
+      // но статус заказа ещё не обновился.
+      try {
+        const info = await studio.getBalance(customerKey);
+        if (info.balance > 0) {
+          localStorage.removeItem('current_order_id');
+          setCurrentOrderId(null);
+          setProcessingError(null);
           setWalletBalance(info.balance);
-        } catch (_) { /* ignore */ }
-        navigateTo('studio');
-      } else {
-        setProcessingError('Кредиты ещё не начислены. Подождите 1–2 минуты или обновите страницу.');
-      }
+          navigateTo('studio');
+          return;
+        }
+      } catch (_) { /* ignore */ }
+
+      setProcessingError('Кредиты ещё не начислены. Подождите 1–2 минуты или обновите страницу.');
     } catch (e: any) {
       log.error('Retry handler failed', e);
       setProcessingError('Не удалось обновить статус. Попробуйте перезагрузить страницу.');
@@ -972,9 +916,11 @@ function App() {
             selectedStyles={selectedStyles}
             selectedGoal={selectedGoal}
             activeCategory={activeCategory}
+            genderMode={genderMode}
             isFullBody={isFullBody}
             onSelectStyle={(id) => setSelectedStyles(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
             onCategoryChange={setActiveCategory}
+            onGenderChange={setGenderMode}
             onFullBodyToggle={() => setIsFullBody(!isFullBody)}
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}

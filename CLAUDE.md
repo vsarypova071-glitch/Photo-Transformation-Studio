@@ -28,30 +28,45 @@
 
 **Проект:** poto-transformation-studio (фотовоплощение) — веб-приложение для AI-генерации фотосессий из загруженной пользователем фотографии.
 
+**Продакшн-инфраструктура:**
+- Beget VPS: `/var/www/ai-fotosessia.ru/`
+- Public frontend: `/var/www/ai-fotosessia.ru/public/`
+- API backend: `/var/www/ai-fotosessia.ru/api/dist/` (процесс poto-api в PM2)
+- БД: PostgreSQL на Beget
+- Деплой: `bash deploy.sh` (frontend + server), `bash deploy.sh frontend`, `bash deploy.sh server`
+- nginx: `https://www.ai-fotosessia.ru` → reverse proxy → Express на порту 3000
+
 **Frontend:**
 - React 18 + TypeScript
 - Vite 6 (bundler, SWC)
 - Tailwind CSS 3
-- Деплой: Vercel (основной), ранее Lovable (legacy, выводится из эксплуатации)
+- Деплой через `bash deploy.sh frontend` → VPS (НЕ Vercel, НЕ Lovable)
 
-**Backend:**
-- Supabase (Postgres + Auth + Storage)
-- Supabase Edge Functions (Deno runtime, TypeScript)
-- Платежи: ЮKassa (через webhook `yookassa-webhook`)
+**Backend (server/):**
+- Node.js + Express + TypeScript
+- Роуты: `/api/payment`, `/api/order`, `/api/balance`, `/api/photos`, `/api/generation`, `/api/styles`, `/api/credits`, `/api/referrals`
+- Платежи: ЮKassa (вебхук `/api/payment/webhook`)
+- БД: PostgreSQL через `pg` (pool)
+
+**Хранение фото:**
+- Временное хранилище на VPS: `/var/www/ai-fotosessia.ru/public/uploads/` или аналог
+- TTL фото: 30 минут (cron удаляет)
+- Эндпоинт загрузки: `POST /api/photos/upload` (multer)
+- Эндпоинт скачивания: `GET /api/photos/download/:filename` (Content-Disposition: attachment)
 
 **AI:**
-- Google Gemini (`@google/genai`)
-- Текущий способ вызова: через Lovable AI Gateway (`ai.gateway.lovable.dev`) с моделями `google/gemini-3-pro-image-preview` и `google/gemini-2.5-flash-lite`
-- План миграции: переход на прямой Google Gemini API (секрет `GEMINI_API_KEY` в Supabase)
+- OpenRouter → Google Gemini (через `OPENROUTER_API_KEY`)
+- Модель: `google/gemini-3.1-flash-lite` (конфиг `OPENROUTER_MODEL`)
+- Вызов: через `server/services/openrouter.ts`
 
-**Edge Functions (supabase/functions/):**
-- `generate-photo` — пакетная генерация изображений
-- `generate-one` — одиночная генерация (повтор/доработка)
-- `retry-generation` — повторная попытка после ошибки
-- `create-payment` — создание платежа в ЮKassa
-- `yookassa-webhook` — обработка вебхуков платежей и запуск генерации
+**НЕ используется в production:**
+- Vercel (ранее упоминался в документации — устарело)
+- Supabase Storage (был legacy, заменён на VPS upload)
+- Supabase Auth (мёртвый код удалён — `src/integrations/supabase/` и `src/pages/AuthPage.tsx`)
+- Supabase Edge Functions (заменены на Express routes на VPS)
+- Lovable AI Gateway (устарело)
 
-**Среда:**
-- ОС разработчика: Windows 11, PowerShell
-- Менеджер пакетов: bun (есть `bun.lock`), npm также работает
+**Среда разработчика:**
+- ОС: Windows 11, PowerShell
+- Менеджер пакетов: npm (есть также `bun.lock` — legacy)
 - Git: `main` ветка — продакшн
