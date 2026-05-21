@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Style, StyleCategory } from '../../types';
+import { Style, StyleCategory, GenderMode } from '../../types';
 
 interface StylesScreenProps {
   styles: Style[];
   selectedStyles: string[];
   selectedGoal: string | null;
   activeCategory: StyleCategory;
+  genderMode: GenderMode;
   isFullBody: boolean;
   onSelectStyle: (id: string) => void;
   onCategoryChange: (cat: StyleCategory) => void;
+  onGenderChange: (mode: GenderMode) => void;
   onFullBodyToggle: () => void;
   onBack: () => void;
   onGenerate: () => void;
@@ -18,6 +20,7 @@ const CATEGORIES: { id: StyleCategory; label: string }[] = [
   { id: 'realistic', label: 'РЕАЛИЗМ' },
   { id: 'premium',  label: 'ПРЕМИУМ' },
   { id: 'kids',     label: 'ДЕТИ' },
+  { id: 'together', label: 'ПАРНЫЕ' },
 ];
 
 export default function StylesScreen({
@@ -25,9 +28,11 @@ export default function StylesScreen({
   selectedStyles,
   selectedGoal: _selectedGoal,
   activeCategory,
+  genderMode,
   isFullBody,
   onSelectStyle,
   onCategoryChange,
+  onGenderChange,
   onFullBodyToggle,
   onBack,
   onGenerate,
@@ -98,6 +103,25 @@ export default function StylesScreen({
         </button>
       </div>
 
+      {/* Gender toggle — скрыт для парных фото (там 2 разных человека) */}
+      {activeCategory !== 'together' && (
+        <div className="flex mb-6 rounded-full bg-secondary border border-border p-1 gap-1">
+          {(['female', 'male'] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onGenderChange(mode)}
+              className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                genderMode === mode
+                  ? 'bg-primary text-primary-foreground shadow'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {mode === 'female' ? 'Женский' : 'Мужской'}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Categories */}
       <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
         {CATEGORIES.map(cat => (
@@ -114,6 +138,17 @@ export default function StylesScreen({
           </button>
         ))}
       </div>
+
+      {/* Парные фото — пояснение */}
+      {activeCategory === 'together' && (
+        <div className="mb-6 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
+          <p className="font-black text-primary uppercase tracking-wider text-[10px] mb-1">👥 Два фото — один результат</p>
+          <p className="text-muted-foreground">
+            Загрузите фото двух людей и получите одно совместное AI-фото.
+            Стоимость: <strong className="text-foreground">2 генерации</strong> за снимок.
+          </p>
+        </div>
+      )}
 
       {/* Styles grid — uniform 2-column */}
       <div className="grid grid-cols-2 gap-4 mb-10">

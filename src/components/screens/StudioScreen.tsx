@@ -10,6 +10,9 @@ import { createLogger } from '@/utils/logger';
 import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
 import ReferralBlock from '@/components/ReferralBlock';
 
+// Стоимость парной генерации (должно совпадать с PAIR_CREDITS на бэкенде)
+const PAIR_CREDITS = 2;
+
 const log = createLogger('StudioScreen');
 
 // 1 генерация / 2 генерации / 5 генераций
@@ -45,13 +48,18 @@ export default function StudioScreen({
   const [balance, setBalance] = useState(initialBalance);
   const [step, setStep] = useState<Step>('upload');
 
-  // upload
+  // upload — Фото A (основное, используется и для single и для pair)
   const [uploadedImage, setUploadedImage] = useState<string>(''); // base64 (для превью)
   const [uploadedUrl, setUploadedUrl] = useState<string>('');     // URL результата на VPS
   const [uploadedFilename, setUploadedFilename] = useState<string>(''); // имя файла на VPS — для /api/generation/single
   const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | undefined>();
   const [biometryConsent, setBiometryConsent] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // upload — Фото B (только для парных стилей)
+  const [uploadedImageB, setUploadedImageB] = useState<string>('');
+  const [uploadedFilenameB, setUploadedFilenameB] = useState<string>('');
+  const [isUploadingB, setIsUploadingB] = useState(false);
 
   // popup о TTL результата
   const [showTtlNotice, setShowTtlNotice] = useState(false);
@@ -60,6 +68,7 @@ export default function StudioScreen({
   // choose
   const [selectedStyleId, setSelectedStyleId] = useState<string>('');
   const [isFullBody, setIsFullBody] = useState(false);
+  const [genderMode, setGenderMode] = useState<'female' | 'male'>('female');
 
   // result
   const [resultImage, setResultImage] = useState<string>('');
@@ -128,7 +137,11 @@ export default function StudioScreen({
     return id;
   })();
 
-  // === Шаг 1: загрузка фото ===
+  // Определяем режим: pair если выбранный стиль принадлежит категории 'together'
+  const selectedStyleObj = STYLES.find(s => s.id === selectedStyleId);
+  const isPairMode = selectedStyleObj?.category === 'together';
+
+  // === Шаг 1: загрузка фото A ===
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -165,14 +178,39 @@ export default function StudioScreen({
     }
   };
 
-  // === Шаг 2: выбор стиля и генерация ===
+  // === Шаг 1b: загрузка фото B (только для pair styles) ===
+  const handleFileChangeB = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setIsUploadingB(true);
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = ev => resolve(ev.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      setUploadedImageB(base64);
+
+      const up = await studio.uploadPhoto(base64);
+      setUploadedFilenameB(up.filename);
+    } catch (err: any) {
+      log.error('Upload B failed', err);
+      setError(err.message || 'Не удалось загрузить второе фото');
+      setUploadedImageB('');
+    } finally {
+      setIsUploadingB(false);
+    }
+  };
+
+  // === Шаг 2: выбор стиля и генерация (single и pair) ===
   const handleGenerate = async () => {
     if (!selectedStyleId) {
       setError('Выберите стиль');
-      return;
-    }
-    if (balance < 1) {
-      setError('Закончились генерации');
       return;
     }
 
@@ -182,8 +220,14 @@ export default function StudioScreen({
       return;
     }
 
-    setError(null);
-    setStep('generating');
+    const requiredCredits = isPairMode ? PAIR_CREDITS : 1;
+
+    if (balance < requiredCredits) {
+      setError(isPairMode
+        ? `Для парного фото нужно минимум ${PAIR_CREDITS} генерации`
+        : 'Закончились генерации');
+      return;
+    }
 
     if (!uploadedFilename) {
       setError('Сначала загрузите фото');
@@ -191,14 +235,36 @@ export default function StudioScreen({
       return;
     }
 
+    if (isPairMode && !uploadedFilenameB) {
+      setError('Загрузите фото второго человека');
+      return;
+    }
+
+    setError(null);
+    setStep('generating');
+
     try {
-      const res = await studio.generateOne({
-        customerKey,
-        styleId: style.id,
-        sourcePhotoFilename: uploadedFilename,
-        isFullBody,
-        originalDimensions,
-      });
+      let res: Awaited<ReturnType<typeof studio.generateOne>>;
+
+      if (isPairMode) {
+        // --- Парная генерация ---
+        res = await studio.generatePair({
+          customerKey,
+          styleId: style.id,
+          sourcePhotoFilenameA: uploadedFilename,
+          sourcePhotoFilenameB: uploadedFilenameB,
+        });
+      } else {
+        // --- Одиночная генерация ---
+        res = await studio.generateOne({
+          customerKey,
+          styleId: style.id,
+          sourcePhotoFilename: uploadedFilename,
+          isFullBody,
+          genderMode,
+          originalDimensions,
+        });
+      }
 
       setResultImage(res.imageUrl);
       setResultStyleName(style.name);
@@ -206,18 +272,19 @@ export default function StudioScreen({
       setBalance(res.balance);
       onBalanceChange(res.balance);
       setStep('result');
-      setShowTtlNotice(true); // popup «Фото доступны 30 минут»
+      setShowTtlNotice(true);
     } catch (err: any) {
       log.error('Generation failed', err);
       const msg = err?.error || err?.message || 'Ошибка генерации';
       const refunded = err?.refunded;
-      setError(refunded ? `${msg} Генерация возвращена на баланс.` : msg);
-      // если кредит вернули — обновим баланс
+      const refundedAmt = err?.refundedAmount ?? (isPairMode ? PAIR_CREDITS : 1);
+      setError(refunded
+        ? `${msg} ${refundedAmt > 1 ? `${refundedAmt} генерации возвращены` : 'Генерация возвращена'} на баланс.`
+        : msg);
       if (typeof err?.balance === 'number') {
         setBalance(err.balance);
         onBalanceChange(err.balance);
       } else {
-        // подтянем актуальный баланс
         const info = await studio.getBalance(customerKey);
         setBalance(info.balance);
         onBalanceChange(info.balance);
@@ -265,6 +332,9 @@ export default function StudioScreen({
   const handleNext = () => {
     setResultImage('');
     setResultStyleName('');
+    // Сбрасываем фото B — пользователь выбирает новый стиль
+    setUploadedImageB('');
+    setUploadedFilenameB('');
     setStep(balance > 0 ? 'choose' : 'upload');
   };
 
@@ -397,6 +467,23 @@ export default function StudioScreen({
             </div>
           </div>
 
+          {/* Gender toggle */}
+          <div className="flex rounded-full bg-secondary border border-border p-1 gap-1">
+            {(['female', 'male'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setGenderMode(mode)}
+                className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                  genderMode === mode
+                    ? 'bg-primary text-primary-foreground shadow'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {mode === 'female' ? 'Женский' : 'Мужской'}
+              </button>
+            ))}
+          </div>
+
           <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
             <input
               type="checkbox"
@@ -407,15 +494,94 @@ export default function StudioScreen({
             <span className="text-sm text-foreground">Во весь рост</span>
           </label>
 
+          {/* Зона загрузки второго фото — только для парных стилей */}
+          {isPairMode && (
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
+                👥 Фото второго человека
+              </p>
+
+              {uploadedImageB ? (
+                // Превью фото B + кнопка замены
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
+                  <img
+                    src={uploadedImageB}
+                    alt="Второй человек"
+                    className="w-14 h-14 rounded-lg object-cover border border-border"
+                  />
+                  <div className="flex-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Фото 2 загружено</p>
+                    <label className="text-xs text-primary hover:underline cursor-pointer mt-1 block">
+                      Заменить
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChangeB}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {isUploadingB && (
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                  )}
+                </div>
+              ) : (
+                // Зона загрузки фото B
+                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all ${isUploadingB ? 'opacity-60 cursor-wait' : 'border-border hover:border-primary/60 bg-secondary/20 hover:bg-secondary/40'}`}>
+                  {isUploadingB ? (
+                    <div className="w-8 h-8 border-3 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 border border-primary/20">
+                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground">Загрузить фото 2</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Второй человек</p>
+                      </div>
+                    </>
+                  )}
+                  {!isUploadingB && (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChangeB}
+                      className="hidden"
+                    />
+                  )}
+                </label>
+              )}
+
+              {/* Предупреждение о качестве */}
+              <p className="text-[9px] text-muted-foreground leading-relaxed px-1">
+                ⚠️ В парных фото лица могут отличаться от оригинала сильнее, чем в обычном режиме.
+              </p>
+            </div>
+          )}
+
+          {/* Кнопка генерации */}
           <button
             onClick={handleGenerate}
-            disabled={!selectedStyleId || balance < 1}
+            disabled={
+              !selectedStyleId ||
+              balance < (isPairMode ? PAIR_CREDITS : 1) ||
+              (isPairMode && !uploadedFilenameB)
+            }
             className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all"
           >
-            {balance < 1 ? 'Закончились генерации' : `Сгенерировать (−1 фото)`}
+            {isPairMode
+              ? (balance < PAIR_CREDITS
+                  ? `Нужно минимум ${PAIR_CREDITS} генерации`
+                  : !uploadedFilenameB
+                    ? 'Загрузите второе фото'
+                    : `Сгенерировать (−${PAIR_CREDITS} фото)`)
+              : (balance < 1 ? 'Закончились генерации' : `Сгенерировать (−1 фото)`)
+            }
           </button>
 
-          {balance < 1 && (
+          {balance < (isPairMode ? PAIR_CREDITS : 1) && (
             <button
               onClick={onBuyMore}
               className="w-full py-3 rounded-2xl border border-primary text-primary font-bold uppercase tracking-wider text-sm hover:bg-primary/10 transition-all"

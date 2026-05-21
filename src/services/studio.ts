@@ -7,6 +7,7 @@ import {
   getBalance as apiGetBalance,
   uploadPhoto as apiUploadPhoto,
   generateSingle as apiGenerateSingle,
+  generatePair as apiGeneratePair,
 } from '@/services/api';
 
 const log = createLogger('StudioService');
@@ -48,6 +49,7 @@ export interface GenerateOneError {
   status: number;
   code?: string;
   refunded?: boolean;
+  refundedAmount?: number;
   balance?: number;
 }
 
@@ -111,9 +113,10 @@ class StudioService {
     sourcePhotoFilename: string;
     customPrompt?: string;
     isFullBody?: boolean;
+    genderMode?: 'female' | 'male';
     originalDimensions?: { width: number; height: number };
   }): Promise<GenerateOneResult> {
-    log.info('generateOne start', { styleId: params.styleId });
+    log.info('generateOne start', { styleId: params.styleId, genderMode: params.genderMode });
 
     try {
       const data = await apiGenerateSingle({
@@ -122,6 +125,7 @@ class StudioService {
         sourcePhotoFilename: params.sourcePhotoFilename,
         customPrompt: params.customPrompt,
         isFullBody: params.isFullBody,
+        genderMode: params.genderMode,
         originalDimensions: params.originalDimensions,
       });
       return {
@@ -141,6 +145,48 @@ class StudioService {
         balance: typeof body.balance === 'number' ? body.balance : undefined,
       };
       log.error('generateOne failed', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Сгенерить одно парное фото за 2 кредита (Phase 5 — Together styles).
+   * Если AI упадёт — оба кредита вернутся (бэкенд делает refund).
+   * Бросает GenerateOneError.
+   */
+  async generatePair(params: {
+    customerKey: string;
+    styleId: string;
+    sourcePhotoFilenameA: string;
+    sourcePhotoFilenameB: string;
+  }): Promise<GenerateOneResult> {
+    log.info('generatePair start', { styleId: params.styleId });
+
+    try {
+      const data = await apiGeneratePair({
+        customerKey: params.customerKey,
+        styleId: params.styleId,
+        sourcePhotoFilenameA: params.sourcePhotoFilenameA,
+        sourcePhotoFilenameB: params.sourcePhotoFilenameB,
+      });
+      return {
+        generationId: data.generationId,
+        imageUrl: absolutize(data.imageUrl),
+        ttlMinutes: data.ttlMinutes,
+        balance: data.balance,
+      };
+    } catch (e: any) {
+      const status = e?.status ?? 500;
+      const body = e?.body ?? {};
+      const err: GenerateOneError = {
+        error: body.error || e?.message || 'Ошибка парной генерации',
+        status,
+        code: body.code,
+        refunded: !!body.refunded,
+        refundedAmount: typeof body.refundedAmount === 'number' ? body.refundedAmount : undefined,
+        balance: typeof body.balance === 'number' ? body.balance : undefined,
+      };
+      log.error('generatePair failed', err);
       throw err;
     }
   }

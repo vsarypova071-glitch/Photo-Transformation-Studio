@@ -1,20 +1,26 @@
 import { PlanType, Style, Package } from '../types';
 
 import roskoshImg from '@/assets/styles/roskosh.png';
-import liderImg from '@/assets/styles/lider.png';
-import dikayaPrirodaImg from '@/assets/styles/dikaya-priroda.png';
-import zimnyayaSkazkaImg from '@/assets/styles/zimnyaya-skazka.png';
-import skorostImg from '@/assets/styles/skorost.png';
-import rokovayaImg from '@/assets/styles/rokovaya.png';
-import eliteSportImg from '@/assets/styles/elite-sport.png';
-import bolshoePatheshestvieImg from '@/assets/styles/bolshoe-puteshestvie.png';
-import romantikaImg from '@/assets/styles/romantika.png';
-import mirBudushchegoImg from '@/assets/styles/mir-budushchego.png';
-import vysokayaModaImg from '@/assets/styles/vysokaya-moda.png';
-import boginyaImg from '@/assets/styles/boginya.png';
-import tikhayaRoskoshImg from '@/assets/styles/quiet-luxury.png';
-import idealnyj_kadrImg from '@/assets/styles/idealnyj-kadr.png';
-import bwportraitImg from '@/assets/styles/lider.png';
+import liderImg from '@/assets/styles/leader.png';
+import dikayaPrirodaImg from '@/assets/styles/wild_nature.png';
+import zimnyayaSkazkaImg from '@/assets/styles/alpine_fairytale.png';
+import skorostImg from '@/assets/styles/monaco.png';
+import rokovayaImg from '@/assets/styles/femme_fatale.png';
+import eliteSportImg from '@/assets/styles/sport.png';
+import bolshoePatheshestvieImg from '@/assets/styles/great_journey.png';
+import romantikaImg from '@/assets/styles/romance.png';
+import mirBudushchegoImg from '@/assets/styles/summer_city.png';
+import vysokayaModaImg from '@/assets/styles/neon_city.png';
+import boginyaImg from '@/assets/styles/goddess.png';
+import tikhayaRoskoshImg from '@/assets/styles/tropics.png';
+import idealnyj_kadrImg from '@/assets/styles/social_profile.png';
+import bwportraitImg from '@/assets/styles/bw_portrait.png';
+
+// ── ПАРНЫЕ ФОТО: временные preview-заглушки. ─────────────────────────────────
+// TODO: заменить на собственные preview-изображения для каждого pair-стиля.
+// Pair-стили используют category: 'together' — отображаются в отдельной вкладке.
+// Prompt в этих записях пустой: реальный prompt хранится только в БД и
+// оборачивается server-side через buildPairPrompt() → не доверяем клиенту.
 
 export const STYLES: Style[] = [
   // ── РЕАЛИЗМ: premium lifestyle для массового пользователя ───────────────────
@@ -105,6 +111,49 @@ export const STYLES: Style[] = [
     description: 'Athletic lifestyle — premium sport editorial, энергия, сила.',
     prompt: '',
     previewUrl: eliteSportImg,
+  },
+
+  // ── ПАРНЫЕ ФОТО ─────────────────────────────────────────────────────────────
+  // Превью-заглушки — заменить на собственные изображения (TODO).
+  {
+    id: 'couple_love_story',
+    name: 'LOVE STORY',
+    category: 'together',
+    description: 'Cinematic romantic portrait — двое в атмосфере тёплого кино.',
+    prompt: '',
+    previewUrl: romantikaImg,        // TODO: заменить на пару-preview
+  },
+  {
+    id: 'mother_child',
+    name: 'МАМА И РЕБЁНОК',
+    category: 'together',
+    description: 'Тёплая семейная фотосессия — настоящий момент близости.',
+    prompt: '',
+    previewUrl: boginyaImg,          // TODO: заменить на пару-preview
+  },
+  {
+    id: 'father_child',
+    name: 'ПАПА И РЕБЁНОК',
+    category: 'together',
+    description: 'Сильный и тёплый семейный образ — отец и ребёнок.',
+    prompt: '',
+    previewUrl: liderImg,            // TODO: заменить на пару-preview
+  },
+  {
+    id: 'best_friends',
+    name: 'ЛУЧШИЕ ДРУЗЬЯ',
+    category: 'together',
+    description: 'Lifestyle editorial двух людей — настоящая дружба в кадре.',
+    prompt: '',
+    previewUrl: mirBudushchegoImg,   // TODO: заменить на пару-preview
+  },
+  {
+    id: 'business_duo',
+    name: 'ДЕЛОВОЙ ДУЭТ',
+    category: 'together',
+    description: 'Premium business portrait двух людей — партнёрство, успех, статус.',
+    prompt: '',
+    previewUrl: liderImg,            // TODO: заменить на пару-preview
   },
 
   // ── ПРЕМИУМ: cinematic / luxury / fantasy ───────────────────────────────────

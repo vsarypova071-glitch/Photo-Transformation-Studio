@@ -156,6 +156,7 @@ export interface GenerateSingleInput {
   sourcePhotoFilename: string;
   customPrompt?: string;
   isFullBody?: boolean;
+  genderMode?: 'female' | 'male';
   originalDimensions?: { width: number; height: number };
 }
 
@@ -169,6 +170,32 @@ export interface GenerateSingleResult {
 
 export function generateSingle(input: GenerateSingleInput): Promise<GenerateSingleResult> {
   return request<GenerateSingleResult>('/api/generation/single', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// === Generation: Pair (Phase 5 — Together styles) ===
+
+export interface GeneratePairInput {
+  customerKey: string;
+  styleId: string;
+  /** Имя файла на VPS (из uploadPhoto) — Человек A */
+  sourcePhotoFilenameA: string;
+  /** Имя файла на VPS (из uploadPhoto) — Человек B */
+  sourcePhotoFilenameB: string;
+}
+
+export interface GeneratePairResult {
+  generationId: string;
+  imageUrl: string;
+  ttlMinutes: number;
+  balance: number;
+  modelUsed?: string;
+}
+
+export function generatePair(input: GeneratePairInput): Promise<GeneratePairResult> {
+  return request<GeneratePairResult>('/api/generation/pair', {
     method: 'POST',
     body: JSON.stringify(input),
   });

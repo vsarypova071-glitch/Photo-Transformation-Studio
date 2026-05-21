@@ -20,7 +20,7 @@ import { createLogger } from '@/utils/logger';
 
 const log = createLogger('StylesService');
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
-const CACHE_KEY = 'poto.styles.cache.v3';
+const CACHE_KEY = 'poto.styles.cache.v4';
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 час
 
 interface ApiStyle {
@@ -74,7 +74,8 @@ function bundlePreview(id: string): string {
 // Маппинг русских маркетинговых категорий из БД → ASCII-ключи фронта.
 // Adult-стили имеют только legacy_category ('realistic'/'wild') — сюда не попадают.
 const RU_CATEGORY_TO_KEY: Record<string, StyleCategory> = {
-  'Детские': 'kids',
+  'Детские':    'kids',
+  'Парные фото': 'together',
 };
 
 function adapt(api: ApiStyle): Style {

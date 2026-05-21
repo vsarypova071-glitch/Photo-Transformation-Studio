@@ -5,7 +5,8 @@
    VIP = 'VIP'
  }
  
- export type StyleCategory = 'realistic' | 'premium' | 'kids';
+ export type StyleCategory = 'realistic' | 'premium' | 'kids' | 'together';
+ export type GenderMode = 'female' | 'male';
  
  export interface User {
    id: string;
