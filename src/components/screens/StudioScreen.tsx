@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { STYLES } from '@/lib/constants';
+import { StyleCategory } from '@/types';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
 import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
@@ -12,6 +13,14 @@ import ReferralBlock from '@/components/ReferralBlock';
 
 // Стоимость парной генерации (должно совпадать с PAIR_CREDITS на бэкенде)
 const PAIR_CREDITS = 2;
+
+// Вкладки категорий в шаге choose (зеркалят StylesScreen)
+const STUDIO_CATEGORIES: { id: StyleCategory; label: string }[] = [
+  { id: 'realistic', label: 'РЕАЛИЗМ' },
+  { id: 'premium',  label: 'ПРЕМИУМ' },
+  { id: 'kids',     label: 'ДЕТИ' },
+  { id: 'together', label: 'ПАРНЫЕ' },
+];
 
 const log = createLogger('StudioScreen');
 
@@ -67,6 +76,7 @@ export default function StudioScreen({
 
   // choose
   const [selectedStyleId, setSelectedStyleId] = useState<string>('');
+  const [studioCategory, setStudioCategory] = useState<StyleCategory>('realistic');
   const [isFullBody, setIsFullBody] = useState(false);
   const [genderMode, setGenderMode] = useState<'female' | 'male'>('female');
 
@@ -446,8 +456,35 @@ export default function StudioScreen({
 
           <div>
             <h2 className="text-lg font-sans uppercase tracking-tighter mb-3">Выберите стиль</h2>
+
+            {/* Вкладки категорий */}
+            <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
+              {STUDIO_CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setStudioCategory(cat.id)}
+                  className={`px-4 py-2.5 rounded-full text-[10px] font-black border transition-all flex-shrink-0 ${
+                    studioCategory === cat.id
+                      ? 'bg-primary border-primary text-primary-foreground shadow-lg'
+                      : 'bg-secondary border-border text-muted-foreground'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Пояснение для парных */}
+            {studioCategory === 'together' && (
+              <div className="mb-4 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
+                <p className="font-black text-primary uppercase tracking-wider text-[10px] mb-1">👥 Два фото — один результат</p>
+                <p className="text-muted-foreground">Стоимость: <strong className="text-foreground">2 генерации</strong> за снимок.</p>
+              </div>
+            )}
+
+            {/* Сетка стилей — отфильтрованная по вкладке */}
             <div className="grid grid-cols-2 gap-3">
-              {STYLES.map(style => (
+              {STYLES.filter(s => s.category === studioCategory).map(style => (
                 <button
                   key={style.id}
                   onClick={() => setSelectedStyleId(style.id)}
@@ -481,8 +518,8 @@ export default function StudioScreen({
             </div>
           </div>
 
-          {/* Gender toggle — скрыт для парных фото (там два разных человека) */}
-          {!isPairMode && (
+          {/* Gender toggle — скрыт для парных фото и вкладки ПАРНЫЕ */}
+          {!isPairMode && studioCategory !== 'together' && (
             <div className="flex rounded-full bg-secondary border border-border p-1 gap-1">
               {(['female', 'male'] as const).map((mode) => (
                 <button
@@ -500,8 +537,8 @@ export default function StudioScreen({
             </div>
           )}
 
-          {/* Полный рост — скрыт для парных фото */}
-          {!isPairMode && (
+          {/* Полный рост — скрыт для парных фото и вкладки ПАРНЫЕ */}
+          {!isPairMode && studioCategory !== 'together' && (
             <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
               <input
                 type="checkbox"
