@@ -455,6 +455,12 @@ export default function StudioScreen({
                     <p className="text-white text-sm font-bold uppercase tracking-tight leading-tight">{style.name}</p>
                     <p className="text-white/70 text-[10px] mt-0.5">{style.description}</p>
                   </div>
+                  {/* Бейдж "2 фото" для парных стилей */}
+                  {style.category === 'together' && (
+                    <div className="absolute top-2 left-2 z-10 bg-black/65 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                      <span className="text-[8px] font-black text-white uppercase tracking-wide">👥 2 фото</span>
+                    </div>
+                  )}
                   {selectedStyleId === style.id && (
                     <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                       <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
@@ -467,96 +473,106 @@ export default function StudioScreen({
             </div>
           </div>
 
-          {/* Gender toggle */}
-          <div className="flex rounded-full bg-secondary border border-border p-1 gap-1">
-            {(['female', 'male'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setGenderMode(mode)}
-                className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                  genderMode === mode
-                    ? 'bg-primary text-primary-foreground shadow'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                {mode === 'female' ? 'Женский' : 'Мужской'}
-              </button>
-            ))}
-          </div>
+          {/* Gender toggle — скрыт для парных фото (там два разных человека) */}
+          {!isPairMode && (
+            <div className="flex rounded-full bg-secondary border border-border p-1 gap-1">
+              {(['female', 'male'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setGenderMode(mode)}
+                  className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                    genderMode === mode
+                      ? 'bg-primary text-primary-foreground shadow'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  {mode === 'female' ? 'Женский' : 'Мужской'}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isFullBody}
-              onChange={e => setIsFullBody(e.target.checked)}
-              className="w-4 h-4 accent-primary cursor-pointer"
-            />
-            <span className="text-sm text-foreground">Во весь рост</span>
-          </label>
+          {/* Полный рост — скрыт для парных фото */}
+          {!isPairMode && (
+            <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFullBody}
+                onChange={e => setIsFullBody(e.target.checked)}
+                className="w-4 h-4 accent-primary cursor-pointer"
+              />
+              <span className="text-sm text-foreground">Во весь рост</span>
+            </label>
+          )}
 
-          {/* Зона загрузки второго фото — только для парных стилей */}
+          {/* Загрузка второго фото — только для парных стилей */}
           {isPairMode && (
-            <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">
-                👥 Фото второго человека
-              </p>
+            <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/5 p-5 space-y-4">
 
-              {uploadedImageB ? (
-                // Превью фото B + кнопка замены
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border">
-                  <img
-                    src={uploadedImageB}
-                    alt="Второй человек"
-                    className="w-14 h-14 rounded-lg object-cover border border-border"
-                  />
-                  <div className="flex-1">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Фото 2 загружено</p>
-                    <label className="text-xs text-primary hover:underline cursor-pointer mt-1 block">
-                      Заменить
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChangeB}
-                        className="hidden"
-                      />
-                    </label>
+              {/* Step-индикатор */}
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${uploadedImageB ? 'bg-primary' : 'bg-primary/20 border-2 border-primary/40'}`}>
+                  {uploadedImageB
+                    ? <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    : <span className="text-xs font-black text-primary">2</span>
+                  }
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    {uploadedImageB ? 'Оба фото готовы ✓' : 'Шаг 2 из 2 — второе фото'}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    {uploadedImageB ? 'Можно запускать генерацию' : 'Загрузите фото второго человека'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Превью обоих фото (или зона загрузки фото B) */}
+              <div className="flex items-center gap-3">
+
+                {/* Фото A */}
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <img src={uploadedImage} alt="Фото 1" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover border-2 border-primary/50" />
+                  <span className="text-[8px] text-primary font-black uppercase">Фото 1 ✓</span>
+                </div>
+
+                <div className="text-primary/50 text-2xl font-light flex-shrink-0">+</div>
+
+                {/* Фото B — превью или зона загрузки */}
+                {uploadedImageB ? (
+                  <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                    <img src={uploadedImageB} alt="Фото 2" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover border-2 border-primary/50" />
+                    <span className="text-[8px] text-primary font-black uppercase">Фото 2 ✓</span>
                   </div>
-                  {isUploadingB && (
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                ) : (
+                  <label className={`w-[4.5rem] h-[4.5rem] rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer transition-all flex-shrink-0 ${isUploadingB ? 'border-primary/60 opacity-70 cursor-wait' : 'border-primary/40 hover:border-primary hover:bg-primary/10 bg-background/50'}`}>
+                    {isUploadingB
+                      ? <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                      : <svg className="w-6 h-6 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    }
+                    {!isUploadingB && <input type="file" accept="image/*" onChange={handleFileChangeB} className="hidden" />}
+                  </label>
+                )}
+
+                {/* CTA кнопка или ссылка «Заменить» */}
+                <div className="flex-1 min-w-0">
+                  {uploadedImageB ? (
+                    <label className="text-xs text-primary cursor-pointer hover:underline font-semibold">
+                      Заменить фото 2
+                      <input type="file" accept="image/*" onChange={handleFileChangeB} className="hidden" />
+                    </label>
+                  ) : (
+                    <label className={`block w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all active:scale-95 ${isUploadingB ? 'bg-primary/30 text-primary-foreground cursor-wait' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}>
+                      {isUploadingB ? 'Загрузка...' : '+ Загрузить фото 2'}
+                      {!isUploadingB && <input type="file" accept="image/*" onChange={handleFileChangeB} className="hidden" />}
+                    </label>
                   )}
                 </div>
-              ) : (
-                // Зона загрузки фото B
-                <label className={`flex items-center gap-3 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-all ${isUploadingB ? 'opacity-60 cursor-wait' : 'border-border hover:border-primary/60 bg-secondary/20 hover:bg-secondary/40'}`}>
-                  {isUploadingB ? (
-                    <div className="w-8 h-8 border-3 border-primary border-t-transparent animate-spin rounded-full mx-auto" />
-                  ) : (
-                    <>
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 border border-primary/20">
-                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">Загрузить фото 2</p>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Второй человек</p>
-                      </div>
-                    </>
-                  )}
-                  {!isUploadingB && (
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChangeB}
-                      className="hidden"
-                    />
-                  )}
-                </label>
-              )}
+              </div>
 
               {/* Предупреждение о качестве */}
-              <p className="text-[9px] text-muted-foreground leading-relaxed px-1">
-                ⚠️ В парных фото лица могут отличаться от оригинала сильнее, чем в обычном режиме.
+              <p className="text-[9px] text-muted-foreground leading-relaxed">
+                ⚠️ В парных фото лица могут отличаться от оригинала сильнее, чем обычно.
               </p>
             </div>
           )}

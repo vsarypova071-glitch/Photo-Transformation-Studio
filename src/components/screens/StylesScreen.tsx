@@ -40,6 +40,18 @@ export default function StylesScreen({
   const [customPrompt, setCustomPrompt] = useState('');
   const canGenerate = selectedStyles.length > 0 || customPrompt.trim() !== '';
 
+  // Pair-gate: когда выбран парный стиль, показываем инфо-блок перед отправкой на оплату
+  const [showPairInfo, setShowPairInfo] = useState(false);
+  const isPairSelected = styles.some(
+    s => selectedStyles.includes(s.id) && s.category === 'together'
+  );
+
+  // Сбросить gate при смене набора стилей
+  const handleSelectStyle = (id: string) => {
+    setShowPairInfo(false);
+    onSelectStyle(id);
+  };
+
   const filteredStyles = styles.filter(s => s.category === activeCategory);
 
   const renderStyleCard = (style: Style) => {
@@ -48,7 +60,7 @@ export default function StylesScreen({
     return (
       <div
         key={style.id}
-        onClick={() => onSelectStyle(style.id)}
+        onClick={() => handleSelectStyle(style.id)}
         style={{ transition: 'transform 200ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 200ms ease' }}
         className={`relative rounded-[2rem] overflow-hidden cursor-pointer group
           ${isSelected
@@ -77,6 +89,12 @@ export default function StylesScreen({
             </p>
           )}
         </div>
+        {/* Бейдж «2 фото» для парных стилей */}
+        {style.category === 'together' && (
+          <div className="absolute top-3 left-3 z-10 bg-black/65 backdrop-blur-sm px-2 py-0.5 rounded-full">
+            <span className="text-[8px] font-black text-white uppercase tracking-wide">👥 2 фото</span>
+          </div>
+        )}
         {isSelected && (
           <div
             style={{ animation: 'scale-in 0.18s cubic-bezier(0.34,1.56,0.64,1)' }}
@@ -181,14 +199,42 @@ export default function StylesScreen({
       </div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 glass border-t border-white/5 z-50 max-w-md mx-auto flex gap-3">
-        <button
-          onClick={onGenerate}
-          disabled={!canGenerate}
-          className="btn-shimmer flex-1 py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95"
-        >
-          ✦ Создать шедевр
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 glass border-t border-white/5 z-50 max-w-md mx-auto">
+
+        {/* Pair-info панель — появляется при первом нажатии на «Создать шедевр» с парным стилем */}
+        {showPairInfo && isPairSelected && (
+          <div className="px-6 pt-5 pb-1">
+            <div className="rounded-2xl bg-primary/10 border border-primary/30 p-4 space-y-2">
+              <p className="text-[10px] font-black text-primary uppercase tracking-wider">
+                👥 Для парного фото нужны 2 фотографии
+              </p>
+              <div className="flex items-center gap-2 text-[10px] text-foreground/80">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Фото первого человека уже загружено</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Второе фото вы загрузите в <strong className="text-foreground">Студии</strong> после пополнения баланса.
+                Без него генерация не запустится.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="p-6 flex gap-3">
+          <button
+            onClick={() => {
+              if (isPairSelected && !showPairInfo) {
+                setShowPairInfo(true);
+                return;
+              }
+              onGenerate();
+            }}
+            disabled={!canGenerate}
+            className="btn-shimmer flex-1 py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed opacity-95"
+          >
+            {showPairInfo && isPairSelected ? '✦ Продолжить к оплате' : '✦ Создать шедевр'}
+          </button>
+        </div>
       </div>
     </section>
   );
