@@ -4,8 +4,8 @@
 // + предупреждение «фото нигде не сохраняется».
 
 import { useState, useEffect, useRef } from 'react';
-import { STYLES } from '@/lib/constants';
-import { StyleCategory } from '@/types';
+import { STYLES as BUNDLED_STYLES } from '@/lib/constants';
+import { Style, StyleCategory } from '@/types';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
 import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
@@ -41,6 +41,8 @@ interface StudioScreenProps {
   // Prefill после оплаты — пропускаем шаг загрузки фото и выбор стиля
   prefillPhotoUrl?: string;
   prefillStyleId?: string;
+  // Стили из API (включая ДЕТИ/ПАРНЫЕ); если не переданы — fallback на константы
+  styles?: Style[];
 }
 
 type Step = 'upload' | 'choose' | 'generating' | 'result';
@@ -53,7 +55,10 @@ export default function StudioScreen({
   onGeneratingChange,
   prefillPhotoUrl,
   prefillStyleId,
+  styles: stylesProp,
 }: StudioScreenProps) {
+  // Используем стили из API (переданные через проп), иначе — встроенные константы
+  const availableStyles = stylesProp ?? BUNDLED_STYLES;
   const [balance, setBalance] = useState(initialBalance);
   const [step, setStep] = useState<Step>('upload');
 
@@ -148,7 +153,7 @@ export default function StudioScreen({
   })();
 
   // Определяем режим: pair если выбранный стиль принадлежит категории 'together'
-  const selectedStyleObj = STYLES.find(s => s.id === selectedStyleId);
+  const selectedStyleObj = availableStyles.find(s => s.id === selectedStyleId);
   const isPairMode = selectedStyleObj?.category === 'together';
 
   // === Шаг 1: загрузка фото A ===
@@ -224,7 +229,7 @@ export default function StudioScreen({
       return;
     }
 
-    const style = STYLES.find(s => s.id === selectedStyleId);
+    const style = availableStyles.find(s => s.id === selectedStyleId);
     if (!style) {
       setError('Стиль не найден');
       return;
@@ -484,7 +489,7 @@ export default function StudioScreen({
 
             {/* Сетка стилей — отфильтрованная по вкладке */}
             <div className="grid grid-cols-2 gap-3">
-              {STYLES.filter(s => s.category === studioCategory).map(style => (
+              {availableStyles.filter(s => s.category === studioCategory).map(style => (
                 <button
                   key={style.id}
                   onClick={() => setSelectedStyleId(style.id)}

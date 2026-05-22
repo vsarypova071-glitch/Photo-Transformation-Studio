@@ -890,6 +890,7 @@ function App() {
             onGeneratingChange={(g) => { studioGeneratingRef.current = g; }}
             prefillPhotoUrl={prefilledStudio?.photoUrl}
             prefillStyleId={prefilledStudio?.styleId}
+            styles={styles}
           />
         )}
 
