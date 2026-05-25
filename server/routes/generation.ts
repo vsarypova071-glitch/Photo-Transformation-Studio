@@ -6,6 +6,7 @@ import { db } from '../db/pool';
 import * as openrouter from '../services/openrouter';
 import { buildPrompt } from '../services/prompts';
 import { buildPairPrompt } from '../services/pairPrompts';
+import { getFilteredParts, WISH_MAX_LENGTH } from '../services/wishFilter';
 
 const TEMP_DIR = process.env.PHOTO_TEMP_DIR || '/var/www/ai-fotosessia.ru/temp-photos';
 const TTL_MIN = Number(process.env.PHOTO_TTL_MINUTES ?? 30);
@@ -195,7 +196,22 @@ router.post('/single', async (req, res) => {
     }
 
     // === 5. Build prompt + call OpenRouter ===
+    // Wish filter: log any forbidden fragments that were stripped.
+    // Raw value is already saved to DB (audit trail). buildPrompt() applies
+    // filterWish() internally — this log is for server-side visibility only.
+    if (body.customPrompt) {
+      const rawWish = body.customPrompt.slice(0, WISH_MAX_LENGTH);
+      const blocked = getFilteredParts(rawWish);
+      if (blocked.length > 0) {
+        console.log(`[gen/single] wish-filter: stripped ${blocked.length} fragment(s) [${generationId}]:`, blocked);
+      }
+    }
+
+    // styleId передаётся в buildPrompt() как дополнительный сигнал детектирования:
+    // некоторые стили (bw_portrait) могут приходить с пустым stylePrompt при bundle-fallback,
+    // и styleId служит страховочным идентификатором для активации нужных блоков.
     const prompt = buildPrompt({
+      styleId,
       stylePrompt,
       customPrompt: body.customPrompt,
       isFullBody: !!body.isFullBody,

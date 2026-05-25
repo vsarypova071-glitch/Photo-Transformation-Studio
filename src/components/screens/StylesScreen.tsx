@@ -1,24 +1,23 @@
 import { useState } from 'react';
-import { Style, StyleCategory, GenderMode } from '../../types';
+import { Style, StudioTab } from '../../types';
 
 interface StylesScreenProps {
   styles: Style[];
   selectedStyles: string[];
   selectedGoal: string | null;
-  activeCategory: StyleCategory;
-  genderMode: GenderMode;
+  activeCategory: StudioTab;
   isFullBody: boolean;
   onSelectStyle: (id: string) => void;
-  onCategoryChange: (cat: StyleCategory) => void;
-  onGenderChange: (mode: GenderMode) => void;
+  onCategoryChange: (cat: StudioTab) => void;
   onFullBodyToggle: () => void;
   onBack: () => void;
   onGenerate: () => void;
 }
 
-const CATEGORIES: { id: StyleCategory; label: string }[] = [
-  { id: 'realistic', label: 'РЕАЛИЗМ' },
-  { id: 'premium',  label: 'ПРЕМИУМ' },
+// 'male' = cinematic мужские стили (category 'men' в данных).
+const CATEGORIES: { id: StudioTab; label: string }[] = [
+  { id: 'female',   label: 'ЖЕНСКИЕ' },
+  { id: 'male',     label: 'МУЖСКИЕ' },
   { id: 'kids',     label: 'ДЕТИ' },
   { id: 'together', label: 'ПАРНЫЕ' },
 ];
@@ -28,11 +27,9 @@ export default function StylesScreen({
   selectedStyles,
   selectedGoal: _selectedGoal,
   activeCategory,
-  genderMode,
   isFullBody,
   onSelectStyle,
   onCategoryChange,
-  onGenderChange,
   onFullBodyToggle,
   onBack,
   onGenerate,
@@ -52,7 +49,15 @@ export default function StylesScreen({
     onSelectStyle(id);
   };
 
-  const filteredStyles = styles.filter(s => s.category === activeCategory);
+  // ЖЕНСКИЕ → реализм + премиум.
+  // МУЖСКИЕ → cinematic мужские стили (category 'men').
+  // ДЕТИ / ПАРНЫЕ → своя category.
+  const filteredStyles = (() => {
+    if (activeCategory === 'female')   return styles.filter(s => s.category === 'realistic' || s.category === 'premium');
+    if (activeCategory === 'male')     return styles.filter(s => s.category === 'men');
+    if (activeCategory === 'kids')     return styles.filter(s => s.category === 'kids');
+    return styles.filter(s => s.category === 'together');
+  })();
 
   const renderStyleCard = (style: Style) => {
     const isSelected = selectedStyles.includes(style.id);
@@ -121,24 +126,6 @@ export default function StylesScreen({
         </button>
       </div>
 
-      {/* Gender toggle — скрыт для парных фото (там 2 разных человека) */}
-      {activeCategory !== 'together' && (
-        <div className="flex mb-6 rounded-full bg-secondary border border-border p-1 gap-1">
-          {(['female', 'male'] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onGenderChange(mode)}
-              className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                genderMode === mode
-                  ? 'bg-primary text-primary-foreground shadow'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {mode === 'female' ? 'Женский' : 'Мужской'}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Categories */}
       <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">

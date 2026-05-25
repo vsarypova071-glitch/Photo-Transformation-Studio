@@ -5,8 +5,11 @@
    VIP = 'VIP'
  }
  
- export type StyleCategory = 'realistic' | 'premium' | 'kids' | 'together';
+ export type StyleCategory = 'realistic' | 'premium' | 'kids' | 'together' | 'men';
  export type GenderMode = 'female' | 'male';
+ // UI-вкладки: используются только в StudioScreen и StylesScreen.
+ // 'male' — показывает men cinematic стили (Повелитель пустыни и др.).
+ export type StudioTab = 'female' | 'male' | 'kids' | 'together';
  
  export interface User {
    id: string;

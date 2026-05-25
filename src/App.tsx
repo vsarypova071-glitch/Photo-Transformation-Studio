@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { backend } from './services/backend';
-import { StyleCategory, GenderMode, Job, Style } from './types';
+import { Job, Style, StudioTab } from './types';
 import { createLogger } from './utils/logger';
 import {
   createPayment,
@@ -90,8 +90,7 @@ function App() {
   }, []);
   const [uploadedImage, setUploadedImage] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [activeCategory, setActiveCategory] = useState<StyleCategory>('realistic');
-  const [genderMode, setGenderMode] = useState<GenderMode>('female');
+  const [activeCategory, setActiveCategory] = useState<StudioTab>('female');
   const [intensity, setIntensity] = useState(70);
   const [isFullBody, setIsFullBody] = useState(false);
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
@@ -917,11 +916,9 @@ function App() {
             selectedStyles={selectedStyles}
             selectedGoal={selectedGoal}
             activeCategory={activeCategory}
-            genderMode={genderMode}
             isFullBody={isFullBody}
             onSelectStyle={(id) => setSelectedStyles(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])}
             onCategoryChange={setActiveCategory}
-            onGenderChange={setGenderMode}
             onFullBodyToggle={() => setIsFullBody(!isFullBody)}
             onBack={() => navigateTo('upload')}
             onGenerate={() => navigateTo('tariff')}

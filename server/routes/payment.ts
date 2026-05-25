@@ -100,8 +100,15 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
 
   const router = Router();
 
-  // === Безопасная диагностика. НЕ показывает секрет, только метаданные. ===
-  router.get('/diagnostic', async (_req, res) => {
+  // === Диагностика ЮKassa — только для DevOps. Закрыта токеном. ===
+  // Установить DIAGNOSTIC_TOKEN=<random> в server/.env.
+  // Запрос: GET /api/payment/diagnostic?token=<значение>
+  // Без токена → 404 (не раскрываем факт существования endpoint'а).
+  router.get('/diagnostic', async (req, res) => {
+    const token = (process.env.DIAGNOSTIC_TOKEN || '').trim();
+    if (!token || req.query.token !== token) {
+      return res.status(404).json({ error: 'Not found' });
+    }
     res.json(await diagnoseCredentials());
   });
 

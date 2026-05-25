@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { STYLES as BUNDLED_STYLES } from '@/lib/constants';
-import { Style, StyleCategory } from '@/types';
+import { Style, StudioTab } from '@/types';
 import { studio } from '@/services/studio';
 import { createLogger } from '@/utils/logger';
 import { downloadGeneratedPhoto, detectDevice } from '@/utils/download';
@@ -14,13 +14,26 @@ import ReferralBlock from '@/components/ReferralBlock';
 // Стоимость парной генерации (должно совпадать с PAIR_CREDITS на бэкенде)
 const PAIR_CREDITS = 2;
 
-// Вкладки категорий в шаге choose (зеркалят StylesScreen)
-const STUDIO_CATEGORIES: { id: StyleCategory; label: string }[] = [
-  { id: 'realistic', label: 'РЕАЛИЗМ' },
-  { id: 'premium',  label: 'ПРЕМИУМ' },
+// Вкладки в шаге choose — по типу фотосессии, не по internal category.
+// 'male' = cinematic мужские стили (Повелитель пустыни и др.) — category 'men' в данных.
+const STUDIO_CATEGORIES: { id: StudioTab; label: string }[] = [
+  { id: 'female',   label: 'ЖЕНСКИЕ' },
+  { id: 'male',     label: 'МУЖСКИЕ' },
   { id: 'kids',     label: 'ДЕТИ' },
   { id: 'together', label: 'ПАРНЫЕ' },
 ];
+
+// Возвращает стили для выбранной вкладки.
+// ЖЕНСКИЕ → реализм + премиум.
+// МУЖСКИЕ → cinematic мужские стили (category 'men').
+// ДЕТИ / ПАРНЫЕ → своя category.
+function filterByTab(styles: Style[], tab: StudioTab): Style[] {
+  if (tab === 'female')   return styles.filter(s => s.category === 'realistic' || s.category === 'premium');
+  if (tab === 'male')     return styles.filter(s => s.category === 'men');
+  if (tab === 'kids')     return styles.filter(s => s.category === 'kids');
+  if (tab === 'together') return styles.filter(s => s.category === 'together');
+  return [];
+}
 
 const log = createLogger('StudioScreen');
 
@@ -81,9 +94,12 @@ export default function StudioScreen({
 
   // choose
   const [selectedStyleId, setSelectedStyleId] = useState<string>('');
-  const [studioCategory, setStudioCategory] = useState<StyleCategory>('realistic');
+  const [studioTab, setStudioTab] = useState<StudioTab>('female');
   const [isFullBody, setIsFullBody] = useState(false);
-  const [genderMode, setGenderMode] = useState<'female' | 'male'>('female');
+  // genderMode выводится из активной вкладки — отдельный стейт не нужен.
+  // MEN → 'male' (premium cinematic мужские стили, те же правила генерации).
+  // 'male' tab = cinematic мужские стили → genderMode 'male'
+  const genderMode = studioTab === 'male' ? 'male' : 'female';
 
   // result
   const [resultImage, setResultImage] = useState<string>('');
@@ -112,8 +128,8 @@ export default function StudioScreen({
     prefillConsumedRef.current = true;
     log.info('PREFILL applied', { prefillPhotoUrl, prefillStyleId });
 
-    // Фото юзера приходит сюда с Supabase Storage URL (legacy перед оплатой).
-    // Нужно скачать и заново залить в /api/photos чтобы получить filename для Beget.
+    // Фото юзера приходит сюда как URL (сохранён в заказе до оплаты).
+    // Скачиваем и заново заливаем в /api/photos чтобы получить актуальный filename на Beget.
     (async () => {
       try {
         setIsUploading(true);
@@ -374,10 +390,7 @@ export default function StudioScreen({
         </div>
       )}
 
-      {/* Phase 4 — Реферальный блок. Показывается только если flag включён
-          (внутри компонента + бэкенд). Для текущего prod (flag=false)
-          ReferralBlock рендерится null, ничего не меняется. */}
-      <ReferralBlock customerKey={customerKey} />
+      {/* ReferralBlock перенесён в шаг result — см. ниже */}
 
       {/* === ШАГ 1: ЗАГРУЗКА === */}
       {step === 'upload' && (
@@ -467,9 +480,9 @@ export default function StudioScreen({
               {STUDIO_CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => setStudioCategory(cat.id)}
+                  onClick={() => setStudioTab(cat.id)}
                   className={`px-4 py-2.5 rounded-full text-[10px] font-black border transition-all flex-shrink-0 ${
-                    studioCategory === cat.id
+                    studioTab === cat.id
                       ? 'bg-primary border-primary text-primary-foreground shadow-lg'
                       : 'bg-secondary border-border text-muted-foreground'
                   }`}
@@ -480,7 +493,7 @@ export default function StudioScreen({
             </div>
 
             {/* Пояснение для парных */}
-            {studioCategory === 'together' && (
+            {studioTab === 'together' && (
               <div className="mb-4 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/30 text-xs text-foreground/90 leading-relaxed">
                 <p className="font-black text-primary uppercase tracking-wider text-[10px] mb-1">👥 Два фото — один результат</p>
                 <p className="text-muted-foreground">Стоимость: <strong className="text-foreground">2 генерации</strong> за снимок.</p>
@@ -489,7 +502,7 @@ export default function StudioScreen({
 
             {/* Сетка стилей — отфильтрованная по вкладке */}
             <div className="grid grid-cols-2 gap-3">
-              {availableStyles.filter(s => s.category === studioCategory).map(style => (
+              {filterByTab(availableStyles, studioTab).map(style => (
                 <button
                   key={style.id}
                   onClick={() => setSelectedStyleId(style.id)}
@@ -523,27 +536,9 @@ export default function StudioScreen({
             </div>
           </div>
 
-          {/* Gender toggle — скрыт для парных фото и вкладки ПАРНЫЕ */}
-          {!isPairMode && studioCategory !== 'together' && (
-            <div className="flex rounded-full bg-secondary border border-border p-1 gap-1">
-              {(['female', 'male'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setGenderMode(mode)}
-                  className={`flex-1 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                    genderMode === mode
-                      ? 'bg-primary text-primary-foreground shadow'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {mode === 'female' ? 'Женский' : 'Мужской'}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Полный рост — скрыт для парных фото и вкладки ПАРНЫЕ */}
-          {!isPairMode && studioCategory !== 'together' && (
+          {/* Полный рост — скрыт для ПАРНЫЕ и MEN (кадрирование задаётся промптом) */}
+          {/* Полный рост: скрыт для ПАРНЫЕ и МУЖСКИЕ — у мужских стилей кадрирование задано в промпте */}
+          {!isPairMode && studioTab !== 'together' && studioTab !== 'male' && (
             <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
               <input
                 type="checkbox"
@@ -735,6 +730,11 @@ export default function StudioScreen({
           >
             {balance > 0 ? `Сгенерировать ещё (осталось ${balance})` : 'Купить ещё фото'}
           </button>
+
+          {/* 🎁 Реферальный блок — показывается после первого результата.
+              Пользователь только что увидел фото → максимально вовлечён → готов делиться.
+              Компонент сам проверяет flag и тихо скрывается если фича выключена. */}
+          <ReferralBlock customerKey={customerKey} />
         </div>
       )}
 

@@ -1,6 +1,8 @@
 // Wardrobe + buildPrompt — взяты из supabase/functions/generate-one/index.ts
 // чтобы у Beget single-generation был такой же визуальный стиль, как сейчас.
 
+import { filterWish, detectEnvironment, EnvironmentHint } from './wishFilter';
+
 const WARDROBE_FEMALE: readonly string[] = [
   'flowing silk midi dress in warm terracotta with gentle drape',
   'structured blazer dress in cobalt blue, sharp feminine silhouette',
@@ -38,7 +40,191 @@ function pickGarment(genderMode?: 'female' | 'male'): string {
   return wardrobe[Math.floor(Math.random() * wardrobe.length)];
 }
 
+// ── ENVIRONMENT-AWARE WARDROBE POOLS ─────────────────────────────────────────
+// Activated when detectEnvironment() finds a scene cue in the user's filtered wish.
+// Each pool is scene-coherent: no blazers on beaches, no bikinis in offices.
+// Falls back to WARDROBE_FEMALE / WARDROBE_MALE when no environment is detected.
+
+const ENV_WARDROBE_FEMALE: Record<EnvironmentHint, readonly string[]> = {
+  beach_resort: [
+    'flowing linen midi dress in warm white with gentle breeze drape — Mediterranean beach resort elegance',
+    'light linen sundress in sandy beige with subtle texture — effortless coastal summer luxury',
+    'breezy silk cover-up in soft ivory over minimal swimwear, wide brim hat — luxury beach lifestyle',
+    'relaxed linen co-ord set in warm sand tone — resort wear, elegant coastal leisure',
+    'lightweight cotton maxi dress in sky blue with thin straps — pure seaside summer editorial',
+  ],
+  yacht_nautical: [
+    'crisp white linen blouse with tailored navy wide-leg trousers, leather sandals — Monaco yacht club',
+    'flowing white silk maxi dress with navy accent — Riviera luxury, Mediterranean afternoon',
+    'premium navy and ivory striped linen set — classic nautical luxury, Côte d\'Azur aesthetic',
+    'lightweight silk blouse in ivory over cream tailored shorts — riviera resort summer fashion',
+    'tailored wide-leg trousers in warm white with nautical navy top — refined Monaco marina afternoon',
+    'lightweight cream silk midi skirt with relaxed navy linen blouse — Côte d\'Azur harbour editorial',
+  ],
+  alpine_winter: [
+    'oversized cashmere coat in cream over luxury turtleneck, slim premium trousers — alpine elegance',
+    'premium ski parka in deep navy with tailored slim snow trousers — luxury alpine resort style',
+    'chunky cable-knit turtleneck in warm oat over tailored wool trousers — Courchevel après-ski chic',
+    'luxurious sherpa-trim parka in camel, warm boots — mountain luxury editorial fashion',
+    'fine cashmere jumper in ivory fitted at the waist, sleek dark ski trousers — alpine luxury portrait',
+  ],
+  evening_dinner: [
+    'sculptural floor-length gown in deep midnight with elegant draping — luxury dinner editorial',
+    'sleek fitted midi dress in deep wine with gathered detail — sophisticated evening wear',
+    'silk slip dress in champagne gold with refined jewelry — elegant dinner party look',
+    'elegant evening gown in deep forest green, minimal luxury styling — timeless dinner glamour',
+    'draped satin dress in dusty rose, one-shoulder silhouette — premium evening editorial',
+  ],
+  business_formal: [
+    'precision-tailored blazer in deep charcoal with slim trousers, crisp white blouse — executive authority',
+    'structured double-breasted blazer dress in midnight navy — powerful corporate femininity',
+    'fitted pencil skirt and matching blazer in warm taupe — refined professional presence',
+    'tailored blazer in rich cobalt over cream high-neck blouse, slim trousers — modern executive woman',
+    'sleek high-neck blouse in ivory with sharp-cut charcoal wide-leg trousers — senior executive presence',
+    'structured collarless blazer in warm camel over slim cream trousers — modern quiet luxury corporate',
+  ],
+  nature_outdoor: [
+    'relaxed premium linen trousers in warm earth tone and soft cotton blouse — nature editorial luxury',
+    'tailored utility jacket in olive over wide-leg premium trousers — editorial outdoor elegance',
+    'soft cashmere sweater in warm camel and relaxed luxury trousers — countryside editorial mood',
+    'flowing maxi skirt in terracotta and tucked silk top — nature lifestyle luxury editorial',
+    'oversized linen shirt in warm sand over slim trousers — effortless editorial nature aesthetic',
+  ],
+  city_casual: [
+    'tailored oversized blazer in warm camel over fitted turtleneck, slim trousers — urban editorial chic',
+    'silk blouse in dusty rose with high-waisted tailored trousers — city lifestyle premium fashion',
+    'structured midi dress in warm cognac — urban premium editorial, city luxury lifestyle',
+    'minimalist knit dress in deep charcoal with elegant accessories — clean modern urban look',
+    'relaxed wool coat in warm stone over fitted turtleneck, slim dark trousers — elevated urban lifestyle',
+    'tailored leather blazer in warm cognac over clean white tee, straight-leg trousers — city premium editorial',
+  ],
+};
+
+const ENV_WARDROBE_MALE: Record<EnvironmentHint, readonly string[]> = {
+  beach_resort: [
+    'premium linen shirt in soft white, open collar, tailored shorts — luxury beach resort aesthetic',
+    'relaxed linen co-ord in sandy beige — Mediterranean resort wear, effortless coastal elegance',
+    'lightweight linen shirt in light blue over tailored swim shorts — refined seaside lifestyle',
+    'premium white resort shirt half-tucked, linen shorts — natural luxury beach moment',
+    'vintage-washed cotton button-down in sky blue, relaxed tailored shorts — effortless coastal luxury',
+  ],
+  yacht_nautical: [
+    'crisp white linen shirt, open collar, navy tailored shorts, premium watch — Monaco yacht club',
+    'luxury navy polo shirt with tailored cream chinos — Riviera nautical summer elegance',
+    'premium white quarter-zip over dark tailored shorts — yacht lifestyle, luxury summer',
+    'classic navy linen blazer over crisp white shirt, tailored chinos — Riviera yacht club elegance',
+    'premium ivory linen co-ord — relaxed elegant yacht owner, sun-drenched Mediterranean afternoon',
+  ],
+  alpine_winter: [
+    'premium ski parka in deep charcoal, fitted base layer, luxury snow trousers — alpine editorial',
+    'chunky cable-knit sweater in cream under structured outdoor jacket — mountain luxury lifestyle',
+    'luxury performance jacket in navy over slim merino turtleneck — alpine resort masculine elegance',
+    'luxury down vest in deep navy over premium merino turtleneck, fitted ski trousers — alpine weekend',
+    'warm slate grey ski jacket with tailored snow trousers, luxury watch detail — mountain editorial',
+  ],
+  evening_dinner: [
+    'perfectly tailored black tuxedo, crisp white shirt, slim bow tie — elegant dinner sophistication',
+    'navy slim-fit dinner suit, fine white dress shirt — refined evening masculine presence',
+    'dark charcoal suit with premium white shirt, pocket square — timeless evening luxury',
+    'slim double-breasted suit in deep forest green, white shirt, no tie — elevated modern dinner luxury',
+    'premium cream dinner jacket with tailored dark trousers — summer evening, Riviera gala aesthetic',
+  ],
+  business_formal: [
+    'bespoke tailored suit in deep navy, crisp white shirt, no tie — senior executive authority',
+    'precision charcoal suit with structured white dress shirt — masculine professional presence',
+    'tailored double-breasted suit in midnight blue — commanding business masculine elegance',
+    'slim-cut suit in warm olive, white shirt — modern executive with quiet distinguished personality',
+    'luxury herringbone blazer in rich brown over cream shirt, dark trousers — intellectual authority',
+  ],
+  nature_outdoor: [
+    'premium linen shirt in warm sand over tailored outdoor trousers — editorial nature lifestyle',
+    'relaxed luxury field jacket in olive over premium white shirt, slim trousers — outdoor editorial',
+    'soft cashmere sweater in warm camel, relaxed luxury trousers — countryside masculine elegance',
+    'premium technical fleece in warm charcoal over slim outdoor trousers — editorial mountain lifestyle',
+    'slim-cut waxed jacket in olive over premium cotton shirt — English countryside gentleman energy',
+  ],
+  city_casual: [
+    'tailored jacket in forest green, slim trousers, premium white shirt — smart urban masculine',
+    'luxury turtleneck in cream cashmere under structured open blazer — city editorial cool',
+    'premium overshirt in warm cognac over slim dark trousers — relaxed urban luxury masculine',
+    'structured wool coat in camel over clean white shirt, slim dark trousers — elevated city daily look',
+    'navy unstructured blazer over premium grey tee and slim chinos — effortless urban masculine style',
+  ],
+};
+
+/**
+ * Picks a wardrobe item appropriate for the scene environment detected from the
+ * user's filtered wish. Falls back to the default random pool if no environment
+ * cue is present — preserving existing behaviour for all non-location wishes.
+ *
+ * Only fires for editorial non-clean-portrait styles (same condition as the
+ * OUTFIT INSPIRATION line in the return array). MEN cinematic styles are
+ * handled separately by pickMenWardrobe() and are never affected.
+ */
+function pickEnvironmentAwareGarment(filteredWish: string, genderMode?: 'female' | 'male'): string {
+  const env = detectEnvironment(filteredWish);
+  if (!env) return pickGarment(genderMode);
+  const pool = genderMode === 'male' ? ENV_WARDROBE_MALE[env] : ENV_WARDROBE_FEMALE[env];
+  return pickFromArray(pool);
+}
+
+// ── LUXURY COLOR PALETTE POOLS ───────────────────────────────────────────────
+// Rotated randomly per generation to drive visual diversity across repeated
+// generations of the same style. AI is instructed to cross-reference the
+// suggested palette with THIS specific person's natural coloring from the
+// reference photo — palette is a starting direction, not a hard override.
+
+const COLOR_PALETTES: Record<string, readonly string[]> = {
+  cool_elegant:     ['cobalt blue', 'steel grey', 'dusty rose', 'icy white', 'deep navy', 'silver', 'soft lavender', 'muted slate'],
+  warm_elegant:     ['camel', 'terracotta', 'warm coral', 'cognac', 'cream', 'champagne', 'warm amber', 'soft gold'],
+  deep_contrast:    ['midnight black', 'deep charcoal', 'forest green', 'dark plum', 'deep wine', 'rich espresso', 'dark navy'],
+  soft_neutral:     ['ivory', 'warm oat', 'sand beige', 'dusty mauve', 'soft blush', 'pale grey', 'warm white'],
+  luxury_universal: ['deep emerald', 'rich burgundy', 'warm cognac', 'teal', 'deep plum', 'forest green', 'cobalt blue'],
+};
+
+/** Returns a random "palette label — color list" string for the COLOR ADAPTATION block. */
+function pickColorDirection(): string {
+  const keys = Object.keys(COLOR_PALETTES);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  return `${key.replace(/_/g, ' ')} — ${COLOR_PALETTES[key].join(', ')}`;
+}
+
+/**
+ * Builds the PERSONAL COLOR ADAPTATION prompt block.
+ *
+ * Rotates through 5 luxury palette pools per generation to prevent color repetition
+ * across successive generations of the same style.
+ *
+ * Detects whether the user mentioned a specific clothing item in their wish —
+ * if so, keeps the silhouette but adapts color to the person's natural coloring.
+ *
+ * No AI color analysis — prompt-level instruction only. The AI reads the
+ * reference photo and applies the direction accordingly.
+ */
+function buildColorInstruction(filteredWish: string): string {
+  const colorDirection = pickColorDirection();
+
+  // Detect user-specified clothing item (RU + EN).
+  const userMentionedClothing = /платье|костюм|пиджак|блуза|рубашка|юбка|брюки|куртка|пальто|dress|suit|blazer|blouse|shirt|skirt|trousers|jacket|coat/i.test(filteredWish);
+
+  const base = `PERSONAL COLOR ADAPTATION:
+Analyze THIS specific person's natural coloring from the reference photo — skin undertone, hair color, eye color.
+Choose outfit colors that genuinely flatter their specific coloring, not a generic editorial palette choice.
+Color direction for this generation: ${colorDirection}.
+The outfit must feel personally selected for this individual — not randomly assigned.
+Hair undertone guidance: warm golden → camel, ivory, champagne, cognac, warm amber.
+Cool/fair → steel grey, navy, icy white, dusty rose, cobalt. Deep warm → chocolate, forest green, burgundy.
+Dark hair → midnight, rich black, ivory, silver, deep emerald. Neutral → any rich saturated color.`;
+
+  const clothingAdaptLine = userMentionedClothing
+    ? '\nUser mentioned a specific clothing type — honor the silhouette, but choose the exact color/shade to flatter this person\'s natural coloring from the reference photo.'
+    : '';
+
+  return base + clothingAdaptLine;
+}
+
 // Позы для портретного кадра (голова + плечи / поясной).
+// P2: расширен с 8 до 12 — снижает вероятность повтора позы при генерации разных стилей.
 const POSES_PORTRAIT: readonly string[] = [
   'three-quarter turn, weight shifted to one hip, relaxed shoulder drop — candid editorial',
   'leaning lightly against surface, arms naturally relaxed, genuine unstaged energy',
@@ -48,9 +234,15 @@ const POSES_PORTRAIT: readonly string[] = [
   'natural hand near face or collar — organic gesture, not staged or forced',
   'body lightly turned, strong editorial angle — like a working photographer caught the moment',
   'glancing back toward camera — candid luxury editorial moment, genuine personality',
+  // +4 новых
+  'standing near architecture, one arm loosely raised, fingertips grazing surface — dynamic but effortless',
+  'seated or perched, legs together, hands softly in lap, looking directly into camera — composed modern poise',
+  'half-turned, one shoulder forward, gaze over shoulder toward lens — caught in a real transition moment',
+  'chin resting lightly on hand, thoughtful direct gaze — quiet confident intelligence, wholly natural gesture',
 ];
 
 // Позы для full-body кадра.
+// P2: расширен с 7 до 10.
 const POSES_FULLBODY: readonly string[] = [
   'walking naturally toward camera — caught mid-step, body in real motion',
   'leaning against wall or surface, weight on one leg, arms naturally at sides',
@@ -59,6 +251,10 @@ const POSES_FULLBODY: readonly string[] = [
   'elegant natural stride — confident forward motion, not a runway walk',
   'one hand in pocket, weight shifted, relaxed powerful presence in open space',
   'three-quarter turn, weight on back leg, looking over shoulder toward camera',
+  // +3 новых
+  'standing in architectural frame (doorway, archway, window) — environment as natural border, body at ease',
+  'crouching slightly or sitting on low surface, elbows on knees, direct calm gaze — grounded editorial energy',
+  'side profile, weight on far leg, chin slightly lifted, looking forward — strong clean silhouette shot',
 ];
 
 // Схемы освещения — каждая создаёт отдельный атмосферный мир.
@@ -79,6 +275,230 @@ function pickPose(isFullBody?: boolean): string {
 
 function pickLighting(): string {
   return LIGHTINGS[Math.floor(Math.random() * LIGHTINGS.length)];
+}
+
+// ── ЖЕНСКИЕ STYLE-SPECIFIC POSE POOLS ────────────────────────────────────────
+// P2: стиль-специфичные позы для 4 женских образов с уникальной physicality.
+// Паттерн как в MEN серии — pickFemaleEditorialPose() детектирует стиль по тегу
+// в stylePrompt и выбирает из нужного pool. Остальные стили → POSES_PORTRAIT/FULLBODY.
+
+// БОГИНЯ (intellectual_elegance) — эпическая, морская, ветер, скалы.
+const POSES_FEMALE_GODDESS: readonly string[] = [
+  'standing at cliff edge, wind in hair and fabric, arms slightly open — silent power, sea behind',
+  'sitting on marble terrace ledge overlooking sea, one hand resting on stone, direct composed gaze',
+  'turned in profile against open ocean horizon, fabric catching wind, strong and still as the landscape',
+  'walking slowly on coastal stone path, looking back over shoulder at camera with quiet authority',
+  'both hands resting lightly on ancient stone wall, looking into camera — calm ownership of the space',
+  'one arm raised slightly against sea wind, weight back on one hip, dress in motion — epic editorial',
+];
+
+// МОНАКО (new_york_power) — яхта, набережная, расслабленный luxury статус.
+const POSES_FEMALE_MONACO: readonly string[] = [
+  'standing on yacht bow, one hand on chrome railing, sea wind in hair — relaxed confident nautical',
+  'leaning against harbour railing with Mediterranean sea behind, arms loose, direct calm gaze',
+  'sitting on promenade wall, one leg drawn up, looking toward sea — effortless Monaco afternoon',
+  'walking along dock looking sideways at the water — caught mid-stroll, candid lifestyle energy',
+  'hand resting on luxury car rooftop at waterfront, weight on one hip, subtle natural confidence',
+  'forearms resting on yacht railing, Mediterranean light on face, open warm direct gaze to camera',
+];
+
+// РОМАНТИКА (parisian_chic) — мягкая, кафе, цветы, свет Парижа / летний сад.
+const POSES_FEMALE_ROMANCE: readonly string[] = [
+  'sitting at outdoor cafe table, elbows resting, both hands around coffee cup, warm natural smile',
+  'standing beside sunny cafe window, one hand lightly touching glass, looking out into warm street',
+  'walking through flower market, looking over shoulder at camera — soft spontaneous candid moment',
+  'seated on sunlit park bench with book open, looking up at camera with gentle genuine expression',
+  'standing in warm doorway, shoulder against the frame, flowers nearby — relaxed feminine presence',
+  'holding small flower bouquet at chest level, looking directly into camera with soft quiet joy',
+];
+
+// ДИКАЯ ПРИРОДА (golden_hour_glow) — натуральная, свободная, горы / лес / открытые пространства.
+const POSES_FEMALE_WILD: readonly string[] = [
+  'standing on rocky outcrop with open valley behind, weight on one leg, grounded confident gaze',
+  'arms lightly open to sides, chin slightly lifted — breathing in open wilderness, alive and free',
+  'sitting on boulder or fallen log, hands on knees, looking directly at camera — still, real, grounded',
+  'walking through tall grass, hands brushing the tips, looking over shoulder at camera — candid nature',
+  'leaning back against ancient tree trunk, hands in coat pockets, steady forest gaze — rooted energy',
+  'crouching near stream or water edge, one arm resting on knee, candid natural editorial moment',
+];
+
+/** Выбирает позу для женских editorial стилей с style-specific пулами.
+ *  При совпадении с одним из 4 стилей — берёт из профильного пула.
+ *  Иначе — из общего POSES_PORTRAIT / POSES_FULLBODY (как раньше).
+ *  Сигнатура идентична pickPose() для простой замены в buildPrompt(). */
+function pickFemaleEditorialPose(stylePrompt: string, isFullBody?: boolean): string {
+  // Детектируем по тегам из SQL-промптов (migration 009).
+  if (/DIVINE CINEMATIC|БОГИНЯ/i.test(stylePrompt))     return pickFromArray(POSES_FEMALE_GODDESS);
+  if (/MONACO LIFESTYLE|МОНАКО/i.test(stylePrompt))     return pickFromArray(POSES_FEMALE_MONACO);
+  if (/SUMMER HAPPINESS|РОМАНТИКА/i.test(stylePrompt))  return pickFromArray(POSES_FEMALE_ROMANCE);
+  if (/FRESH WILDERNESS|ДИКАЯ ПРИРОДА/i.test(stylePrompt)) return pickFromArray(POSES_FEMALE_WILD);
+  // Fallback: стандартный пул (portrait или full-body).
+  return isFullBody
+    ? pickFromArray(POSES_FULLBODY)
+    : pickFromArray(POSES_PORTRAIT);
+}
+
+// ── MEN CINEMATIC SERIES: банки поз, атмосфера, одежда ─────────────────────
+// Используются только для стилей с тегом [MEN:] в stylePrompt.
+
+const POSES_MEN_DESERT: readonly string[] = [
+  'standing confidently next to the open SUV door, one hand resting on the door frame, direct camera gaze',
+  'leaning casually against the SUV hood, arms lightly crossed, relaxed masculine presence',
+  'one hand in pocket, three-quarter turn toward camera, weight shifted — grounded confident stance',
+  'stepping out of the SUV caught mid-movement — natural energy, real candid adventure moment',
+  'sitting on the open door edge, one foot on the sand, relaxed editorial adventure pose',
+  'adjusting luxury wristwatch beside the SUV, glancing up toward camera — caught in a real moment',
+  'crossed arms near the front hood, weight shifted back, rugged masculine confidence',
+];
+
+const POSES_MEN_FISHING: readonly string[] = [
+  'holding giant Northern Pike proudly with both hands at chest level, broad smile, direct eye contact',
+  'holding trophy fish and making a casual relaxed thumbs-up — genuine masculine pride and joy',
+  'standing on dock with fish held outward toward camera — trophy presentation, natural proud posture',
+  'kneeling at lake shore with trophy fish — grounded, authentic, editorial outdoor moment',
+  'fish held to the side, body in three-quarter turn — proud energy with misty lake behind',
+];
+
+const POSES_MEN_YACHT: readonly string[] = [
+  'one hand in shorts pocket, direct eye contact, relaxed confident stance on yacht deck',
+  'leaning lightly against the yacht rail, open ocean horizon behind, natural casual weight shift',
+  'adjusting luxury watch, looking up toward camera — caught in a real relaxed authentic moment',
+  'standing confidently on deck, body slightly turned, open grounded masculine posture',
+  'walking slowly across deck, caught mid-step — natural cinematic movement energy',
+  'one-hand-in-pocket stance, wide ocean horizon in background, calm dominant masculine presence',
+];
+
+const POSES_MEN_LION: readonly string[] = [
+  'standing confidently beside lion, one hand in trouser pocket, calm dominant stance, direct camera gaze',
+  'crossed arms beside the lion, strong composed posture, alpha leader energy radiating outward',
+  'adjusting suit jacket cuff near the lion — subtle authoritative gesture, composed executive presence',
+  'slight three-quarter turn toward camera — caught in a powerful composed moment beside the lion',
+  'standing at angle to camera, lion at side — commanding cinematic leadership composition',
+  'looking toward savanna horizon, lion beside him — wide epic leadership framing',
+];
+
+// ── MEN CINEMATIC SERIES WAVE 2: variation banks ────────────────────────────
+
+const POSES_MEN_INTELLECTUAL: readonly string[] = [
+  'sitting in a leather armchair of a premium library, arms relaxed on armrests, direct intelligent calm gaze into camera — quiet authority',
+  'standing beside floor-to-ceiling bookshelves, one hand resting lightly on books, composed thoughtful direct gaze — intellectual presence',
+  'leaning forward slightly at a clean modern desk, hands clasped, intense focused gaze directly at camera — analytical energy',
+  'holding a book or notebook in one hand, looking up directly into camera with sharp composed gaze — intellectual confidence',
+  'three-quarter turn near a tall window with natural light, relaxed posture, calm intelligent direct gaze into camera — editorial presence',
+];
+
+const WARDROBE_MEN_INTELLECTUAL: readonly string[] = [
+  'tailored charcoal blazer over a premium white Oxford shirt — understated intellectual authority, clean minimal styling',
+  'smart dark merino turtleneck sweater, clean premium minimal look — modern intellectual elegance without effort',
+  'refined business casual: premium navy blazer, white shirt, no tie — intellectual confidence without formality',
+  // P2: +3 варианта → pool 6, сокращает повторы при 5+ генерациях
+  'fitted charcoal turtleneck under an open structured blazer in warm tobacco brown — quiet academic authority',
+  'premium dark navy overshirt with subtle texture, worn open over clean white tee — smart relaxed intellectual energy',
+  'light grey fine-wool crewneck sweater with pressed dark trousers — Princeton-library casual, effortless intelligence',
+];
+
+const POSES_MEN_PRIVATE_JET: readonly string[] = [
+  'sitting relaxed in plush leather seat, holding crystal whiskey glass, direct calm gaze into camera — billionaire composure',
+  'looking through oval airplane window, profile caught mid-thought, light flooding across face — cinematic wealth',
+  'adjusting luxury wristwatch with both hands, glancing up toward camera — caught in a real wealthy moment',
+  'leaning back fully in first-class leather seat, arm resting on tray, one leg crossed — effortless confidence',
+  'standing in jet aisle slightly, hand resting on seat back, direct camera gaze — private jet owner energy',
+];
+
+const WARDROBE_MEN_PRIVATE_JET: readonly string[] = [
+  'premium white quarter-zip cashmere knit sweater, luxury watch visible — first-class effortless wealth',
+  'unbuttoned luxury black silk shirt, relaxed open collar, premium watch — cinematic billionaire casual',
+  'beige fine cashmere crewneck sweater, minimal elegant styling — quiet old-money luxury aesthetic',
+  // P2: +3 варианта → pool 6
+  'stone-grey premium cashmere zip-up hoodie, relaxed and expensive — billionaire off-duty, above the clouds',
+  'midnight navy fine-knit polo, understated luxury watch, single thin bracelet — refined first-class elegance',
+  'cream merino wool rollneck under open linen blazer in warm sand — European luxury travel, effortless premium',
+];
+
+const POSES_MEN_ATHLETE: readonly string[] = [
+  'standing confidently in a premium gym, arms loose at sides, direct powerful focused gaze into camera — athletic authority',
+  'leaning one hand against a wall or column, relaxed athletic weight shift, direct composed gaze — grounded presence',
+  'seated on a weight bench, forearms resting on knees, direct intense focused gaze into camera — authentic training moment',
+  'standing outdoors in athletic gear, three-quarter turn, alive masculine energy looking directly into camera',
+  'mid-motion pause — caught between reps, powerful authentic athletic energy, direct confident gaze into camera',
+];
+
+const WARDROBE_MEN_ATHLETE: readonly string[] = [
+  'premium black performance t-shirt and athletic shorts, luxury brand aesthetic — clean powerful athletic presence',
+  'fitted compression base layer top with premium running shorts, elite athletic training aesthetic',
+  'luxury performance hoodie open over a fitted athletic tank — sporty editorial masculine lifestyle look',
+  // P2: +3 варианта → pool 6
+  'clean white premium athletic tee and dark training shorts — minimal elite fitness, editorial calm energy',
+  'structured athletic jacket in slate grey, open over performance base layer — luxury sport editorial cool',
+  'premium navy technical quarter-zip pullover, fitted athletic trousers — high-performance lifestyle aesthetic',
+];
+
+const POSES_MEN_WARRIOR: readonly string[] = [
+  'standing powerfully facing camera, one gauntleted hand on sword hilt, direct intense warrior gaze — unyielding presence',
+  'arms crossed against mountain wind, cloak billowing, composed unbreakable stance, direct camera gaze',
+  'looking toward distant mountain horizon, side-profile cinematic composition — contemplative warrior leader',
+  'low-angle shot from below, warrior towering against stormy sky, dramatic heroic framing, direct eyes at camera',
+  'stepping forward through snow, armor catching cold light, breath misting in frozen air — alive cinematic warrior moment',
+];
+
+const WARDROBE_MEN_WARRIOR: readonly string[] = [
+  'dark forged metal plate armor with massive heavy fur cape, intricate battle-worn detailing — legendary warrior',
+  'weathered dark leather warrior vest with iron chest plates, aged leather bracers — Nordic warrior aesthetic',
+  'cinematic full dark armored outfit with wolf-fur mantle, clasp detail, worn battle aesthetic — legendary hero',
+];
+
+function pickFromArray<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pickMenPose(stylePrompt: string): string {
+  if (/DESERT KING/i.test(stylePrompt))    return pickFromArray(POSES_MEN_DESERT);
+  if (/BIG CATCH/i.test(stylePrompt))      return pickFromArray(POSES_MEN_FISHING);
+  if (/KING OF THE OCEAN/i.test(stylePrompt)) return pickFromArray(POSES_MEN_YACHT);
+  if (/MASTER OF LIFE/i.test(stylePrompt)) return pickFromArray(POSES_MEN_LION);
+  if (/INTELLECTUAL/i.test(stylePrompt))    return pickFromArray(POSES_MEN_INTELLECTUAL);
+  if (/PRIVATE JET/i.test(stylePrompt))    return pickFromArray(POSES_MEN_PRIVATE_JET);
+  if (/\bATHLETE\b/i.test(stylePrompt))    return pickFromArray(POSES_MEN_ATHLETE);
+  if (/LEGEND WARRIOR/i.test(stylePrompt)) return pickFromArray(POSES_MEN_WARRIOR);
+  return pickPose();
+}
+
+function buildMenAtmosphere(stylePrompt: string): string {
+  if (/DESERT KING/i.test(stylePrompt))
+    return 'ATMOSPHERE: Sandy desert canyon at golden sunset. Dust particles floating in warm canyon air. Sun rays piercing through dust clouds. Heat haze visible in the distance. Wind moving jacket fabric slightly. Volumetric warm golden light casting long shadows.';
+  if (/BIG CATCH/i.test(stylePrompt))
+    return 'ATMOSPHERE: Misty lake at sunrise. Soft golden hour sun flare reflecting on still water. Morning atmospheric fog drifting across the lake surface. Calm peaceful lake setting. Weathered wooden dock beneath feet. Warm cinematic sunrise color grade.';
+  if (/KING OF THE OCEAN/i.test(stylePrompt))
+    return 'ATMOSPHERE: Golden tropical sunset reflecting across the ocean. Sun flare breaking through evening clouds. Ocean wind moving jacket fabric. Cinematic warm tropical mist in the air. Luxury yacht lifestyle premium visual.';
+  if (/MASTER OF LIFE/i.test(stylePrompt))
+    return 'ATMOSPHERE: Warm African golden hour sunset. Cinematic sun flare on the horizon. Soft dust particles in the evening air. Dramatic long shadows stretching across the vast savanna below. Wind subtly moving suit fabric. Rocky cliff edge with panoramic savanna vista.';
+  if (/INTELLECTUAL/i.test(stylePrompt))
+    return 'ATMOSPHERE: Premium private library or modern minimal workspace with warm amber light. Floor-to-ceiling bookshelves, rich leather furniture, warm wooden surfaces. Soft natural light through tall windows. Intellectual atmosphere of quiet authority and composed achievement.';
+  if (/PRIVATE JET/i.test(stylePrompt))
+    return 'ATMOSPHERE: Exclusive private jet interior. Warm golden sunlight streaming through oval cabin windows. Plush cream leather seats, polished wood trim, premium aviation luxury details. Quiet powerful cabin — above the clouds, above the world.';
+  if (/\bATHLETE\b/i.test(stylePrompt))
+    return 'ATMOSPHERE: Modern luxury gym with floor-to-ceiling windows and panoramic city views, or premium outdoor athletic training setting at golden hour. Clean architectural lines, premium equipment, warm cinematic light. Athletic masculine energy radiating from the space.';
+  if (/LEGEND WARRIOR/i.test(stylePrompt))
+    return 'ATMOSPHERE: Dramatic snowy mountain peaks under dark stormy sky. Cinematic movie-grade lighting cutting through clouds. Heavy fog rolling through mountain valleys. Snow and ice catching cold directional light. Epic fantasy-realism visual — dark, powerful, legendary.';
+  return `LIGHTING: ${pickLighting()}`;
+}
+
+function pickMenWardrobe(stylePrompt: string): string {
+  if (/DESERT KING/i.test(stylePrompt))
+    // P2 fix: разведён с King of Ocean (оба были open jacket + torso).
+    // Desert King = сухопутный экспедитор, King of Ocean = яхтенный атлет.
+    return 'rugged khaki tactical shirt with sleeves rolled to elbow, worn leather belt, dark expedition cargo shorts — sand-dusted adventure explorer, no exposed torso';
+  if (/BIG CATCH/i.test(stylePrompt))
+    return 'functional olive green tactical outdoor suit, luxury watch — rugged refined expedition aesthetics';
+  if (/KING OF THE OCEAN/i.test(stylePrompt))
+    return 'open premium black jacket over toned athletic torso, dark shorts, luxury watch — ocean lifestyle aesthetic';
+  if (/MASTER OF LIFE/i.test(stylePrompt))
+    return 'charcoal tailored business suit, crisp white shirt, premium fabric — authoritative alpha executive';
+  if (/INTELLECTUAL/i.test(stylePrompt))    return pickFromArray(WARDROBE_MEN_INTELLECTUAL);
+  if (/PRIVATE JET/i.test(stylePrompt))    return pickFromArray(WARDROBE_MEN_PRIVATE_JET);
+  if (/\bATHLETE\b/i.test(stylePrompt))    return pickFromArray(WARDROBE_MEN_ATHLETE);
+  if (/LEGEND WARRIOR/i.test(stylePrompt)) return pickFromArray(WARDROBE_MEN_WARRIOR);
+  return pickGarment('male');
 }
 
 // Ключевые слова lifestyle/kids стилей. Совпадение → editorial-блоки отключаются.
@@ -103,6 +523,9 @@ function detectIsEditorial(
 }
 
 export interface BuildPromptInput {
+  /** ID стиля из БД/bundle — используется как дополнительный сигнал детектирования
+   *  когда prompt может быть пустым (bundle fallback). Например: 'bw_portrait'. */
+  styleId?: string;
   stylePrompt: string;
   customPrompt?: string;
   isFullBody?: boolean;
@@ -145,7 +568,36 @@ export function buildNegativePrompt(): string {
   ].join(', ');
 }
 
+// ── BODY SHAPE & IDENTITY LOCK ───────────────────────────────────────────────
+// Permanent block — inserted into EVERY prompt regardless of style or mode.
+// Covers body weight / proportions for portrait AND full-body.
+// Complements identityBlock (face) and fullBodyFaceLockBlock (full-body face+body).
+// Positioned BEFORE user styling note — establishes inviolable priority hierarchy.
+const BODY_SHAPE_LOCK = `\
+BODY SHAPE & IDENTITY LOCK (always enforced — overrides all user input):
+User styling notes are always secondary to identity and body preservation.
+
+NEVER change regardless of user request:
+- Body weight, waist, hips, chest/bust, stomach, arms, legs — do NOT slim, enlarge, or reshape.
+- Facial anatomy: nose shape, eye shape, lip shape, jaw, cheekbones, chin — do NOT alter.
+- Age: do NOT make younger, older, or rejuvenated. Preserve exact visible age from the reference photo.
+- Ethnicity, skin undertone, and natural distinguishing features — do NOT generalize or change.
+- Do NOT transform the subject into a fitness model, editorial beauty archetype, or any celebrity/model likeness.
+The subject must remain visually identical to the reference photo in body type, face geometry, and age.
+
+ALLOWED via user styling note (these do not alter identity):
+- Accessories: glasses, sunglasses (accent), earrings, necklace, hat, scarf, bag.
+- Clothing: outfit, dress, jacket, suit, coat — color, style, fabric type.
+- Background: indoor, outdoor, location, architecture, nature setting, city.
+- Lighting: golden hour, dramatic, soft, cinematic, colored atmosphere.
+- Cinematic mood, color palette, overall visual atmosphere.
+- Subtle natural expression: soft smile, calm, confident energy.`;
+
 export function buildPrompt(input: BuildPromptInput): string {
+  // Filter user wish — backend enforcement, cannot be bypassed from browser.
+  // Raw customPrompt is stored in DB for audit; filtered version goes to AI.
+  const filteredWish = filterWish(input.customPrompt);
+
   const fullBodyHint = input.isFullBody
     ? 'Full body composition: include subject from head to feet.'
     : 'Portrait composition: head and shoulders, magazine cover style.';
@@ -459,8 +911,12 @@ Preferred inspiration: Dubai elite, chrome minimalism, luxury skyscrapers, sculp
 Avoid: cyberpunk clichés, latex fetish aesthetics, gamer visuals, sci-fi cosplay, neon overload.`;
 
   // ТИХАЯ РОСКОШЬ / OLD MONEY LIFESTYLE — quiet luxury, old money estate. Активен для editorial стилей.
+  // FIX (migration 020): после migration 009 prompt стиля old_money начинается с [LUXURY DAYLIGHT],
+  // а не с «тихая роскошь». Добавляем LUXURY DAYLIGHT в regex, чтобы oldMoneyEstateBlock
+  // применялся и давал scene variety (countryside, horses, cashmere, Range Rover).
+  // LUXURY DAYLIGHT уникален — только old_money использует этот тег, побочных срабатываний нет.
   const isOldMoneyEstate = isEditorial &&
-    /ТИХАЯ РОСКОШЬ|тихая.*роскошь|quiet.*luxury.*lifestyle|old.*money.*lifestyle/i.test(input.stylePrompt);
+    /ТИХАЯ РОСКОШЬ|LUXURY DAYLIGHT|тихая.*роскошь|quiet.*luxury.*lifestyle|old.*money.*lifestyle/i.test(input.stylePrompt);
 
   // WILD LUXURY — активируется только для стилей с явными животными (волк, пантера и т.д.).
   // Намеренно НЕ срабатывает на ДИКАЯ ПРИРОДА / FRESH WILDERNESS (там нет животных).
@@ -640,11 +1096,138 @@ WHAT TO AVOID:
   // ЧЁРНО-БЕЛЫЙ ПОРТРЕТ — timeless monochrome studio portrait.
   // Как social portrait: отключает тяжёлые luxury-блоки.
   // Дополнительно: вставляет блок принудительного B&W вывода.
-  const isBWPortrait = isEditorial &&
-    /TIMELESS PORTRAIT|ЧЁРНО-БЕЛЫЙ|bw.portrait|monochrome.*portrait|grayscale.*portrait/i.test(input.stylePrompt);
+  //
+  // FIX (migration 020): двойная защита от деградации при пустом prompt.
+  //   Сигнал 1: keyword в stylePrompt (основной путь — prompt из БД начинается с [TIMELESS PORTRAIT]).
+  //   Сигнал 2: styleId === 'bw_portrait' (страховка — срабатывает даже если prompt пустой
+  //             в bundle-fallback режиме или при ошибке применения миграции).
+  // Оба сигнала независимы — достаточно одного для активации B&W-блока.
+  const isBWPortrait = isEditorial && (
+    /TIMELESS PORTRAIT|ЧЁРНО-БЕЛЫЙ|bw.portrait|monochrome.*portrait|grayscale.*portrait/i.test(input.stylePrompt)
+    || input.styleId === 'bw_portrait'
+  );
 
   // Общий флаг: оба portrait-режима отключают одни и те же luxury-блоки.
   const isCleanPortrait = isSocialPortrait || isBWPortrait;
+
+  // ── MEN CINEMATIC SERIES ────────────────────────────────────────────────────
+  // Активируется для 4 стилей MEN Premium (тег [MEN:] в stylePrompt + isMale).
+  // Заменяет женские luxury/aura/fashion блоки мужскими cinematic блоками.
+  const isMenCinematic = isMale && isEditorial &&
+    /\[MEN:/i.test(input.stylePrompt);
+
+  const isMasterOfLife = isMenCinematic && /MASTER OF LIFE/i.test(input.stylePrompt);
+
+  // Мужская идентичность без prescription одежды — одежда описана в stylePrompt сцены.
+  const menGenderBlock = `\
+MASCULINE IDENTITY (required):
+This is a male portrait. The subject is a man.
+Generate exclusively masculine presentation exactly as described in the scene.
+Grooming: clean masculine — neat hair, clean shave or light stubble appropriate to the character.
+No makeup. No feminine styling. No feminine body proportions.
+Presence: confident, grounded, raw masculine energy as described in the scene.
+FORBIDDEN: any feminine styling, feminine makeup, female body proportions, feminine silhouette, woman's clothing.`;
+
+  const menCinematicBlock = `\
+MEN CINEMATIC QUALITY (mandatory for this style):
+This must feel like a frame from a premium cinematic commercial campaign — NOT a generic AI male render.
+
+SKIN & FACE:
+- Realistic masculine skin texture: natural pores, subtle stubble if appropriate, warm authentic tones.
+- FORBIDDEN: plastic skin, over-smoothed face, wax male face, CGI male model, artificial male beauty filter.
+- Do NOT over-beautify or feminize the face. Preserve the subject's real masculine features exactly.
+- Jawline, facial structure, skin quality — all preserved from reference.
+
+BODY:
+- Preserve the user's natural body type and proportions from the reference photo.
+- DO NOT transform into a bodybuilder, fitness model, or unrealistic muscular physique.
+- Slim reference → lean athletic build. Heavier reference → broad masculine build.
+- Realistic anatomy: correct head-to-body ratio, natural proportions, believable posture.
+
+EXPRESSION & EMOTION:
+- Authentic masculine emotion: calm dominance, confident joy, silent power, raw triumph, adventurous freedom.
+- Eyes: alive, expressive, direct camera gaze. Real human masculine energy.
+- NOT: blank model stare, artificial commercial smile, empty generic expression.
+
+SCENE & PROPS:
+- Background must be cinematic, detailed and immersive — not empty or generic.
+- Environment must feel REAL: real canyon, real lake, real yacht deck, real savanna cliff.
+- All props must be photorealistic with correct anatomy, texture and believable scale.
+
+FINAL STANDARD: Premium luxury advertising campaign — shot by a top photographer. Real. Cinematic. Powerful.`;
+
+  const menLionBlock = `\
+LION DIRECTION (MASTER OF LIFE — critical):
+The lion is a HUGE majestic adult male lion with a full dense mane — rendered with PHOTOGRAPHIC REALISM.
+The lion is a cinematic symbol of power and mastery — NOT a prop, NOT a pet, NOT a zoo animal.
+Realistic lion anatomy: correct proportions, detailed fur texture, natural musculature, believable weight and scale.
+The lion stands or sits beside the man — NOT attacking, NOT hugging, NOT posed unnaturally.
+The lion's scale must feel enormous and physically imposing relative to the man.
+Both man and lion face the camera — shared calm composure, cinematic dominance.
+FORBIDDEN: cartoon lion, CGI fantasy lion, small lion, lion touching man, zoo or cage aesthetic, illustrated animal.`;
+
+  // ── MEN CINEMATIC: чистые мужские замены женских editorial блоков ──────────
+  // Заменяют editorialBlock, candorBlock, realPhotographyBlock + переопределяют
+  // makeup-строку из identityBlock — полностью убирают женские элементы из MEN пути.
+
+  // Заменяет editorialBlock ("Vogue / Harper's Bazaar" — женские журналы).
+  const menEditorialBlock = `\
+MEN CINEMATIC EDITORIAL (masculine standard):
+Shoot this as a working professional photographer for a premium men's publication — GQ, Esquire, National Geographic, Men's Journal.
+Posing: dynamic, powerful and natural. Confident masculine weight shift, grounded stance.
+The man is caught in a real moment — alive, purposeful, present. Not posed for a passport.
+Composition: cinematic off-center framing, editorial rule-of-thirds, commanding negative space.
+Avoid static symmetric headshots. Avoid flat corporate portrait framing.
+Depth of field: shallow to medium, cinematic background separation, realistic lens compression (85–135mm feel).
+Lighting: masculine cinematic — golden hour, dramatic directional light, atmospheric natural light, sun flare.
+No flat even studio lighting. No generic empty background.
+Atmosphere: GQ / National Geographic adventure editorial energy. Premium masculine visual language.
+Powerful and cinematic — shot on a real camera, by a real photographer, in a real decisive moment.`;
+
+  // Заменяет candorBlock ("should NOT walk, stride" — ограничение для женских fashion shots).
+  // MEN cinematic — мужское движение ПРИВЕТСТВУЕТСЯ.
+  const menCandorBlock = `\
+MASCULINE PRESENCE (authentic):
+Natural grounded masculine posture — weight shift, confident stance, authentic body alignment.
+Calm powerful presence radiating from within — not theatrical, not performative, not stiff.
+Subject may stand, lean, walk, stride, or move naturally in the scene.
+Masculine movement energy is encouraged — dynamic alive energy is a strength, not a flaw.
+Avoid rigid mannequin posture. Avoid passive static freezing.
+The man must feel alive, purposeful, dynamically present — a real man in a real powerful moment.`;
+
+  // Заменяет realPhotographyBlock ("Vogue / Harper's Bazaar / Condé Nast" — женские журналы).
+  const menRealPhotographyBlock = `\
+REAL PHOTOGRAPHY FEEL — MASCULINE (mandatory):
+This image must feel like it was captured by a real professional photographer on a real men's editorial shoot — not generated by AI.
+The viewer must sense: a real man was photographed in a real powerful moment.
+
+WHAT MUST BE PRESENT:
+Captured decisive moment: the man feels caught mid-action, mid-breath — alive and present.
+Natural masculine body tension: authentic weight, relaxed muscle, real confident asymmetry.
+Authentic masculine posture: natural spine, weight shift, a real man standing in a real space.
+Natural skin response to lighting: realistic texture, micro-shadows, visible skin detail — not airbrushed.
+Emotional realism: masculine confidence, quiet power, adventurous joy, real emotion radiating outward.
+Imperfect human beauty: natural masculine asymmetry, real facial character — not AI-smoothed.
+Cinematic masculine depth: the man has strength, personality, presence beyond the frame.
+Premium men's photography: GQ / National Geographic / Men's Journal / Esquire real photoshoot aesthetic.
+
+THE VIEWER MUST FEEL: "This was shot by a top photographer on a real adventure — not generated by AI."
+
+FORBIDDEN:
+Mannequin stiffness, frozen posture, plastic AI male energy.
+Over-smoothed hyper-perfect artificial male skin — looks generated, not photographed.
+CGI male model aesthetic instead of a real masculine human being.
+Plastic skin without texture, airbrushed face without natural masculine detail.`;
+
+  // Добавляется ПОСЛЕ identityBlock в MEN пути — явно переопределяет "makeup allowed".
+  // identityBlock содержит в ALLOWED grooming: "Style-appropriate makeup applied naturally over the real face."
+  // Для мужчин это неприемлемо.
+  const menGroomingBlock = `\
+MEN GROOMING (strictly no makeup):
+Natural masculine grooming ONLY — neat styled hair, clean shave or appropriate stubble for the character.
+NO MAKEUP of any kind. NO beauty filter. NO feminine grooming. NO eyeliner. NO foundation.
+Preserve natural masculine skin texture — real pores, authentic skin tones, natural masculine character.
+The face must look like a real man's face — NOT a smoothed AI male model, NOT a beauty-filtered face.`;
 
   const socialPortraitBlock = `\
 CLEAN AUTHENTIC PORTRAIT:
@@ -744,7 +1327,15 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
   const genderAvoidExtra = isMale
     ? ', dress, skirt, blouse, feminine makeup, lipstick, long eyelashes, female body, feminine jewelry, exposed shoulders, evening gown, feminine silhouette, woman\'s clothing'
     : ', masculine suit cut, menswear, beard, mustache, overly broad masculine shoulders, male body proportions, male clothing';
-  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}${genderAvoidExtra}`;
+  const menAvoidExtra = isMenCinematic
+    ? ', makeup, beauty filter, eyeliner, mascara, lipstick, foundation, female grooming'
+      + ', artificial bodybuilder physique, unrealistic muscle mass, gym selfie aesthetic'
+      + ', cheap AI male render, plastic male face, CGI male face, male wax figure, fitness model body swap'
+      + ', female silhouette, female body proportions, feminine styling, feminine clothing'
+      + ', Vogue aesthetic, Harper\'s Bazaar styling, female fashion campaign energy'
+      + (isMasterOfLife ? ', cartoon lion, CGI lion, fantasy lion, small lion, illustrated lion, zoo aesthetic, cage background' : '')
+    : '';
+  const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}${genderAvoidExtra}${menAvoidExtra}`;
 
   return [
     // ── Глобальные блоки ──────────────────────────────────────────────────────
@@ -752,50 +1343,94 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     '',
     identityBlock,
     '',
-    genderPositiveBlock,
+    // MEN: явный запрет макияжа — переопределяет "makeup allowed" строку из identityBlock
+    ...(isMenCinematic ? [menGroomingBlock, ''] : []),
+    // MEN: мужская идентичность без prescription одежды (одежда в stylePrompt)
+    isMenCinematic ? menGenderBlock : genderPositiveBlock,
     '',
-    ...(input.isFullBody ? [fullBodyFaceLockBlock, ''] : []),
+    // fullBodyFaceLock: всегда для MEN (все 4 сцены — полный рост) + при isFullBody
+    ...((input.isFullBody || isMenCinematic) ? [fullBodyFaceLockBlock, ''] : []),
+    // BODY SHAPE LOCK: всегда активен — запрещает изменения веса/фигуры/возраста/лица.
+    // Позиционирован ДО пользовательских пожеланий — identity имеет наивысший приоритет.
+    BODY_SHAPE_LOCK,
+    '',
     realismBlock,
     '',
-    realPhotographyBlock,
+    // MEN: замена Vogue/Harper's Bazaar на GQ/National Geographic
+    isMenCinematic ? menRealPhotographyBlock : realPhotographyBlock,
     '',
-    // ── Editorial-only блоки (isEditorial = false → не включаются) ────────────
+    // ── Editorial-only блоки ──────────────────────────────────────────────────
     ...(isEditorial
-      ? [
-          // isSocialPortrait отключает тяжёлые luxury блоки — они противоречат clean portrait
-          ...(!isCleanPortrait ? [auraBlock, ''] : []),
-          ...(!isCleanPortrait ? [luxuryAdaptBlock, ''] : []),
-          editorialBlock, '',
-          ...(!isCleanPortrait ? [fashionBlock, ''] : []),
-          candorBlock, '',
-          ...(!isCleanPortrait ? [magnetismBlock, ''] : []),
-          ...(!isCleanPortrait && !isMale ? [femininityBlock, ''] : []),
-          eyeContactBlock, '',
-          cinematicRealismBlock, '',
-          ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
-          antiRepetitionBlock, '',
-          ...(isSummerCity ? [summerCityBlock, ''] : []),
-          ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
-          ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
-          ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),
-          ...(isGoddess ? [goddessBlock, ''] : []),
-          ...(isEliteSport ? [eliteSportBlock, ''] : []),
-          ...(isSocialPortrait ? [socialPortraitBlock, ''] : []),
-          ...(isBWPortrait ? [bwPortraitBlock, ''] : []),
-        ]
+      ? isMenCinematic
+        ? [
+            // MEN: 100% мужские editorial блоки.
+            // menEditorialBlock заменяет editorialBlock (убраны Vogue/Harper's Bazaar).
+            // menCandorBlock заменяет candorBlock (убран запрет ходьбы/движения).
+            // Без женских: aura, luxuryAdapt, fashion, magnetism, femininity.
+            menEditorialBlock, '',
+            menCandorBlock, '',
+            eyeContactBlock, '',
+            cinematicRealismBlock, '',
+            antiRepetitionBlock, '',
+            menCinematicBlock, '',
+            ...(isMasterOfLife ? [menLionBlock, ''] : []),
+          ]
+        : [
+            // Стандартные editorial блоки (не изменились)
+            ...(!isCleanPortrait ? [auraBlock, ''] : []),
+            ...(!isCleanPortrait ? [luxuryAdaptBlock, ''] : []),
+            editorialBlock, '',
+            ...(!isCleanPortrait ? [fashionBlock, ''] : []),
+            candorBlock, '',
+            ...(!isCleanPortrait ? [magnetismBlock, ''] : []),
+            ...(!isCleanPortrait && !isMale ? [femininityBlock, ''] : []),
+            eyeContactBlock, '',
+            cinematicRealismBlock, '',
+            ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
+            antiRepetitionBlock, '',
+            ...(isSummerCity ? [summerCityBlock, ''] : []),
+            ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
+            ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
+            ...(isOldMoneyEstate ? [oldMoneyEstateBlock, ''] : []),
+            ...(isGoddess ? [goddessBlock, ''] : []),
+            ...(isEliteSport ? [eliteSportBlock, ''] : []),
+            ...(isSocialPortrait ? [socialPortraitBlock, ''] : []),
+            ...(isBWPortrait ? [bwPortraitBlock, ''] : []),
+          ]
       : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
     // ── Состав и технические параметры ───────────────────────────────────────
-    fullBodyHint,
-    // OUTFIT INSPIRATION не нужен для social portrait — там нет fashion-stylist направления
-    ...(isEditorial && !isCleanPortrait ? [`OUTFIT INSPIRATION: ${pickGarment(input.genderMode)} — choose a colorway that specifically flatters THIS person's natural skin tone and hair. The outfit must feel personally chosen for them, not generic. It should express their individuality and enhance their natural appearance. Subject looks directly at camera, no sunglasses.`] : []),
-    // POSE: случайная поза из библиотеки. Не для clean portrait — там своя жёсткая композиция.
-    ...(isEditorial && !isCleanPortrait ? [`POSE: ${pickPose(input.isFullBody)} — feel candid, alive, editorial. Not stiff, not staged, not runway.`] : []),
-    // LIGHTING: случайная схема. Не для BW portrait — там строгий studio lighting в своём блоке.
-    ...(isEditorial && !isBWPortrait ? [`LIGHTING: ${pickLighting()}`] : []),
+    // MEN: кадрирование описано в stylePrompt — fullBodyHint не нужен и будет конфликтовать
+    ...(isMenCinematic ? [] : [fullBodyHint]),
+    // OUTFIT + PERSONAL COLOR ADAPTATION:
+    ...(isMenCinematic
+      ? [`OUTFIT: ${pickMenWardrobe(input.stylePrompt)} — wear exactly as described in the scene, no substitution.`]
+      : isEditorial && !isCleanPortrait
+        ? [
+            `OUTFIT INSPIRATION: ${pickEnvironmentAwareGarment(filteredWish, input.genderMode)} — silhouette and style suited to the scene environment, feel personally chosen for this person.`,
+            buildColorInstruction(filteredWish),
+          ]
+        : []),
+    // POSE:
+    // P2: женские editorial стили используют pickFemaleEditorialPose() — она возвращает
+    // style-specific позы для БОГИНЯ/МОНАКО/РОМАНТИКА/ДИКАЯ ПРИРОДА, иначе — общий пул.
+    ...(isMenCinematic
+      ? [`POSE: ${pickMenPose(input.stylePrompt)} — authentic, alive, cinematic. Not stiff, not staged.`]
+      : isEditorial && !isCleanPortrait
+        ? [`POSE: ${pickFemaleEditorialPose(input.stylePrompt, input.isFullBody)} — feel candid, alive, editorial. Not stiff, not staged, not runway.`]
+        : []),
+    // LIGHTING / ATMOSPHERE:
+    ...(isMenCinematic
+      ? [buildMenAtmosphere(input.stylePrompt)]
+      : isEditorial && !isBWPortrait
+        ? [`LIGHTING: ${pickLighting()}`]
+        : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
-    input.customPrompt ? `Additional note: ${input.customPrompt}` : '',
+    // [USER STYLING NOTE] — пользовательские пожелания, прошедшие backend-фильтр.
+    // filteredWish уже очищен от запросов на изменение тела/лица/возраста.
+    // BODY_SHAPE_LOCK выше имеет приоритет над этим блоком.
+    filteredWish ? `User styling note (accessories/clothing/background/lighting only — body and identity preserved): ${filteredWish}` : '',
     '',
     // ── Глобальный AVOID ──────────────────────────────────────────────────────
     avoidBlock,

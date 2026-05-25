@@ -46,3 +46,7 @@ supabase/.branches/
 
 # local backups (Phase 2 staging — содержат секреты и большие архивы)
 backup-*/
+
+# server runtime artifacts
+server/.server.err
+server/.server.out

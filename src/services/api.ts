@@ -60,6 +60,9 @@ export interface CreatePaymentResult {
   photosCount?: number;
   results?: string[];
   message?: string;
+  // Поля из существующего заказа (возвращаются когда existingOrder=true):
+  originalImage?: string | null;
+  styleIds?: string[];
 }
 
 export function createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
@@ -100,6 +103,10 @@ export interface RecentOrderResult {
   price?: number;
   paymentMethod?: 'rub' | 'credits';
   createdAt?: string;
+  // Поля, которые бэкенд возвращает в find-recent (совпадают с OrderStatus):
+  originalImage?: string | null;
+  styleIds?: string[];
+  customerKey?: string | null;
 }
 
 export function findRecentOrder(customerKey: string): Promise<RecentOrderResult> {
