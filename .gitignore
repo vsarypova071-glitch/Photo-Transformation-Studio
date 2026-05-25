@@ -50,3 +50,6 @@ backup-*/
 # server runtime artifacts
 server/.server.err
 server/.server.out
+
+# reference/source images — не импортируются в код, только для локальной работы
+src/assets/styles/reference/
