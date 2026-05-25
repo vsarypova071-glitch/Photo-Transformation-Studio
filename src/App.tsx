@@ -878,8 +878,8 @@ function App() {
   const currentJob: Job | undefined = orderJob || backend.getJobs().find(j => j.id === currentJobId);
 
   return (
-    <div className="max-w-md mx-auto relative min-h-screen bg-background shadow-2xl">
-      <main className="relative min-h-screen">
+    <div className="max-w-md mx-auto relative min-h-[100dvh] bg-background shadow-2xl">
+      <main className="relative min-h-[100dvh]">
         {screen === 'studio' && (
           <StudioScreen
             customerKey={getCustomerKey()}

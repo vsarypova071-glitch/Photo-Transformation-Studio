@@ -84,7 +84,7 @@ export default function TariffScreen({
     "https://docs.google.com/document/d/1kGEom55-I2nqWQpFlMjXbYhVHh4lwHKKFR4bjReek40/edit?usp=sharing";
 
   return (
-    <section className="min-h-screen px-4 py-6 pt-20">
+    <section className="min-h-[100dvh] px-4 py-6 pt-20">
       <button
         onClick={onBack}
         className="flex items-center gap-2 transition-colors mb-6 text-slate-200">

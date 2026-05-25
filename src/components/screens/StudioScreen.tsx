@@ -371,7 +371,7 @@ export default function StudioScreen({
 
   // ─────────────────────── RENDER ───────────────────────
   return (
-    <section className="min-h-screen px-6 py-10 max-w-2xl mx-auto">
+    <section className="min-h-[100dvh] px-6 py-10 max-w-2xl mx-auto">
       {/* Хедер с балансом */}
       <header className="flex items-center justify-between mb-8">
         <div>
@@ -451,7 +451,7 @@ export default function StudioScreen({
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             {uploadedImage && (
-              <img src={uploadedImage} alt="Ваше фото" className="w-20 h-20 rounded-xl object-cover border border-border" />
+              <img src={uploadedImage} alt="Ваше фото" className="w-20 h-20 rounded-xl object-cover object-top border border-border" />
             )}
             <div>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Ваше фото</p>
@@ -480,7 +480,7 @@ export default function StudioScreen({
               {STUDIO_CATEGORIES.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => setStudioTab(cat.id)}
+                  onClick={() => { setStudioTab(cat.id); setSelectedStyleId(''); }}
                   className={`px-4 py-2.5 rounded-full text-[10px] font-black border transition-all flex-shrink-0 ${
                     studioTab === cat.id
                       ? 'bg-primary border-primary text-primary-foreground shadow-lg'
@@ -577,7 +577,7 @@ export default function StudioScreen({
 
                 {/* Фото A */}
                 <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                  <img src={uploadedImage} alt="Фото 1" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover border-2 border-primary/50" />
+                  <img src={uploadedImage} alt="Фото 1" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover object-top border-2 border-primary/50" />
                   <span className="text-[8px] text-primary font-black uppercase">Фото 1 ✓</span>
                 </div>
 
@@ -586,7 +586,7 @@ export default function StudioScreen({
                 {/* Фото B — превью или зона загрузки */}
                 {uploadedImageB ? (
                   <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                    <img src={uploadedImageB} alt="Фото 2" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover border-2 border-primary/50" />
+                    <img src={uploadedImageB} alt="Фото 2" className="w-[4.5rem] h-[4.5rem] rounded-2xl object-cover object-top border-2 border-primary/50" />
                     <span className="text-[8px] text-primary font-black uppercase">Фото 2 ✓</span>
                   </div>
                 ) : (
@@ -765,7 +765,7 @@ export default function StudioScreen({
           />
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md shadow-xl text-center max-w-[90vw]"
+            className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-10 px-5 py-3 rounded-full bg-white text-black text-xs font-bold backdrop-blur-md shadow-xl text-center max-w-[90vw]"
           >
             Если кнопка не сработала: удерживайте фото → «Сохранить изображение»
           </div>
@@ -775,7 +775,7 @@ export default function StudioScreen({
       {/* Popup: фото живут 30 минут на VPS */}
       {showTtlNotice && (
         <div
-          className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+          className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0"
           onClick={() => setShowTtlNotice(false)}
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />

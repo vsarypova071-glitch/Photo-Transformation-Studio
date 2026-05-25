@@ -25,7 +25,7 @@ export default function ProcessingScreen({ errorMessage, retrying, onRetry, onAb
 
   if (errorMessage) {
     return (
-      <section className="min-h-screen flex items-center justify-center px-6 text-center flex-col">
+      <section className="min-h-[100dvh] flex items-center justify-center px-6 text-center flex-col">
         <div className="w-20 h-20 mb-6 rounded-full bg-amber-500/20 flex items-center justify-center text-4xl">
           ⚠️
         </div>
@@ -57,7 +57,7 @@ export default function ProcessingScreen({ errorMessage, retrying, onRetry, onAb
   }
 
   return (
-    <section className="min-h-screen flex items-center justify-center px-12 text-center flex-col">
+    <section className="min-h-[100dvh] flex items-center justify-center px-12 text-center flex-col">
       <div className="relative w-44 h-44 mb-16">
         <div className="absolute inset-0 rounded-full border-4 border-secondary" />
         <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />

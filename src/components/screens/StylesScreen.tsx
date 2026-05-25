@@ -115,7 +115,7 @@ export default function StylesScreen({
   };
 
   return (
-    <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
+    <section className="min-h-[100dvh] flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-64">
       <div className="flex justify-between items-center mb-8 text-slate-50">
         <div>
           <h2 className="text-2xl font-black uppercase tracking-tight font-serif">Стиль образа</h2>

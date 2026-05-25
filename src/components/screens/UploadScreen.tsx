@@ -18,7 +18,7 @@ export default function UploadScreen({
       reader.readAsDataURL(file);
     }
   };
-  return <section className="min-h-screen flex items-center justify-center px-8 py-24 flex-col">
+  return <section className="min-h-[100dvh] flex items-center justify-center px-8 py-24 flex-col">
        <h2 className="text-3xl mb-3 uppercase tracking-tighter font-sans font-normal">Загрузите фото</h2>
        <p className="text-sm mb-12 text-center font-medium font-serif text-blue-100">
          AI создаст безупречный образ, идеально подходящий вашей фигуре.

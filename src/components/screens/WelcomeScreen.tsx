@@ -134,7 +134,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   const slide = SLIDES[active];
 
   return (
-    <section className="min-h-screen flex flex-col items-center px-5 py-10 rounded-2xl">
+    <section className="min-h-[100dvh] flex flex-col items-center px-5 py-10 rounded-2xl">
 
       {/* Top badge */}
       <div className="mb-6 text-center">

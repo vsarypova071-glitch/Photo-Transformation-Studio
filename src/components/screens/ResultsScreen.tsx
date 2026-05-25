@@ -361,7 +361,7 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
         </div>
       )}
 
-      <section className="min-h-screen flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
+      <section className="min-h-[100dvh] flex flex-col px-6 py-28 overflow-y-auto no-scrollbar pb-80">
         <h2 className="text-3xl font-black uppercase mb-4 text-foreground">Результат</h2>
 
         {/* STAGE 3.1: partial-result notice with pro-rata refund info */}
@@ -598,7 +598,7 @@ export default function ResultsScreen({ job, onRefine, onFullBody, onNewPhoto, o
           </div>
         )}
 
-        <div className="fixed bottom-0 left-0 right-0 p-8 glass border-t border-white/5 flex gap-4 z-50 max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 pt-4 px-8 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] glass border-t border-white/5 flex gap-4 z-50 max-w-md mx-auto">
           <button
             onClick={onBackToStyles}
             className="flex-1 bg-secondary py-5 rounded-2xl font-black text-xs uppercase"

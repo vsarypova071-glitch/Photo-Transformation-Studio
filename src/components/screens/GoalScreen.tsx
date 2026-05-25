@@ -31,7 +31,7 @@ const GOALS = [
 
 export default function GoalScreen({ onSelectGoal }: GoalScreenProps) {
   return (
-    <section className="min-h-screen flex flex-col items-center px-5 py-16">
+    <section className="min-h-[100dvh] flex flex-col items-center px-5 py-16">
       <div className="mb-8 text-center">
         <span className="text-[9px] uppercase tracking-[0.4em] text-white/60 font-semibold bg-white/10 backdrop-blur-sm border border-white/15 px-4 py-1.5 rounded-full">
           AI Photo Studio
