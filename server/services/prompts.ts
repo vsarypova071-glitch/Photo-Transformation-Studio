@@ -562,6 +562,8 @@ export function buildNegativePrompt(): string {
     // Forbidden backgrounds / locations
     'kitchen background', 'domestic kitchen', 'home kitchen interior',
     'living room background', 'home couch', 'domestic sofa', 'home living room',
+    'cafe background', 'coffee shop background', 'restaurant chairs background',
+    'wooden chairs background', 'casual cafe interior', 'cafe with tables',
     'domestic furniture backdrop', 'wooden dresser background', 'home shelves background',
     'bare white walls', 'random domestic room', 'cheap interior room',
     'home plants background', 'potted plants decoration', 'indoor plant background',
@@ -569,6 +571,13 @@ export function buildNegativePrompt(): string {
     'domestic bedroom', 'home bathroom', 'home hallway', 'domestic staircase',
     'fast food restaurant', 'cheap cafe interior', 'plastic furniture restaurant',
     'shopping mall background', 'supermarket', 'parking lot',
+    // Anti-fatigue / anti-aging
+    'tired face', 'fatigued look', 'grey skin', 'dull skin', 'washed out skin',
+    'visually unwell', 'aging effect', 'added wrinkles', 'exhausted expression',
+    'older appearance', 'worn face', 'fatigue shadows',
+    // Anti-hair-change
+    'changed hairstyle', 'different haircut', 'longer hair', 'shorter hair',
+    'different hair color', 'bleached hair', 'darkened hair',
     // Eye contact & eyewear
     'sunglasses', 'wearing sunglasses', 'tinted glasses', 'eyewear covering eyes',
     'looking away from camera', 'side glance', 'averted gaze',
@@ -641,27 +650,20 @@ male body proportions, generic gender-neutral presentation.`;
   // [REFERENCE IMAGE] — напоминание модели использовать загруженное фото как
   // первичный визуальный источник личности, а не только как текстовое описание.
   const referenceBlock = `\
-Use the uploaded reference photo as the PRIMARY identity source. \
-The attached image defines who this person is — match their face exactly.`;
+REFERENCE PHOTO — HOW TO USE IT:
+Extract from the reference photo: face geometry, hair (cut, color, length), body type, age, skin tone.
+COMPLETELY REPLACE in the output: background, location, clothing, furniture, setting — everything around the person.
+The background/environment from the reference photo MUST NOT appear in the output. Replace it entirely with the premium location from the style.
+Rule: take the PERSON, place them in a completely new premium scene.`;
 
   // [IDENTITY] — строгое сохранение лица, структуры, возраста и индивидуальности.
   // Запрещает любую «улучшающую» обработку, которая убирает индивидуальность.
   const identityBlock = `\
-IDENTITY PRESERVATION (strict):
-- Do not alter facial structure, face shape, nose, lips, eyes, jawline, or cheekbones.
-- Do not change age, natural asymmetry, or distinguishing personal features.
-- Do not beautify, idealize, or transform the person into a fashion-model archetype.
-- The person must be immediately recognizable as the same individual from the reference photo.
-- Preserve the subject's natural eye openness and alertness exactly as in the reference.
-- Do not add artificial eyelid heaviness, drooping, or tired-eye effect.
-- Preserve the natural energy and sharpness of the gaze — eyes should look open and alive.
-- Do not make the subject appear older, fatigued, or emotionally flattened.
-- Keep realistic anatomy without beautification or cosmetic enhancement.
-- Preserve the exact face proportions and vertical facial structure.
-- Preserve the subject's natural face length and jawline shape.
-- Do not widen, shorten, soften, or round the face shape.
-- Preserve natural cheek volume distribution and facial proportions from the reference image.
-- Avoid artificial facial softening or generalized beauty-face geometry.
+IDENTITY PRESERVATION — PRIORITY #1 (overrides all other instructions):
+Goal: "This is the SAME person in a different photoshoot" — NOT "this is a similar-looking person."
+The subject must be immediately and unmistakably recognizable as the exact individual from the reference photo.
+If unsure whether a change is safe — do NOT make the change. Preserve the face.
+
 FACE GEOMETRY LOCK (copy exactly from reference — every item):
 - Inter-eye distance: exact same spacing as in the reference image.
 - Eye shape: exact eyelid contour, eye size, natural openness.
@@ -678,13 +680,24 @@ FACE GEOMETRY LOCK (copy exactly from reference — every item):
 - Ethnicity and natural skin undertone — do not generalize or Westernize features.
 - Natural face proportions — do not reinterpret for editorial aesthetics.
 - Face identity accuracy is MORE important than cinematic styling.
+- Do not beautify, idealize, or transform the person into a fashion-model archetype.
+- Preserve the exact face proportions and vertical facial structure.
+- Preserve natural cheek volume distribution and facial proportions from the reference image.
+- Avoid artificial facial softening or generalized beauty-face geometry.
+
+HAIR IDENTITY LOCK (copy exactly from reference — no exceptions):
+- Hairstyle and cut: identical shape, volume, and style direction as in reference.
+- Hair length: exact same length — do NOT grow longer, shorten, add layers, or alter structure.
+- Hair color: exact same natural color from reference — do NOT bleach, darken, add highlights, or change tone.
+- Hair texture: preserve natural texture from reference — straight, wavy, curly, fine, or thick as shown.
+- Do NOT restyle, reshape, or "improve" the hairstyle — keep it exactly as the person wears it.
+
 ALLOWED grooming (enhances without altering the person):
 - Style-appropriate makeup applied naturally over the real face.
-- Neat, styled hairstyle matching the editorial direction.
-- Beautiful realistic skin — natural texture, healthy glow, no plastic smoothing.
-FORBIDDEN: changing facial anatomy, creating a fashion-model version of this face,
-smoothing away natural asymmetry, generalizing ethnic features,
-replacing the face with a different-looking person.`;
+- Skin: healthy natural glow, premium cinematic light on skin — same person, better light.
+FORBIDDEN: changing facial anatomy, changing hairstyle or hair length, changing hair color,
+creating a fashion-model version of this face, smoothing away natural asymmetry,
+generalizing ethnic features, replacing the face with a different-looking person.`;
 
   // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
   // Противодействует эффекту манекена и CGI-рендера.
@@ -693,8 +706,10 @@ REALISM (natural photo):
 - Eyes must be expressive and alive: realistic catchlights, natural wet sheen, visible depth and iris detail.
 - EYE CONTACT: subject looks directly into the camera with natural confident gaze. No looking away, no side glance.
 - NO SUNGLASSES OR EYEWEAR — eyes and gaze must be fully visible at all times.
-- Skin: keep natural micro-texture, subtle visible pores, soft realistic shadows. No airbrushing or smoothing.
+- Skin: healthy natural glow, warm cinematic light on skin — not grey, not dull, not washed out.
 - Expression: natural, human, emotionally present. Warm confident energy — not blank stare, not artificial smile.
+- Face vitality: the subject must look HEALTHY and ALIVE. Do NOT make the face tired, fatigued, older, or visually unwell.
+- Do NOT add wrinkles, aging lines, or fatigue shadows beyond what the reference shows.
 - Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
 - Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
 
@@ -884,6 +899,31 @@ CINEMATIC REALISM:
 Every image must feel like a frame from a premium cinematic universe — not an AI-generated fashion render.
 Preferred: realistic skin texture, natural asymmetry, believable movement, cinematic light, emotional realism, Vogue / Netflix luxury atmosphere.
 Avoid: overprocessed skin, plastic beauty, fake perfection, synthetic lighting, AI glamour clichés.`;
+
+  const bestVersionBlock = `\
+BEST VERSION — SAME PERSON (mandatory):
+Goal: show this exact person as they would look photographed by a luxury editorial team.
+NOT: generate someone who looks similar. NOT: change facial geometry to beautify.
+
+WHAT "BEST VERSION" MEANS:
+- Radiant skin: healthy warm glow from cinematic light — same face, better lighting.
+- Alert alive eyes: bright catchlights, natural depth, energetic direct gaze.
+- Professional makeup: editorial-appropriate, applied naturally over the real face.
+- Premium styling: beautiful outfit chosen for this person's coloring and archetype.
+- Cinematic light that flatters without distorting the real face.
+
+ACCEPTANCE CRITERION:
+The viewer must say: "This is ME, photographed by an expensive photographer."
+NOT: "This is a person who looks like me."
+NOT: "This looks like a random photo in a café."
+
+FORBIDDEN:
+- Making the face look tired, fatigued, or exhausted.
+- Making the skin look grey, dull, or washed out.
+- Making the person look older or more worn than the reference.
+- Adding wrinkles or age effects beyond the reference photo.
+- Empty, blank, or dead-eye stare.
+- Copying the background, furniture, or location from the reference photo.`;
 
   const antiCheapBlock = `\
 ANTI-CHEAP LUXURY:
@@ -1437,6 +1477,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
             eyeContactBlock, '',
             cinematicRealismBlock, '',
             ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
+            ...(!isCleanPortrait ? [bestVersionBlock, ''] : []),
             antiRepetitionBlock, '',
             ...(!isCleanPortrait ? [premiumLocationBlock, ''] : []),
             ...(isSummerCity ? [summerCityBlock, ''] : []),
