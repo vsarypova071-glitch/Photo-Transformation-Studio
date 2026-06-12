@@ -80,7 +80,9 @@ export default function StudioScreen({
   const [uploadedUrl, setUploadedUrl] = useState<string>('');     // URL результата на VPS
   const [uploadedFilename, setUploadedFilename] = useState<string>(''); // имя файла на VPS — для /api/generation/single
   const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | undefined>();
-  const [biometryConsent, setBiometryConsent] = useState(false);
+  const [biometryConsent, setBiometryConsent] = useState(
+    () => localStorage.getItem('biometry_consent') === '1'
+  );
   const [isUploading, setIsUploading] = useState(false);
 
   // upload — Фото B (только для парных стилей)
@@ -407,7 +409,10 @@ export default function StudioScreen({
             <input
               type="checkbox"
               checked={biometryConsent}
-              onChange={e => setBiometryConsent(e.target.checked)}
+              onChange={e => {
+              setBiometryConsent(e.target.checked);
+              if (e.target.checked) localStorage.setItem('biometry_consent', '1');
+            }}
               className="mt-1 w-4 h-4 accent-primary cursor-pointer flex-shrink-0"
             />
             <span className="text-xs text-foreground/80 leading-relaxed">
