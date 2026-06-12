@@ -559,6 +559,16 @@ export function buildNegativePrompt(): string {
     // Anti-cheap luxury
     'flashy rich aesthetic', 'fake billionaire visuals', 'gold overload', 'casino luxury',
     'fast fashion energy', 'hypersexual styling',
+    // Forbidden backgrounds / locations
+    'kitchen background', 'domestic kitchen', 'home kitchen interior',
+    'living room background', 'home couch', 'domestic sofa', 'home living room',
+    'domestic furniture backdrop', 'wooden dresser background', 'home shelves background',
+    'bare white walls', 'random domestic room', 'cheap interior room',
+    'home plants background', 'potted plants decoration', 'indoor plant background',
+    'generic office cubicle', 'budget office', 'cheap corporate office',
+    'domestic bedroom', 'home bathroom', 'home hallway', 'domestic staircase',
+    'fast food restaurant', 'cheap cafe interior', 'plastic furniture restaurant',
+    'shopping mall background', 'supermarket', 'parking lot',
     // Eye contact & eyewear
     'sunglasses', 'wearing sunglasses', 'tinted glasses', 'eyewear covering eyes',
     'looking away from camera', 'side glance', 'averted gaze',
@@ -879,6 +889,46 @@ Avoid: overprocessed skin, plastic beauty, fake perfection, synthetic lighting, 
 ANTI-CHEAP LUXURY:
 Luxury must feel quiet, restrained, editorial, cinematic, emotionally intelligent, timeless.
 Avoid: flashy rich aesthetics, fake billionaire visuals, gold overload, casino luxury, cheap glamour, influencer posing, fast fashion energy, hypersexual styling.`;
+
+  const premiumLocationBlock = `\
+PREMIUM LOCATION MANDATE (enforced — no exceptions):
+This is a professional commercial photoshoot worth ₽50,000+. Every background MUST reflect this value.
+
+FORBIDDEN — NEVER generate these locations:
+- Any domestic interior: kitchen, living room, bedroom, bathroom, home hallway
+- Home furniture as background: couch, sofa, dining table, domestic chairs, home shelves
+- Bare white walls, random painted rooms, cheap domestic interiors
+- Generic offices: cubicles, budget conference rooms, beige corporate carpet
+- Home plants, potted plants, domestic plant decorations in the background
+- Casual or budget restaurants, fast food, generic cafe with plastic furniture
+- Shopping mall, supermarket, parking lot, random street with cars
+- Hotel corridor with ugly carpet, elevator lobby with cheap finish
+
+ALLOWED — use exclusively these premium locations:
+- Luxury penthouse with floor-to-ceiling windows and skyline panorama
+- Five-star hotel suite, grand hotel lobby, luxury hotel corridor (marble, brass)
+- Modern executive office with panoramic city or skyline views, designer furniture
+- Designer architectural interior — marble, glass, sculptural lighting, high-end materials
+- Luxury restaurant with fine decor, crystal glassware, dramatic editorial atmosphere
+- Rooftop terrace with city skyline, warm ambient lighting
+- Yacht deck, luxury marina — Mediterranean or modern waterfront
+- Vogue editorial fashion studio — controlled dramatic light, architectural set
+- Luxury business lounge, private members club, premium hospitality space
+- Premium urban architecture — glass facades, modern sculpture, architectural plazas
+- Milan fashion district — elegant streets, luxury boutiques, cobblestone editorial
+- Paris luxury streets — Haussmann architecture, golden afternoon light, refined atmosphere
+- New York skyscraper office — Manhattan skyline through floor-to-ceiling glass
+- Luxury spa or wellness retreat — marble, warm indirect light, premium materials
+
+LIGHTING STANDARD (mandatory for every frame):
+85mm lens feel, shallow depth of field, professional fashion photography lighting.
+Golden hour, dramatic cinematic directional light, or luxury editorial studio quality.
+The atmosphere must feel expensive, cinematic, magazine cover quality.
+
+HERO PRINCIPLE:
+The subject must feel like THE HERO of an intentional editorial photoshoot —
+not a person who happened to wander into a random room.
+Priority: face identity (1) → premium location (2) → cinematic light and composition (3).`;
 
   const antiRepetitionBlock = `\
 ANTI-REPETITION:
@@ -1388,6 +1438,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
             cinematicRealismBlock, '',
             ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
             antiRepetitionBlock, '',
+            ...(!isCleanPortrait ? [premiumLocationBlock, ''] : []),
             ...(isSummerCity ? [summerCityBlock, ''] : []),
             ...(isFutureLuxury ? [futureLuxuryBlock, ''] : []),
             ...(isWildLuxury ? [wildLuxuryBlock, ''] : []),
