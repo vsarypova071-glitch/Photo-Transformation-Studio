@@ -12,13 +12,20 @@ function url(path: string): string {
 }
 
 async function request<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(url(path), {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-  });
+  const fullUrl = url(path);
+  let resp: Response;
+  try {
+    resp = await fetch(fullUrl, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (netErr: any) {
+    console.error('[api] network error', init?.method || 'GET', fullUrl, netErr?.message);
+    throw netErr;
+  }
   let data: any = null;
   try {
     data = await resp.json();
@@ -26,6 +33,7 @@ async function request<T = unknown>(path: string, init?: RequestInit): Promise<T
     // ответ может быть не JSON (например, "OK" от webhook). Игнорим.
   }
   if (!resp.ok) {
+    console.error('[api] error response', resp.status, fullUrl, data);
     const err = new Error(data?.error || `HTTP ${resp.status}`);
     (err as any).status = resp.status;
     (err as any).body = data;

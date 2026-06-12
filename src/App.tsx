@@ -231,6 +231,13 @@ function App() {
   const pollOrderStatus = useCallback((orderId: string) => {
     log.info('Polling order', { orderId });
     let pollCount = 0;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const stopAll = () => {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+    };
+
     const interval = setInterval(async () => {
       pollCount++;
       try {
@@ -239,7 +246,7 @@ function App() {
 
         // 🟢 STAGE WALLET: оплачен пакет → кредиты начислены → ведём в Studio
         if (data.generationStatus === 'credits_credited') {
-          clearInterval(interval);
+          stopAll();
           await handleCreditsCredited(orderId, {
             photoUrl: data.originalImage,
             styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
@@ -249,7 +256,7 @@ function App() {
 
         // STAGE 3.2: refunded — money/credits returned, gentle message
         if (data.paymentStatus === 'refunded') {
-          clearInterval(interval);
+          stopAll();
           localStorage.removeItem('current_order_id');
           setPaymentError('Генерация не удалась — деньги/кредиты вернули вам автоматически. Попробуйте снова.');
           navigateTo('tariff');
@@ -258,7 +265,7 @@ function App() {
 
         // Handle canceled/expired payment
         if (data.paymentStatus === 'canceled' || data.paymentStatus === 'expired') {
-          clearInterval(interval);
+          stopAll();
           localStorage.removeItem('current_order_id');
           setPaymentError('Оплата не прошла. Попробуйте снова.');
           navigateTo('tariff');
@@ -268,7 +275,7 @@ function App() {
         // CRITICAL: paid order with generation error → DO NOT redirect to payment!
         // Show processing screen with retry button instead.
         if (data.generationStatus === 'error' && data.paymentStatus === 'succeeded') {
-          clearInterval(interval);
+          stopAll();
           setProcessingError('Генерация не завершилась. Ваша оплата сохранена — нажмите «Попробовать снова», повторная оплата не нужна.');
           // stay on processing screen
           return;
@@ -276,7 +283,7 @@ function App() {
 
         // Non-paid generation error/canceled
         if (data.generationStatus === 'error' || data.generationStatus === 'canceled') {
-          clearInterval(interval);
+          stopAll();
           localStorage.removeItem('current_order_id');
           setPaymentError('Ошибка генерации. Попробуйте снова.');
           navigateTo('tariff');
@@ -285,7 +292,7 @@ function App() {
 
         // Handle done with results
         if (data.generationStatus === 'done' && data.results?.length > 0) {
-          clearInterval(interval);
+          stopAll();
           setOrderResults(data.results);
 
           // Create job object directly — no sessionStorage
@@ -311,7 +318,7 @@ function App() {
 
         // If still pending after 5 polls (15 sec), payment wasn't completed
         if (data.paymentStatus === 'pending' && pollCount > 5) {
-          clearInterval(interval);
+          stopAll();
           setPaymentError('Оплата не подтверждена. Попробуйте снова.');
           navigateTo('tariff');
           return;
@@ -322,7 +329,7 @@ function App() {
     }, 3000);
 
     // Stop polling after 2 minutes; check balance in case webhook was slow
-    setTimeout(async () => {
+    timeoutId = setTimeout(async () => {
       clearInterval(interval);
       try {
         const ck = getCustomerKey();
@@ -332,7 +339,7 @@ function App() {
           return;
         }
       } catch (_) { /* ignore */ }
-      setProcessingError('Платёж получен, но начисление кредитов задерживается. Обновите страницу — ваши генерации уже ждут в Студии.');
+      setProcessingError('Платёж получен, но начисление кредитов задерживается. Нажмите «Попробовать снова» — кредиты проверим автоматически.');
     }, 120000);
   }, [selectedStyles, isFullBody, uploadedImage, handleCreditsCredited]);
 
@@ -691,7 +698,17 @@ function App() {
       window.location.href = data.paymentUrl;
     } catch (e: any) {
       log.error('Payment creation failed', e);
-      setPaymentError(e.message || 'Ошибка создания платежа. Попробуйте снова.');
+      const raw: string = e?.message ?? '';
+      const isNetworkError =
+        raw === 'Failed to fetch' ||
+        raw.toLowerCase().includes('networkerror') ||
+        raw.toLowerCase().includes('network request failed') ||
+        raw.toLowerCase().includes('load failed');
+      setPaymentError(
+        isNetworkError
+          ? 'Нет соединения с сервером. Проверьте интернет и попробуйте снова.'
+          : raw || 'Ошибка создания платежа. Попробуйте снова.'
+      );
       // STAGE 1.2 — release lock on error so user can retry
       setIsCreatingPayment(false);
     }

@@ -49,18 +49,28 @@ deploy_server() {
   echo "==> [server] Building TypeScript..."
   ( cd server && npx tsc )
 
+  echo "==> [server] Syncing env vars to VPS (adds missing, never overwrites DATABASE_URL)..."
+  bash scripts/push-env-to-vps.sh || echo "    [warn] push-env-to-vps.sh failed — check manually"
+
   echo "==> [server] Uploading server/dist/ to VPS temp dir..."
   $SSH "$VPS" "rm -rf $TMP_API && mkdir -p $TMP_API"
   $SCP -r server/dist/. "$VPS:$TMP_API/"
 
   echo "==> [server] Syncing to api/dist/..."
-  $SSH "$VPS" "rsync -av --delete $TMP_API/ $VPS_API/"
+  $SSH "$VPS" "rsync -av --delete --exclude '.env' $TMP_API/ $VPS_API/"
 
   echo "==> [server] Cleanup temp..."
   $SSH "$VPS" "rm -rf $TMP_API"
 
   echo "==> [server] Restarting PM2..."
   $SSH "$VPS" "pm2 restart all"
+
+  echo "==> [server] Waiting for startup logs..."
+  sleep 3
+  $SSH "$VPS" "pm2 logs --nostream --lines 20" | grep -E "\[api\]" || true
+
+  echo "==> [server] Testing webhook endpoint..."
+  bash scripts/test-webhook.sh || echo "    [warn] Webhook test had issues — check output above"
 
   echo "==> [server] Done."
 }
