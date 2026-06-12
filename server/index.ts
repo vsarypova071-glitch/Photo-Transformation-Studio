@@ -15,7 +15,7 @@ const app = express();
 app.set('trust proxy', 1); // nginx reverse proxy — correct req.ip for rate-limiter
 const PORT = Number(process.env.PORT || 3000);
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://ai-fotosessia.ru,http://localhost:5173,http://localhost:8080')
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://ai-fotosessia.ru,https://www.ai-fotosessia.ru,http://localhost:5173,http://localhost:8080')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
@@ -87,7 +87,10 @@ app.get('/api/config', (_req, res) => {
   res.json(featureSummary());
 });
 
-app.use('/api/payment', paymentLimiter, paymentRouter);
+// Лимитируем только создание платежей, НЕ вебхук.
+// YooKassa вебхук приходит с одного IP и не должен попасть в rate limit.
+app.use('/api/payment/create', paymentLimiter);
+app.use('/api/payment', paymentRouter);
 app.use('/api/balance', apiLimiter, balanceRouter);
 app.use('/api/order', apiLimiter, orderRouter);
 app.use('/api/credits', apiLimiter, creditsRouter);
@@ -118,4 +121,19 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(PORT, () => {
   console.log(`[api] listening on :${PORT}`);
   console.log(`[api] allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
+
+  // Webhook config check — видно сразу в pm2 logs после деплоя.
+  // Если WEBHOOK_USER/PASS не заданы → вебхук fail-closed → кредиты не начислятся.
+  const wbUser = (process.env.YOOKASSA_WEBHOOK_USER || '').trim();
+  const wbPass = (process.env.YOOKASSA_WEBHOOK_PASS || '').trim();
+  if (!wbUser || !wbPass) {
+    console.error('[api] ⚠️  WEBHOOK CONFIG MISSING: YOOKASSA_WEBHOOK_USER and/or YOOKASSA_WEBHOOK_PASS not set!');
+    console.error('[api]    Webhook will return 503 for ALL YooKassa callbacks → credits will NEVER be granted!');
+    console.error('[api]    Fix: run  bash scripts/push-env-to-vps.sh  then pm2 restart all');
+  } else {
+    const appUrl = (process.env.APP_URL || 'https://www.ai-fotosessia.ru').replace(/\/$/, '');
+    const host = appUrl.replace(/^https?:\/\//, '');
+    console.log(`[api] ✅ Webhook auth configured: user=${wbUser}`);
+    console.log(`[api]    YooKassa URL: https://${wbUser}:***@${host}/api/payment/webhook`);
+  }
 });

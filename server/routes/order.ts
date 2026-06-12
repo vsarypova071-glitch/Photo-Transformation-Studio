@@ -92,7 +92,7 @@ router.get('/find-recent', async (req, res) => {
 
     const { rows } = await db.query(
       `SELECT id, payment_status, generation_status, results, photos_count, tariff_id,
-              payment_id, price, created_at
+              payment_id, price, created_at, original_image, style_ids
          FROM orders
         WHERE customer_key = $1
           AND payment_status = 'succeeded'
@@ -122,6 +122,8 @@ router.get('/find-recent', async (req, res) => {
       price: order.price,
       paymentMethod: paymentMethodFromId(order.payment_id),
       createdAt: order.created_at,
+      originalImage: order.original_image || null,
+      styleIds: order.style_ids || [],
     });
   } catch (err: any) {
     console.error('[order/find-recent]', err?.message || err);
