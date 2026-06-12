@@ -559,18 +559,9 @@ export function buildNegativePrompt(): string {
     // Anti-cheap luxury
     'flashy rich aesthetic', 'fake billionaire visuals', 'gold overload', 'casino luxury',
     'fast fashion energy', 'hypersexual styling',
-    // Forbidden backgrounds / locations
-    'kitchen background', 'domestic kitchen', 'home kitchen interior',
-    'living room background', 'home couch', 'domestic sofa', 'home living room',
-    'cafe background', 'coffee shop background', 'restaurant chairs background',
-    'wooden chairs background', 'casual cafe interior', 'cafe with tables',
-    'domestic furniture backdrop', 'wooden dresser background', 'home shelves background',
-    'bare white walls', 'random domestic room', 'cheap interior room',
-    'home plants background', 'potted plants decoration', 'indoor plant background',
-    'generic office cubicle', 'budget office', 'cheap corporate office',
-    'domestic bedroom', 'home bathroom', 'home hallway', 'domestic staircase',
-    'fast food restaurant', 'cheap cafe interior', 'plastic furniture restaurant',
-    'shopping mall background', 'supermarket', 'parking lot',
+    // Non-premium backgrounds (positive location list in LOCATION block overrides these)
+    'cafe interior', 'coffee shop', 'domestic interior', 'budget location', 'non-premium background',
+    'cheap office', 'random room', 'home interior', 'casual restaurant',
     // Anti-fatigue / anti-aging
     'tired face', 'fatigued look', 'grey skin', 'dull skin', 'washed out skin',
     'visually unwell', 'aging effect', 'added wrinkles', 'exhausted expression',
@@ -931,44 +922,67 @@ Luxury must feel quiet, restrained, editorial, cinematic, emotionally intelligen
 Avoid: flashy rich aesthetics, fake billionaire visuals, gold overload, casino luxury, cheap glamour, influencer posing, fast fashion energy, hypersexual styling.`;
 
   const premiumLocationBlock = `\
-PREMIUM LOCATION MANDATE (enforced — no exceptions):
-This is a professional commercial photoshoot worth ₽50,000+. Every background MUST reflect this value.
+LOCATION — MANDATORY SELECTION (choose exactly one):
+This photoshoot takes place in one of these twelve approved locations only.
+Select the one that best serves this style and feels most cinematic for this person.
+No other location exists. No other background is possible.
 
-FORBIDDEN — NEVER generate these locations:
-- Any domestic interior: kitchen, living room, bedroom, bathroom, home hallway
-- Home furniture as background: couch, sofa, dining table, domestic chairs, home shelves
-- Bare white walls, random painted rooms, cheap domestic interiors
-- Generic offices: cubicles, budget conference rooms, beige corporate carpet
-- Home plants, potted plants, domestic plant decorations in the background
-- Casual or budget restaurants, fast food, generic cafe with plastic furniture
-- Shopping mall, supermarket, parking lot, random street with cars
-- Hotel corridor with ugly carpet, elevator lobby with cheap finish
+1. LUXURY PENTHOUSE
+   Floor-to-ceiling glass walls, Manhattan or city skyline panorama, architectural interior,
+   warm amber ambient light, premium furniture, high altitude above the city.
 
-ALLOWED — use exclusively these premium locations:
-- Luxury penthouse with floor-to-ceiling windows and skyline panorama
-- Five-star hotel suite, grand hotel lobby, luxury hotel corridor (marble, brass)
-- Modern executive office with panoramic city or skyline views, designer furniture
-- Designer architectural interior — marble, glass, sculptural lighting, high-end materials
-- Luxury restaurant with fine decor, crystal glassware, dramatic editorial atmosphere
-- Rooftop terrace with city skyline, warm ambient lighting
-- Yacht deck, luxury marina — Mediterranean or modern waterfront
-- Vogue editorial fashion studio — controlled dramatic light, architectural set
-- Luxury business lounge, private members club, premium hospitality space
-- Premium urban architecture — glass facades, modern sculpture, architectural plazas
-- Milan fashion district — elegant streets, luxury boutiques, cobblestone editorial
-- Paris luxury streets — Haussmann architecture, golden afternoon light, refined atmosphere
-- New York skyscraper office — Manhattan skyline through floor-to-ceiling glass
-- Luxury spa or wellness retreat — marble, warm indirect light, premium materials
+2. FIVE-STAR HOTEL SUITE
+   Grand marble floors, floor-to-ceiling windows, golden editorial light,
+   premium soft furnishings, architectural luxury details, timeless elegance.
 
-LIGHTING STANDARD (mandatory for every frame):
-85mm lens feel, shallow depth of field, professional fashion photography lighting.
-Golden hour, dramatic cinematic directional light, or luxury editorial studio quality.
-The atmosphere must feel expensive, cinematic, magazine cover quality.
+3. VOGUE EDITORIAL STUDIO
+   Seamless professional backdrop (grey, cream, or deep tone), dramatic controlled light,
+   high-fashion campaign atmosphere, shallow depth of field, editorial precision.
 
-HERO PRINCIPLE:
-The subject must feel like THE HERO of an intentional editorial photoshoot —
-not a person who happened to wander into a random room.
-Priority: face identity (1) → premium location (2) → cinematic light and composition (3).`;
+4. LUXURY BUSINESS LOUNGE
+   Private members club, dark leather, brass details, architectural warm lighting,
+   premium hospitality space, quiet exclusivity, no other guests visible.
+
+5. PRIVATE JET INTERIOR
+   Plush cream or tan leather seats, oval cabin windows with clouds and sky outside,
+   warm golden cabin light, polished wood trim, above-the-clouds luxury atmosphere.
+
+6. YACHT DECK
+   Open Mediterranean or modern waterfront, ocean horizon, warm golden hour light,
+   polished chrome railings, luxury deck surface, blue sky or sunset behind.
+
+7. ROOFTOP SKYLINE TERRACE
+   Open rooftop, city panorama at golden hour or twilight, architectural concrete or glass railing,
+   warm directional evening light, urban skyline glowing in background.
+
+8. DESIGNER ARCHITECTURAL INTERIOR
+   Sculptural modern space, marble or terrazzo floors, high ceilings, dramatic architectural light,
+   minimal luxury — no clutter, no domestic objects, pure premium form.
+
+9. PREMIUM FASHION CAMPAIGN SET
+   High-end commercial photoshoot staging, bold color backdrop or architectural set,
+   editorial dramatic lighting, Vogue / Harper's Bazaar campaign atmosphere.
+
+10. LUXURY MANHATTAN OFFICE
+    Floor-to-ceiling glass, New York city skyline, executive space,
+    premium design details, power atmosphere, city lights or daytime sky panorama.
+
+11. MILAN FASHION DISTRICT
+    Elegant cobblestone street or piazza, luxury boutique facades (Gucci, Versace, Armani),
+    golden afternoon light, refined European atmosphere, shallow depth of field on background.
+
+12. PARIS LUXURY STREET
+    Haussmann stone architecture, golden warm afternoon light, elegant refined atmosphere,
+    premium European urban luxury, soft bokeh background, timeless Parisian sophistication.
+
+QUALITY STANDARD:
+Every element of the image — light source, architecture, surface material, atmosphere —
+must signal premium quality before the viewer consciously notices anything else.
+This image is a commercial brand photoshoot worth ₽50,000–100,000.
+The person is not visiting this location. She BELONGS here. She owns this space.
+
+LIGHTING (mandatory): 85mm lens, shallow depth of field, cinematic directional light.
+Golden hour / editorial studio / dramatic architectural light. Magazine cover quality.`;
 
   const antiRepetitionBlock = `\
 ANTI-REPETITION:
