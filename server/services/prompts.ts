@@ -1468,6 +1468,17 @@ DO NOT:
 - beautify facial anatomy in any way
 - apply any facial attractiveness optimization
 
+EXACT FACE ANATOMY MATCH (refer strictly to the reference photo):
+1. EYES: keep the exact eye shape, size and depth from the reference. The gaze must be deeply alive,
+   warm and present, with natural prominent specular highlights (real lens catchlights) inside the eyes.
+   Do NOT distort the eyebrows. Do NOT pull the outer eye corners upward into a stylized look.
+2. LIPS: keep the authentic natural width and soft fullness of the lips from the reference.
+   Lips relaxed and naturally resting — zero artificial plumpness, no pinched corners,
+   no synthetic over-sharp lipstick contouring. Do NOT narrow the mouth.
+3. FACE SHAPE & LIGHT: keep the authentic cheek volume and soft jawline contour.
+   Eliminate harsh shadows in the nasolabial area or under the cheekbones that create artificial
+   stiffness or aging. Skin soft, radiant, lit by even premium diffused light.
+
 REFERENCE PHOTO USAGE:
 The uploaded photo is the facial identity reference.
 PRESERVE EXACTLY from the reference photo: face shape, jaw width, chin shape, lower face
