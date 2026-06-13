@@ -8,7 +8,7 @@ const WARDROBE_FEMALE: readonly string[] = [
   'structured blazer dress in cobalt blue, sharp feminine silhouette',
   'elegant wrap dress in deep emerald green, soft luxurious fabric',
   'sculptural midi dress in rich burgundy wine, premium fabric',
-  'minimalist slip dress in warm champagne with delicate lace detail',
+  'elegant satin midi dress in warm champagne with refined modest neckline',
   'tailored shirt dress in powder blue, clean modern cut',
   'dramatic floor-length gown in midnight navy with sculptural silhouette',
   'soft cashmere knit dress in warm camel, effortless luxury',
@@ -40,6 +40,75 @@ function pickGarment(genderMode?: 'female' | 'male'): string {
   return wardrobe[Math.floor(Math.random() * wardrobe.length)];
 }
 
+// ── SOCIAL PORTRAIT VARIETY POOLS ────────────────────────────────────────────
+// Used exclusively by social_portrait style. Picked once per buildPrompt() call →
+// each generation gets a different outfit + pose + background combination.
+// 14 female outfits × 12 poses × 10 backgrounds = 1680 unique starting combinations.
+
+const WARDROBE_SOCIAL_FEMALE: readonly string[] = [
+  'structured oversized camel blazer with slim high-waist white tailored trousers and minimal gold pendant',
+  'flowing silk blouse in warm dusty rose with wide-leg cream trousers, delicate gold necklace',
+  'double-breasted blazer dress in cobalt blue — sharp feminine silhouette, polished modern cut',
+  'soft cashmere turtleneck in warm ivory layered under open structured blazer in warm stone',
+  'sculpted satin midi dress in deep burgundy wine — refined drape, visible luxurious fabric weight',
+  'double-breasted blazer in rich forest green over crisp white fitted blouse, slim dark trousers',
+  'structured blazer in warm coral over ivory silk blouse with tailored wide-leg cream trousers',
+  'luxurious ribbed knit midi dress in warm camel — premium fabric, clean minimal styling',
+  'classic tailored trench coat in warm beige worn open over fitted black turtleneck and slim trousers',
+  'high-waist midi skirt in terracotta with tucked silk blouse in warm cream — editorial everyday elegance',
+  'blazer in soft lavender over crisp white blouse, tailored wide-leg trousers — modern feminine power',
+  'structured leather blazer in cognac over clean white tee, straight-leg premium dark trousers',
+  'fine-knit draped cardigan in warm oat over elegant satin midi dress in champagne — layered effortless luxury',
+  'fitted wrap dress in deep emerald green — elegant V-silhouette, premium crepe fabric',
+  'sharp tailored suit in deep navy — fitted blazer over crisp white blouse, authoritative modern femininity',
+  'structured wool jacket in rich chocolate brown with slim trousers, refined warm visible texture',
+  'tonal cream monochrome look — cream structured blazer over cream blouse, slim cream trousers, quiet luxury minimalism',
+  'luxury fine-gauge ribbed turtleneck in deep olive green with premium tailored trousers, sophisticated knitwear',
+  'minimalist black designer outfit — clean architectural cut, premium matte fabric, sculptural modern silhouette',
+];
+
+const WARDROBE_SOCIAL_MALE: readonly string[] = [
+  'tailored navy blazer over crisp white shirt, no tie — smart premium modern look',
+  'luxury linen shirt in warm white, slim premium dark trousers, clean casual-elegant',
+  'structured double-breasted blazer in charcoal, fitted white shirt, understated authority',
+  'soft cashmere turtleneck in warm camel under open structured blazer in warm sand',
+  'bespoke suit in deep forest green with white shirt — distinctive modern masculine',
+  'premium overshirt in warm cognac over slim dark trousers, refined casual luxury',
+  'crisp Oxford shirt in pale sky blue with tailored slim trousers, luxury watch detail',
+  'fine-knit crewneck in warm grey over white shirt, clean straight-leg trousers',
+];
+
+// КРИТИЧНО: лицо всегда фронтально к камере (как в reference фото).
+// Повороты разрешены только корпусу. Поворот/наклон ГОЛОВЫ провоцирует дрейф
+// identity — модель достраивает лицо под углом и теряет геометрию.
+const POSES_SOCIAL_PORTRAIT: readonly string[] = [
+  'face fully frontal to camera, arms loosely at sides, natural asymmetry in shoulder height, confident warm gaze',
+  'face fully frontal to camera, one hand lightly touching collar — natural unforced gesture, warm expression',
+  'seated naturally facing camera directly, hands resting in lap, face fully frontal, direct warm gaze',
+  'face fully frontal, leaning back gently against a clean wall, arms relaxed, comfortable effortless stance',
+  'face fully frontal to camera, one hand casually in pocket, natural weight shift to one leg',
+  'face fully frontal, both hands lightly clasped at waist level, straight elegant posture, strong direct gaze',
+  'body angled slightly, face turned FULLY frontal toward camera — face flat to lens like a passport of a fashion magazine',
+  'face fully frontal, arms loosely crossed at waist, relaxed and confident, direct eye contact',
+  'face fully frontal to camera, weight on one leg, hip shifted naturally, direct expressive gaze',
+  'face fully frontal, standing in relaxed open posture, natural calm energy, looking straight at camera',
+];
+
+const BACKGROUNDS_SOCIAL: readonly string[] = [
+  'seamless warm grey gradient studio backdrop — professional clean minimal photography, NO furniture, NO decor',
+  'seamless soft ivory studio backdrop — clean professional portrait photography, NO objects, NO domestic elements',
+  'smooth warm beige studio wall — clean even surface, no texture pattern, no furniture, no decorative objects',
+  'clean neutral grey architectural wall surface — solid, uniform, soft focus, NO furniture, NO vases, NO plants',
+  'soft warm white studio seamless background — professional photography setup, uniform tone, nothing visible behind',
+  'blurred minimal outdoor setting — clean blurred greenery or building exterior, NO domestic interior, NO furniture',
+  'clean warm taupe studio surface — solid neutral colour, soft vignette, professional portrait photography quality',
+  'soft natural light against plain warm plaster wall — single colour surface only, NO furniture, NO decor objects',
+  'dark charcoal textured studio backdrop — professional portrait photography, rich neutral tone, NO objects',
+  'clean light blue-grey studio seamless — cool professional studio photography, neutral and minimal',
+  'hand-painted grey canvas studio backdrop — painterly muted texture with soft dark brushstroke gradients, classic fine-art portrait studio, NO objects',
+  'hand-painted warm taupe-brown canvas backdrop — subtle mottled painterly texture, timeless master-photographer studio aesthetic, NO objects',
+];
+
 // ── ENVIRONMENT-AWARE WARDROBE POOLS ─────────────────────────────────────────
 // Activated when detectEnvironment() finds a scene cue in the user's filtered wish.
 // Each pool is scene-coherent: no blazers on beaches, no bikinis in offices.
@@ -49,7 +118,7 @@ const ENV_WARDROBE_FEMALE: Record<EnvironmentHint, readonly string[]> = {
   beach_resort: [
     'flowing linen midi dress in warm white with gentle breeze drape — Mediterranean beach resort elegance',
     'light linen sundress in sandy beige with subtle texture — effortless coastal summer luxury',
-    'breezy silk cover-up in soft ivory over minimal swimwear, wide brim hat — luxury beach lifestyle',
+    'elegant flowing resort dress in soft ivory with wide brim hat — luxury beach lifestyle, fully covered',
     'relaxed linen co-ord set in warm sand tone — resort wear, elegant coastal leisure',
     'lightweight cotton maxi dress in sky blue with thin straps — pure seaside summer editorial',
   ],
@@ -71,7 +140,7 @@ const ENV_WARDROBE_FEMALE: Record<EnvironmentHint, readonly string[]> = {
   evening_dinner: [
     'sculptural floor-length gown in deep midnight with elegant draping — luxury dinner editorial',
     'sleek fitted midi dress in deep wine with gathered detail — sophisticated evening wear',
-    'silk slip dress in champagne gold with refined jewelry — elegant dinner party look',
+    'elegant satin evening dress in champagne gold with refined jewelry and modest neckline — dinner party look',
     'elegant evening gown in deep forest green, minimal luxury styling — timeless dinner glamour',
     'draped satin dress in dusty rose, one-shoulder silhouette — premium evening editorial',
   ],
@@ -266,6 +335,17 @@ const LIGHTINGS: readonly string[] = [
   'morning golden frontlight — gentle warm illumination, delicate skin glow, fresh alive energy',
   'dramatic soft sidelight — strong directional light sculpting the face, deep cinematic shadow',
   'open midday shade — bright reflected outdoor light, even clean illumination, summer freshness',
+];
+
+// Освещение для social_portrait — мягкий студийный свет, как в профессиональной
+// портретной съёмке: ровное, flattering, без драматики. Ни golden hour, ни blue hour.
+const LIGHTINGS_SOCIAL: readonly string[] = [
+  'large soft-box frontal beauty light — even clean illumination across the entire face, minimal shadow, warm-neutral colour temperature, professional studio portrait quality, clean bright catchlights in both eyes',
+  'large front-left softbox with gentle fill from right — smooth even skin light, barely-there shadow under chin, bright clean eyes, premium beauty photography quality',
+  'soft diffused window light from front-left — even skin illumination, natural warm daylight quality, flattering catchlights, no hard shadows anywhere on the face',
+  'beauty-dish key light at slight angle with large reflector fill — classic flattering portrait studio lighting, warm neutral tone, clean skin, bright expressive eyes',
+  'overcast daylight quality — bright even diffused natural light, no directional shadow, skin glows naturally, flat clean flattering beauty-portrait light',
+  'large overhead softbox with front reflector — bright even studio illumination, skin texture visible and natural, clean warm neutral, professional headshot lighting quality',
 ];
 
 function pickPose(isFullBody?: boolean): string {
@@ -575,6 +655,12 @@ export function buildNegativePrompt(): string {
     'empty model stare', 'constant side-looking editorial pose', 'emotionless beauty shot',
     // Cinematic realism
     'plastic beauty', 'fake perfection', 'synthetic lighting', 'AI glamour',
+    // Makeup render artifacts
+    'lipstick on teeth', 'lipstick stains on teeth', 'red marks on teeth', 'stained teeth',
+    'smeared makeup', 'makeup bleed', 'color bleed on teeth',
+    // Photo quality
+    'digital noise', 'oversharpened edges', 'low detail', 'soft blurry focus on eyes',
+    'oversaturated colors', 'cheap digital look', 'smartphone photo quality',
   ].join(', ');
 }
 
@@ -1333,20 +1419,111 @@ NO MAKEUP of any kind. NO beauty filter. NO feminine grooming. NO eyeliner. NO f
 Preserve natural masculine skin texture — real pores, authentic skin tones, natural masculine character.
 The face must look like a real man's face — NOT a smoothed AI male model, NOT a beauty-filtered face.`;
 
+  // Variety picks — randomised once per buildPrompt() call so every generation
+  // gets a unique outfit + pose + background combination for social_portrait.
+  const _spOutfit = isSocialPortrait
+    ? pickFromArray(isMale ? WARDROBE_SOCIAL_MALE : WARDROBE_SOCIAL_FEMALE)
+    : '';
+  const _spPose = isSocialPortrait ? pickFromArray(POSES_SOCIAL_PORTRAIT) : '';
+  const _spBg   = isSocialPortrait ? pickFromArray(BACKGROUNDS_SOCIAL) : '';
+
   const socialPortraitBlock = `\
-CLEAN AUTHENTIC PORTRAIT:
-Natural soft light — window light, overcast daylight, or soft studio glow.
-No dramatic shadows, no cinematic mood lighting, no fashion campaign atmosphere.
-Clean neutral or softly blurred background. No expensive interiors, no luxury environments.
-Realistic proportions — preserve the subject's real body, no elongation, no slimming.
-Styling: business casual or smart casual — wearable, real, not curated by a stylist.
-Natural makeup, natural hair — neat and polished but not editorial.
-Expression: warm, approachable, confident, authentic. Not model-blank, not performative.
-Result: the best real version of this person — as they would appear in a premium real-life photo,
-not in a luxury magazine campaign.
-FORBIDDEN: Vogue aesthetic, fashion editorial energy, luxury campaign styling,
-dramatic lighting, evening glamour, yacht or luxury interior backgrounds,
-AI doll look, exaggerated beauty, over-retouching, fantasy costume, cosplay.`;
+PREMIUM SOCIAL MEDIA PORTRAIT — LUXURY FASHION STYLIST STANDARD:
+Every generation must look like a professional photoshoot created by a luxury fashion stylist.
+Photo quality: ultra-realistic photography, Vogue-level, professional premium retouching.
+Natural skin texture — real pores, healthy warm glow. Not AI-looking. Not stylized. Not CGI.
+
+LOCK FACE GEOMETRY — NON-NEGOTIABLE:
+Copy the following exactly from the reference photo. Do not interpret. Do not improve. Copy.
+- jaw width: exact same width as in the reference
+- chin width and chin projection: exact same shape and depth
+- lower face volume: preserve natural fullness — do not slim
+- cheek volume: preserve exactly — do not reduce, do not hollow
+- eye shape: exact eyelid contour, size, natural openness
+- eye color: exact iris color from reference
+- eye distance: exact spacing between eyes
+- nose bridge width: exact same width
+- nose tip shape: exact same form
+- lip proportions: exact upper-to-lower ratio, exact width
+
+DO NOT:
+- make the face slimmer
+- make the face younger
+- make the jaw more defined or angular
+- reduce cheek volume
+- beautify facial anatomy in any way
+- apply any facial attractiveness optimization
+
+REFERENCE PHOTO USAGE:
+The uploaded photo is the facial identity reference.
+PRESERVE EXACTLY from the reference photo: face shape, jaw width, chin shape, lower face
+proportions, cheek volume, eye shape and color, eye spacing, nose shape, lip shape,
+jawline, skin tone, age appearance, facial asymmetry, hairstyle length, hair color, body type.
+The generated person must be immediately recognisable as the same individual from the reference.
+Face identity similarity must remain above 95%.
+
+NO BEAUTY TRANSFORMATION (strictly enforced for every generation):
+The AI must NOT apply any of the following — ever:
+- facial enhancement, attractiveness optimization, or beauty filter of any kind
+- face slimming, jaw reshaping, chin refinement, or lower-face proportion change
+- reduction of natural cheek volume or facial fullness
+- removal of authentic facial asymmetry
+- youth filter, skin rejuvenation beyond natural healthy glow, or age reduction
+- influencer aesthetic transformation
+- fashion model face replacement or look-alike generation
+- AI beauty idealization of any feature
+This person must look like THEMSELVES — not like a more attractive or younger version of themselves.
+Preserve: exact natural jaw width, exact chin shape, exact cheek volume, exact facial asymmetry — all from the reference.
+
+OUTFIT FOR THIS GENERATION (use exactly — no substitution):
+${_spOutfit}
+Completely replace ALL clothing from the reference photo with this specific premium outfit.
+Fit perfectly to this person's exact body type and proportions.
+Expensive fabric texture must be clearly visible — silk sheen, knit texture, tailoring structure.
+Color must harmonise naturally with this person's skin tone and hair color.
+Accessories and details must be refined and cohesive — nothing generic or fast fashion.
+The viewer must immediately feel: "A luxury fashion stylist chose this outfit personally."
+FORBIDDEN: any trace of original clothing, fast fashion energy, generic basics, sportswear.
+
+BACKGROUND FOR THIS GENERATION (use exactly):
+${_spBg}
+Replace original background entirely.
+FORBIDDEN: cheap cafes, restaurant tables, random coffee shops, amateur home environments,
+cartoon or painted backgrounds, low-quality textures.
+
+POSE FOR THIS GENERATION:
+${_spPose}
+Natural, confident, approachable — genuinely alive, not stiff, not runway, not corporate.
+Expression: neutral confident by default. Subtle natural smile only if it fits — do NOT force a smile.
+
+HEAD ANGLE — CRITICAL FOR IDENTITY:
+The FACE must be fully frontal to the camera — same angle as the reference photo.
+Body may turn or shift, but the head stays straight and frontal. NO head turn, NO head tilt,
+NO three-quarter face angle, NO profile. Rendering the face at an angle distorts identity — forbidden.
+
+LIGHTING:
+Natural soft light — window quality, clean premium studio glow, or lifestyle setting light.
+Flattering to face and fabric texture. Skin: warm, healthy, alive.
+NO harsh shadows. NO neon. NO dramatic contrast. NO colored gels.
+Shallow depth of field — 85–105mm portrait lens feel.
+
+MAKEUP HYGIENE (critical render rule):
+Lipstick stays ONLY on the lips — crisp clean lip line.
+TEETH must be completely clean: natural white, NO lipstick stains, NO red marks, NO color bleed onto teeth.
+Makeup must look professionally applied — no smearing, no bleeding outside natural borders.
+
+CAMERA QUALITY (medium-format standard):
+Render as if shot on a medium-format studio camera (Hasselblad quality):
+tack-sharp focus on the eyes, crisp visible fabric weave and knit texture,
+fine natural skin detail, smooth tonal transitions, zero digital noise.
+Muted refined color grading — calm, expensive, timeless. Not oversaturated, not glossy-digital.
+
+RESULT GOAL:
+This person must look like the BEST REAL VERSION OF THEMSELVES.
+Not another person. Not AI-looking. Not over-stylized beyond recognition.
+The result must look like a real professional photoshoot that could be published
+in a luxury lifestyle magazine or premium social media.`;
+
 
   const bwPortraitBlock = `\
 BLACK & WHITE PORTRAIT (critical output requirement):
@@ -1443,6 +1620,31 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
 
   return [
     // ── Глобальные блоки ──────────────────────────────────────────────────────
+    // Social portrait: identity is the absolute top priority — stated first so the model
+    // reads it before any other instruction.
+    // Identity-first: глобально для ВСЕХ стилей (не только social_portrait).
+    `ABSOLUTE PRIORITY — READ THIS FIRST:
+Identity preservation is the highest priority.
+Recognizability is more important than beauty.
+If there is any conflict between style and identity — preserve the face. Always.
+
+DO NOT MODIFY under any circumstances:
+- jaw width
+- chin shape
+- lower face proportions
+- eye shape
+- eye color
+- eye spacing
+- nose shape and proportions
+- age appearance
+- facial asymmetry
+
+The person must remain immediately recognizable as the same individual from the reference photo.
+A less beautiful but recognizable result is better than a more beautiful but unrecognizable one.
+
+HEAD ANGLE: keep the face close to the same angle as in the reference photo — frontal or near-frontal.
+Avoid strong head turns, profiles, or extreme tilts: rendering the face at a steep angle distorts identity.`,
+    '',
     referenceBlock,
     '',
     identityBlock,
@@ -1527,9 +1729,11 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     // LIGHTING / ATMOSPHERE:
     ...(isMenCinematic
       ? [buildMenAtmosphere(input.stylePrompt)]
-      : isEditorial && !isBWPortrait
-        ? [`LIGHTING: ${pickLighting()}`]
-        : []),
+      : isSocialPortrait
+        ? [`LIGHTING: ${pickFromArray(LIGHTINGS_SOCIAL)}`]
+        : isEditorial && !isBWPortrait
+          ? [`LIGHTING: ${pickLighting()}`]
+          : []),
     input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : '',
     // [STYLE DIRECTION] — эстетическое направление конкретного стиля из каталога.
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',

@@ -8,6 +8,8 @@ import demoFuturisticImg from '@/assets/demo/demo-futuristic.png';
 
 interface WelcomeScreenProps {
   onStart: () => void;
+  walletBalance?: number;
+  onContinue?: () => void;
 }
 
 // Hero slider: 5 слайдов в порядке для маркетинга.
@@ -47,7 +49,7 @@ const SLIDES = [
 
 const INTERVAL_MS = 3500;
 
-export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onStart, walletBalance = 0, onContinue }: WelcomeScreenProps) {
   const [active, setActive] = useState(0);
   const [animDir, setAnimDir] = useState<'left' | 'right'>('right');
   const [isAnimating, setIsAnimating] = useState(false);
@@ -261,12 +263,23 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       </div>
 
       {/* CTA Button */}
-      <button
-        onClick={onStart}
-        className="btn-shimmer w-full max-w-sm py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95"
-      >
-        ✦ Создать AI-фотосессию
-      </button>
+      {walletBalance > 0 && onContinue ? (
+        // Есть кредиты — только кнопка "Перейти в студию", старый flow скрыт
+        // (чтобы не попасть на тарифный экран с заблокированной оплатой)
+        <button
+          onClick={onContinue}
+          className="w-full max-w-sm py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95 bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_4px_20px_rgba(16,185,129,0.35)]"
+        >
+          ✦ Перейти в студию — {walletBalance} {walletBalance === 1 ? 'генерация' : walletBalance < 5 ? 'генерации' : 'генераций'}
+        </button>
+      ) : (
+        <button
+          onClick={onStart}
+          className="btn-shimmer w-full max-w-sm py-5 px-8 rounded-full font-semibold text-sm text-white uppercase tracking-widest transition-all active:scale-95"
+        >
+          ✦ Создать AI-фотосессию
+        </button>
+      )}
 
       {/* Speed badge */}
       <p className="text-[10px] mt-3 text-white/50 flex items-center gap-1.5">

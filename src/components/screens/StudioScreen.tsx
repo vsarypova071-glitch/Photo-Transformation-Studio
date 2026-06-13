@@ -150,6 +150,7 @@ export default function StudioScreen({
         setUploadedFilename(up.filename);
         setOriginalDimensions(up.dimensions);
         setBiometryConsent(true);
+        localStorage.setItem('biometry_consent', '1');
         if (prefillStyleId) setSelectedStyleId(prefillStyleId);
         setStep('choose');
       } catch (e: any) {
@@ -242,6 +243,10 @@ export default function StudioScreen({
 
   // === Шаг 2: выбор стиля и генерация (single и pair) ===
   const handleGenerate = async () => {
+    if (!biometryConsent) {
+      setError('Отметьте согласие на обработку биометрических данных, чтобы продолжить.');
+      return;
+    }
     if (!selectedStyleId) {
       setError('Выберите стиль');
       return;
@@ -365,10 +370,14 @@ export default function StudioScreen({
   const handleNext = () => {
     setResultImage('');
     setResultStyleName('');
-    // Сбрасываем фото B — пользователь выбирает новый стиль
     setUploadedImageB('');
     setUploadedFilenameB('');
-    setStep(balance > 0 ? 'choose' : 'upload');
+    if (balance > 0) {
+      setStep('choose');
+    } else {
+      // Кредиты кончились — идём покупать, не сбрасываем фото
+      onBuyMore?.();
+    }
   };
 
   // ─────────────────────── RENDER ───────────────────────
@@ -420,34 +429,57 @@ export default function StudioScreen({
             </span>
           </label>
 
-          <div className={`relative aspect-square w-full max-w-sm mx-auto rounded-[2.5rem] border-2 border-dashed flex flex-col items-center justify-center overflow-hidden group transition-all ${biometryConsent ? 'border-border bg-secondary/40 hover:border-primary cursor-pointer' : 'border-border/40 bg-secondary/20 opacity-60 cursor-not-allowed'}`}>
-            {!isUploading ? (
-              <div className="flex flex-col items-center px-10 text-center">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 border border-primary/20 group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+          {/* Если фото уже загружено — показываем превью, не заставляем грузить снова */}
+          {uploadedImage && uploadedUrl ? (
+            <div className="space-y-3">
+              <div className="relative w-full max-w-sm mx-auto rounded-[2.5rem] overflow-hidden border-2 border-primary shadow-lg">
+                <img src={uploadedImage} alt="Ваше фото" className="w-full h-auto block" />
+                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs font-bold text-center py-2 uppercase tracking-widest">
+                  Фото загружено ✓
                 </div>
-                <p className="text-lg font-bold text-foreground mb-2 uppercase">Выбрать селфи</p>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                  {biometryConsent ? 'Лицо останется реальным' : 'Сначала отметьте согласие'}
-                </p>
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent animate-spin rounded-full mb-4" />
-                <p className="text-xs font-bold text-muted-foreground uppercase">Загрузка...</p>
-              </div>
-            )}
-            {biometryConsent && !isUploading && (
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-            )}
-          </div>
+              <button
+                onClick={() => setStep('choose')}
+                disabled={!biometryConsent}
+                className="w-full max-w-sm mx-auto block py-4 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all"
+              >
+                Продолжить с этим фото →
+              </button>
+              <label className="w-full max-w-sm mx-auto flex items-center justify-center gap-2 py-3 rounded-2xl border border-border text-muted-foreground text-xs font-semibold uppercase tracking-wider cursor-pointer hover:text-foreground transition-all">
+                Загрузить другое фото
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              </label>
+            </div>
+          ) : (
+            <div className={`relative aspect-square w-full max-w-sm mx-auto rounded-[2.5rem] border-2 border-dashed flex flex-col items-center justify-center overflow-hidden group transition-all ${biometryConsent ? 'border-border bg-secondary/40 hover:border-primary cursor-pointer' : 'border-border/40 bg-secondary/20 opacity-60 cursor-not-allowed'}`}>
+              {!isUploading ? (
+                <div className="flex flex-col items-center px-10 text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 border border-primary/20 group-hover:scale-110 transition-transform">
+                    <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path d="M12 4v16m8-8H4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-bold text-foreground mb-2 uppercase">Выбрать селфи</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                    {biometryConsent ? 'Лицо останется реальным' : 'Сначала отметьте согласие'}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent animate-spin rounded-full mb-4" />
+                  <p className="text-xs font-bold text-muted-foreground uppercase">Загрузка...</p>
+                </div>
+              )}
+              {biometryConsent && !isUploading && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -476,6 +508,23 @@ export default function StudioScreen({
               </button>
             </div>
           </div>
+
+          {/* Согласие на биометрию — 152-ФЗ */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={biometryConsent}
+              onChange={e => {
+                setBiometryConsent(e.target.checked);
+                if (e.target.checked) localStorage.setItem('biometry_consent', '1');
+                else localStorage.removeItem('biometry_consent');
+              }}
+              className="w-4 h-4 accent-primary cursor-pointer flex-shrink-0"
+            />
+            <span className="text-xs text-foreground/70 leading-relaxed">
+              Согласие на обработку фото лица для AI-генерации
+            </span>
+          </label>
 
           <div>
             <h2 className="text-lg font-sans uppercase tracking-tighter mb-3">Выберите стиль</h2>
@@ -631,6 +680,7 @@ export default function StudioScreen({
           <button
             onClick={handleGenerate}
             disabled={
+              !biometryConsent ||
               !selectedStyleId ||
               balance < (isPairMode ? PAIR_CREDITS : 1) ||
               (isPairMode && !uploadedFilenameB)

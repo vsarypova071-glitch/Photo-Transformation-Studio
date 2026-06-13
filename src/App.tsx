@@ -370,10 +370,8 @@ function App() {
         if (data.found && data.orderId) {
           log.info('Found recent paid order by customer_key', { orderId: data.orderId, gen: data.generationStatus });
           if (data.generationStatus === 'credits_credited') {
-            await handleCreditsCredited(data.orderId, {
-              photoUrl: data.originalImage,
-              styleId: Array.isArray(data.styleIds) ? data.styleIds[0] : undefined,
-            });
+            // Credits already in wallet — balance effect will load the count,
+            // WelcomeScreen shows the "continue to studio" button without auto-redirect.
             return;
           }
           setRecentOrderPrompt({
@@ -394,7 +392,6 @@ function App() {
   }, [handleCreditsCredited]);
 
   // 🟢 STAGE WALLET 1.4 — загрузка баланса кошелька при старте
-  // Если баланс > 0 → автоматически переключаем главный экран на Studio.
   // Не мешаем восстановлению старых заказов (current_order_id) и URL ?order_id=.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -418,10 +415,6 @@ function App() {
         const info = await studio.getBalance(customerKey);
         log.info('Wallet balance loaded', { balance: info.balance, exists: info.exists });
         setWalletBalance(info.balance);
-        // Если есть кредиты и юзер на welcome — открываем Studio
-        if (info.balance > 0 && screen === 'welcome' && !recentOrderPrompt) {
-          setScreen('studio');
-        }
       } catch (e) {
         log.warn('Wallet balance load failed', e);
       } finally {
@@ -649,12 +642,12 @@ function App() {
         const code = apiErr?.body?.code;
         const msg = apiErr?.body?.error || apiErr?.message;
         if (status === 409 && code === 'balance_not_empty') {
-          // Бизнес-правило: balance > 0 — новую покупку не делаем, ведём в Studio.
           const balance = apiErr?.body?.balance ?? 0;
           if (typeof balance === 'number') setWalletBalance(balance);
-          setPaymentError(null);
           setIsCreatingPayment(false);
-          navigateTo('studio');
+          // Не перекидываем молча — показываем понятное сообщение на экране тарифов.
+          // TariffScreen покажет баннер "активный пакет" + кнопку "Перейти в студию".
+          setPaymentError(`У вас ${balance} ${balance === 1 ? 'генерация' : balance < 5 ? 'генерации' : 'генераций'} — оплата не нужна. Нажмите «Перейти к генерации» ниже.`);
           return;
         }
         if (status === 503) throw new Error(msg || 'Сервис временно перегружен. Попробуйте через несколько минут.');
@@ -911,7 +904,11 @@ function App() {
         )}
 
         {screen === 'welcome' && (
-          <WelcomeScreen onStart={() => navigateTo('goal')} />
+          <WelcomeScreen
+            onStart={() => navigateTo('goal')}
+            walletBalance={walletBalance}
+            onContinue={() => setScreen('studio')}
+          />
         )}
 
         {screen === 'goal' && (
