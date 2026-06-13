@@ -658,6 +658,10 @@ export function buildNegativePrompt(): string {
     // Makeup render artifacts
     'lipstick on teeth', 'lipstick stains on teeth', 'red marks on teeth', 'stained teeth',
     'smeared makeup', 'makeup bleed', 'color bleed on teeth',
+    // Lower-face / oval drift (Gemini slims the lower third toward a model face)
+    'slimmed face', 'narrowed face', 'V-shape face', 'V-line jaw', 'sharp pointed chin',
+    'tapered lower face', 'reduced cheek volume', 'hollow cheeks', 'sculpted model jawline',
+    'model face geometry', 'face slimming', 'thinner jaw', 'reshaped chin', 'narrowed lower third',
     // Photo quality
     'digital noise', 'oversharpened edges', 'low detail', 'soft blurry focus on eyes',
     'oversaturated colors', 'cheap digital look', 'smartphone photo quality',
@@ -1641,6 +1645,19 @@ DO NOT MODIFY under any circumstances:
 
 The person must remain immediately recognizable as the same individual from the reference photo.
 A less beautiful but recognizable result is better than a more beautiful but unrecognizable one.
+
+LOWER FACE — MOST COMMON ERROR, READ CAREFULLY:
+You consistently make a mistake here. You preserve the eyes and nose but you redraw the lower
+third of the face toward a generic "beautiful" model shape. This is FORBIDDEN.
+Copy the lower face EXACTLY from the reference photo:
+- Keep the soft natural oval of the face — do NOT narrow it.
+- Keep the full cheek volume — do NOT slim, hollow, or sculpt the cheeks.
+- Keep the natural width of the lower third of the face — do NOT taper it.
+- Keep the soft natural chin — do NOT make it sharp, pointed, or V-shaped.
+- Keep the natural jawline — do NOT sharpen or define it into a model jaw.
+NEVER produce a slim V-shape model face. The reference face is the truth, not a beauty ideal.
+Even if the styling is fashion, slimming, or glamorous — the FACE GEOMETRY stays exactly as the reference.
+Face shape fidelity is more important than making the face look slimmer or more photogenic.
 
 HEAD ANGLE: keep the face close to the same angle as in the reference photo — frontal or near-frontal.
 Avoid strong head turns, profiles, or extreme tilts: rendering the face at a steep angle distorts identity.`,
