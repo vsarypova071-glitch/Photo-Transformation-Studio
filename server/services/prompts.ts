@@ -43,7 +43,7 @@ function pickGarment(genderMode?: 'female' | 'male'): string {
 // ── SOCIAL PORTRAIT VARIETY POOLS ────────────────────────────────────────────
 // Used exclusively by social_portrait style. Picked once per buildPrompt() call →
 // each generation gets a different outfit + pose + background combination.
-// 14 female outfits × 12 poses × 10 backgrounds = 1680 unique starting combinations.
+// 24 female outfits × 10 poses × 12 backgrounds = 2880 unique starting combinations.
 
 const WARDROBE_SOCIAL_FEMALE: readonly string[] = [
   'structured oversized camel blazer with slim high-waist white tailored trousers and minimal gold pendant',
@@ -65,6 +65,12 @@ const WARDROBE_SOCIAL_FEMALE: readonly string[] = [
   'tonal cream monochrome look — cream structured blazer over cream blouse, slim cream trousers, quiet luxury minimalism',
   'luxury fine-gauge ribbed turtleneck in deep olive green with premium tailored trousers, sophisticated knitwear',
   'minimalist black designer outfit — clean architectural cut, premium matte fabric, sculptural modern silhouette',
+  // Мягкие премиум-ткани (quiet luxury) — добавлены к структурным образам для разнообразия фактур
+  'luxurious chunky cable-knit cashmere sweater in warm cream with elegant high turtleneck, rich soft visible texture',
+  'fluid pure silk blouse in warm ivory, softly draped at the collar — effortless high-end elegance, light-catching fabric',
+  'flowing satin top in deep rich burgundy, minimalist refined drape that catches light beautifully',
+  'tailored velvet blazer in deep emerald over a fine silk camisole — sophisticated soft luxury texture',
+  'soft finely-woven cashmere wrap cardigan in warm beige over a delicate champagne silk top — layered quiet luxury',
 ];
 
 const WARDROBE_SOCIAL_MALE: readonly string[] = [
@@ -82,16 +88,16 @@ const WARDROBE_SOCIAL_MALE: readonly string[] = [
 // Повороты разрешены только корпусу. Поворот/наклон ГОЛОВЫ провоцирует дрейф
 // identity — модель достраивает лицо под углом и теряет геометрию.
 const POSES_SOCIAL_PORTRAIT: readonly string[] = [
-  'face fully frontal to camera, arms loosely at sides, natural asymmetry in shoulder height, confident warm gaze',
-  'face fully frontal to camera, one hand lightly touching collar — natural unforced gesture, warm expression',
-  'seated naturally facing camera directly, hands resting in lap, face fully frontal, direct warm gaze',
-  'face fully frontal, leaning back gently against a clean wall, arms relaxed, comfortable effortless stance',
-  'face fully frontal to camera, one hand casually in pocket, natural weight shift to one leg',
-  'face fully frontal, both hands lightly clasped at waist level, straight elegant posture, strong direct gaze',
-  'body angled slightly, face turned FULLY frontal toward camera — face flat to lens like a passport of a fashion magazine',
-  'face fully frontal, arms loosely crossed at waist, relaxed and confident, direct eye contact',
-  'face fully frontal to camera, weight on one leg, hip shifted naturally, direct expressive gaze',
-  'face fully frontal, standing in relaxed open posture, natural calm energy, looking straight at camera',
+  'face frontal to camera, soulful intense eye contact with real emotional depth, lips softly relaxed, arms loosely at sides — alive and present',
+  'face frontal to camera, one hand lightly touching collar, deep alive gaze, natural unforced expression — magnetic quiet presence',
+  'seated naturally facing camera, hands resting in lap, face frontal, intimate present gaze straight into the lens',
+  'face frontal, leaning back gently against a clean surface, relaxed shoulders, warm soulful eyes, effortless calm',
+  'face frontal to camera, one hand casually in pocket, natural weight shift, confident alive gaze with genuine personality',
+  'face frontal, both hands lightly clasped at waist, elegant posture, deep magnetic eye contact — composed inner power',
+  'face frontal to camera, soft natural micro-smile allowed, eyes alive and expressive — caught in a real genuine moment',
+  'face frontal, arms loosely crossed at waist, relaxed and confident, direct soulful eye contact, real human warmth',
+  'face frontal to camera, weight on one leg, hip shifted naturally, deep present gaze with quiet emotional intensity',
+  'face frontal, relaxed open posture, calm alive energy, intimate direct gaze into the lens — vulnerability and quiet strength',
 ];
 
 const BACKGROUNDS_SOCIAL: readonly string[] = [
@@ -346,6 +352,10 @@ const LIGHTINGS_SOCIAL: readonly string[] = [
   'beauty-dish key light at slight angle with large reflector fill — classic flattering portrait studio lighting, warm neutral tone, clean skin, bright expressive eyes',
   'overcast daylight quality — bright even diffused natural light, no directional shadow, skin glows naturally, flat clean flattering beauty-portrait light',
   'large overhead softbox with front reflector — bright even studio illumination, skin texture visible and natural, clean warm neutral, professional headshot lighting quality',
+  // Кинематографичный мягкий свет — объём без жёсткой драмы, fine-art портрет
+  'cinematic diffused soft daylight — gentle natural falloff giving subtle three-dimensional depth on the face, timeless fine-art portrait atmosphere, no harsh shadow',
+  'soft warm daylight from a large side window — gentle glowing rim light on the hair, real depth and catchlights in the eyes, intimate editorial mood',
+  'soft warm morning light through a sheer curtain — diffused, intimate and emotional fine-art atmosphere, flattering even glow on the skin',
 ];
 
 function pickPose(isFullBody?: boolean): string {
