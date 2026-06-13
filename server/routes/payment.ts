@@ -7,7 +7,8 @@ import {
   diagnoseCredentials as ykDiagnose,
 } from '../services/yookassa';
 import { flags } from '../featureFlags';
-import { grantIfApplicable, isValidReferralCode } from '../services/referrals';
+import { isValidReferralCode } from '../services/referrals';
+import { creditOrderOnce } from '../services/orderCredit';
 
 const TARIFFS = {
   basic:    { price: 479,  photosCount: 5  },
@@ -126,6 +127,8 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
         referralCode,
       } = req.body ?? {};
 
+      console.log('[payment/create] REQUEST', { tariffId, customerKey: customerKey?.slice(0,20), customerEmail });
+
       if (!userSessionId) return res.status(400).json({ error: 'Missing userSessionId' });
       const tariff = TARIFFS[tariffId as TariffId];
       if (!tariff) return res.status(400).json({ error: 'Invalid tariff' });
@@ -168,6 +171,7 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
           [safeCustomerKey],
         );
         const currentBalance = bRows[0]?.balance ?? 0;
+        console.log('[payment/create] BALANCE GUARD', { safeCustomerKey: safeCustomerKey.slice(0,20), currentBalance, blocked: currentBalance > 0 });
         if (currentBalance > 0) {
           return res.status(409).json({
             error: 'У вас уже есть активный пакет. Сначала используйте оставшиеся генерации.',
@@ -192,20 +196,32 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
           [safeCustomerKey, since.toISOString()],
         );
         const existing = paidRows[0];
+        console.log('[payment/create] SAFEGUARD', {
+          found: !!existing,
+          id: existing?.id,
+          generation_status: existing?.generation_status,
+          credits_purchased: existing?.credits_purchased,
+        });
         if (existing) {
-          const hasResults = Array.isArray(existing.results) && existing.results.length > 0;
-          const isCreditsTopup = existing.generation_status === 'credits_credited' || (existing.credits_purchased ?? 0) > 0;
-          const shouldReuse = isCreditsTopup || existing.generation_status !== 'done' || hasResults;
-          if (shouldReuse) {
-            return res.json({
-              existingOrder: true,
-              orderId: existing.id,
-              generationStatus: existing.generation_status,
-              paymentStatus: existing.payment_status,
-              photosCount: existing.photos_count,
-              results: existing.results || [],
-              message: 'У вас уже есть оплаченный заказ.',
-            });
+          // credits_credited + balance=0 (guard passed above) = credits were spent.
+          // Do NOT reuse — allow the user to make a new purchase.
+          if (existing.generation_status !== 'credits_credited') {
+            const hasResults = Array.isArray(existing.results) && existing.results.length > 0;
+            const shouldReuse = existing.generation_status !== 'done' || hasResults;
+            console.log('[payment/create] SAFEGUARD decision', { hasResults, shouldReuse, action: shouldReuse ? 'REUSE' : 'CREATE_NEW' });
+            if (shouldReuse) {
+              return res.json({
+                existingOrder: true,
+                orderId: existing.id,
+                generationStatus: existing.generation_status,
+                paymentStatus: existing.payment_status,
+                photosCount: existing.photos_count,
+                results: existing.results || [],
+                message: 'У вас уже есть оплаченный заказ.',
+              });
+            }
+          } else {
+            console.log('[payment/create] SAFEGUARD skip: credits_credited + balance=0 → allow new purchase');
           }
         }
 
@@ -233,8 +249,10 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
           Boolean(r.is_full_body) === safeIsFullBody,
         );
 
+        console.log('[payment/create] DUPLICATE GUARD', { pendingCount: pendingRows.length, dupFound: !!dup });
         if (dup?.payment_id) {
           const yoo = await getPayment(dup.payment_id);
+          console.log('[payment/create] DUPLICATE yoo status', { status: yoo?.status, hasUrl: !!yoo?.confirmation?.confirmation_url });
           if (yoo && yoo.status === 'pending' && yoo.confirmation?.confirmation_url) {
             return res.json({
               orderId: dup.id,
@@ -312,6 +330,8 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
 
       await db.query('UPDATE orders SET payment_id = $1 WHERE id = $2', [payment.id, orderId]);
 
+      console.log('[payment/create] PAYMENT CREATED', { orderId, paymentId: payment.id, confirmationUrl: payment.confirmation?.confirmation_url?.slice(0, 60) });
+
       if (!payment.confirmation?.confirmation_url) {
         return res.status(500).json({ error: 'YooKassa did not return confirmation_url', paymentId: payment.id });
       }
@@ -333,7 +353,8 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
   //   2. Cross-check body.payment.id == orders.payment_id (no order crosswire)
   //   3. Re-verify status via getPayment() — body alone never moves credits
   // Idempotency: credits_purchased>0 check + idempotency_key on credit_transactions.
-  router.post('/webhook', webhookAuth, async (req, res) => {
+  // YooKassa sometimes sends requests with a trailing dot (/webhook.)
+  router.post(['/webhook', '/webhook.'], webhookAuth, async (req, res) => {
     // YooKassa ожидает 200 в течение 30 сек — отвечаем максимально быстро. Долгая работа — после respond.
     res.status(200).send('OK');
 
@@ -373,111 +394,24 @@ export function createPaymentRouter(deps: PaymentRouterDeps = {}) {
         return;
       }
 
-      const client = await db.connect();
       try {
-        await client.query('BEGIN');
-
-        // === Defense layer 2: cross-check payment_id matches stored order ===
-        const { rows: orderRows } = await client.query(
-          `SELECT id, customer_key, photos_count, tariff_id, credits_purchased,
-                  payment_status, generation_status, referral_code
-             FROM orders
-            WHERE id = $1 AND payment_id = $2
-            FOR UPDATE`,
-          [orderIdMeta, paymentId],
-        );
-        const order = orderRows[0];
-        if (!order) {
-          await client.query('COMMIT');
-          console.warn(`[webhook] no order matches id=${orderIdMeta} payment_id=${paymentId}`);
-          return;
-        }
-
-        // Идемпотентность: повторный webhook не делает ничего
-        if ((order.credits_purchased ?? 0) > 0) {
-          console.log(`[webhook] order ${orderIdMeta} already credited (${order.credits_purchased})`);
-          await client.query('COMMIT');
-          return;
-        }
-
-        const customerKey: string = (order.customer_key || '').trim();
-        const photos: number = Number(order.photos_count || 0);
-
-        if (!customerKey || photos <= 0) {
-          await client.query(
-            `UPDATE orders
-                SET payment_status = 'succeeded',
-                    generation_status = 'error'
-              WHERE id = $1`,
-            [orderIdMeta],
-          );
-          await client.query('COMMIT');
-          console.error(`[webhook] order ${orderIdMeta} missing customer_key or photos`);
-          return;
-        }
-
-        // upsert credit_accounts
-        const { rows: accRows } = await client.query(
-          `INSERT INTO credit_accounts (customer_key) VALUES ($1)
-             ON CONFLICT (customer_key) DO UPDATE SET updated_at = now()
-             RETURNING id`,
-          [customerKey],
-        );
-        const accountId = accRows[0].id;
-
-        const idemKey = `topup_order_${orderIdMeta}`;
-        const { rows: txInsert } = await client.query(
-          `INSERT INTO credit_transactions
-             (account_id, order_id, type, amount, idempotency_key, description)
-           VALUES ($1,$2,'credit',$3,$4,$5)
-           ON CONFLICT (idempotency_key) DO NOTHING
-           RETURNING id`,
-          [accountId, orderIdMeta, photos, idemKey, `Пополнение за заказ ${order.tariff_id} (${photos} фото)`],
-        );
-
-        // Если транзакция действительно вставилась (а не была заблокирована ON CONFLICT) — обновляем баланс
-        if (txInsert.length > 0) {
-          await client.query(
-            `UPDATE credit_accounts SET balance = balance + $1 WHERE id = $2`,
-            [photos, accountId],
-          );
-        }
-
-        await client.query(
-          `UPDATE orders
-              SET payment_status = 'succeeded',
-                  generation_status = 'credits_credited',
-                  credits_purchased = $1
-            WHERE id = $2`,
-          [photos, orderIdMeta],
-        );
-
-        await client.query('COMMIT');
-        console.log(`[webhook] order ${orderIdMeta}: credited ${photos} to ${customerKey}`);
-
-        // === REFERRAL BONUS (после COMMIT основной транзакции) ===
-        // Отдельная транзакция внутри grantIfApplicable. Если упадёт — не ломаем
-        // оплату, лог-предупреждение и идём дальше. Идемпотентность по
-        // idempotency_key='ref_bonus_<order_id>'.
-        if (flags.enableReferrals && order.referral_code) {
-          try {
-            const ref = await grantIfApplicable({
-              orderId: orderIdMeta,
-              refereeKey: customerKey,
-              referralCode: order.referral_code,
-            });
-            console.log(`[webhook] order ${orderIdMeta}: referral status=${ref.status}` +
-              (ref.referrerKey ? ` referrer=${ref.referrerKey}` : ''));
-          } catch (refErr) {
-            console.warn(`[webhook] order ${orderIdMeta}: referral grant failed`,
-              (refErr as Error).message);
-          }
+        const result = await creditOrderOnce(db, orderIdMeta, paymentId);
+        switch (result.status) {
+          case 'credited':
+            console.log(`[webhook] order ${orderIdMeta}: credited ${result.photos}`);
+            break;
+          case 'already':
+            console.log(`[webhook] order ${orderIdMeta} already credited (${result.photos})`);
+            break;
+          case 'no_order':
+            console.warn(`[webhook] no order matches id=${orderIdMeta} payment_id=${paymentId}`);
+            break;
+          case 'invalid_order':
+            console.error(`[webhook] order ${orderIdMeta} missing customer_key or photos`);
+            break;
         }
       } catch (e) {
-        await client.query('ROLLBACK');
-        console.error('[webhook] tx failed', (e as Error).message);
-      } finally {
-        client.release();
+        console.error('[webhook] credit tx failed', (e as Error).message);
       }
     } catch (err: any) {
       console.error('[webhook] handler error', err?.message || err);

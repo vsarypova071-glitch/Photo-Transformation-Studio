@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/pool';
 import { getPayment } from '../services/yookassa';
+import { creditOrderOnce } from '../services/orderCredit';
 
 const router = Router();
 
@@ -26,25 +27,11 @@ router.get('/check', async (req, res) => {
     const order = rows[0];
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    const isPaid = order.payment_status === 'succeeded';
-    const terminalGen = ['done', 'error', 'canceled', 'credits_credited'];
-    const isTerminal = terminalGen.includes(order.generation_status);
-    const stuck = !isTerminal &&
-      (order.generation_status === 'running' || order.generation_status === 'waiting') &&
-      Date.now() - new Date(order.updated_at).getTime() > STUCK_TIMEOUT_MS;
-
-    if (isPaid && stuck) {
-      await db.query(`UPDATE orders SET generation_status = 'error' WHERE id = $1`, [orderId]);
-      order.generation_status = 'error';
-    }
-
-    // Если pending — спрашиваем YooKassa напрямую и обновляем при необходимости
+    // Если pending — спрашиваем YooKassa напрямую и фиксируем итоговый статус оплаты.
     if (order.payment_status === 'pending' && order.payment_id) {
       const yoo = await getPayment(order.payment_id);
       if (yoo) {
         if (yoo.status === 'succeeded') {
-          // Ждём реального вебхука для credits_credited (он сам обновит generation_status, начислит баланс).
-          // Здесь же просто фиксируем оплату, чтобы фронт перестал тревожиться.
           await db.query(
             `UPDATE orders SET payment_status = 'succeeded' WHERE id = $1 AND payment_status = 'pending'`,
             [orderId],
@@ -59,6 +46,40 @@ router.get('/check', async (req, res) => {
           order.generation_status = 'canceled';
         }
       }
+    }
+
+    // Начисляем кредиты прямо здесь, НЕ дожидаясь вебхука YooKassa.
+    // Вебхук ненадёжен (может не дойти) — тогда без этого fallback заказ зависал
+    // и падал в 'error'. creditOrderOnce идемпотентна: тот же idempotency_key,
+    // что и в вебхуке, повторный вызов — no-op. payment_status='succeeded' в нашей
+    // БД появляется только после authoritative-проверки (вебхук или getPayment выше),
+    // поэтому отдельный re-verify здесь не нужен.
+    if (order.payment_status === 'succeeded' && (order.credits_purchased ?? 0) === 0 && order.payment_id) {
+      try {
+        const result = await creditOrderOnce(db, orderId, order.payment_id);
+        if (result.status === 'credited' || result.status === 'already') {
+          order.generation_status = 'credits_credited';
+          order.credits_purchased = result.photos ?? order.credits_purchased;
+        } else if (result.status === 'invalid_order') {
+          order.generation_status = 'error';
+        }
+      } catch (e: any) {
+        console.error('[order/check] credit failed', e?.message || e);
+      }
+    }
+
+    // Stuck-таймаут: только если оплата прошла, но генерация реально зависла
+    // (после того как кредиты уже обработаны выше).
+    const isPaid = order.payment_status === 'succeeded';
+    const terminalGen = ['done', 'error', 'canceled', 'credits_credited'];
+    const isTerminal = terminalGen.includes(order.generation_status);
+    const stuck = !isTerminal &&
+      (order.generation_status === 'running' || order.generation_status === 'waiting') &&
+      Date.now() - new Date(order.updated_at).getTime() > STUCK_TIMEOUT_MS;
+
+    if (isPaid && stuck) {
+      await db.query(`UPDATE orders SET generation_status = 'error' WHERE id = $1`, [orderId]);
+      order.generation_status = 'error';
     }
 
     res.json({
