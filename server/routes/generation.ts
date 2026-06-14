@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { db } from '../db/pool';
 import * as openrouter from '../services/openrouter';
 import * as replicate from '../services/replicate';
-import { buildPrompt, buildSocialPortraitShortPrompt } from '../services/prompts';
+import { buildPrompt, buildSocialPortraitShortPrompt, buildSocialPortraitMinimalPrompt } from '../services/prompts';
 import { buildPairPrompt } from '../services/pairPrompts';
 import { getFilteredParts, WISH_MAX_LENGTH } from '../services/wishFilter';
 
@@ -227,17 +227,26 @@ router.post('/single', async (req, res) => {
           aspectRatio: dim?.width && dim?.height ? { width: dim.width, height: dim.height } : undefined,
         });
       } else {
+        // EXPERIMENT social_portrait_identity_test: при SOCIAL_PORTRAIT_MINIMAL=1
+        // используем минимальный edit-промпт (~80 слов) вместо полного (~3200 слов).
+        // Гипотеза: короткий промпт перестаёт глушить фото → выше сходство лица.
+        const useMinimal = styleId === 'social_portrait'
+          && (process.env.SOCIAL_PORTRAIT_MINIMAL || '').trim() === '1';
+
         // styleId передаётся в buildPrompt() как дополнительный сигнал детектирования:
         // некоторые стили (bw_portrait) могут приходить с пустым stylePrompt при bundle-fallback,
         // и styleId служит страховочным идентификатором для активации нужных блоков.
-        const prompt = buildPrompt({
-          styleId,
-          stylePrompt,
-          customPrompt: body.customPrompt,
-          isFullBody: !!body.isFullBody,
-          genderMode: body.genderMode,
-          aspectRatio,
-        });
+        const prompt = useMinimal
+          ? buildSocialPortraitMinimalPrompt(body.genderMode)
+          : buildPrompt({
+              styleId,
+              stylePrompt,
+              customPrompt: body.customPrompt,
+              isFullBody: !!body.isFullBody,
+              genderMode: body.genderMode,
+              aspectRatio,
+            });
+        if (useMinimal) console.log(`[gen/single] EXPERIMENT minimal prompt for ${generationId}`);
         aiResult = await openrouter.generateImage({
           prompt,
           imageInput: imageInputDataUrl,

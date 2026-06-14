@@ -1826,3 +1826,31 @@ export function buildSocialPortraitShortPrompt(genderMode?: 'female' | 'male'): 
 
   return { prompt, negativePrompt };
 }
+
+// ── EXPERIMENT: social_portrait_identity_test ─────────────────────────────────
+// Гипотеза: текущий Gemini-промпт (~3200 слов) глушит фото текстом, и модель
+// рисует «по описанию», а не по лицу. Эта функция — минимальный edit-style промпт
+// (~70-90 слов, сокращение ~97%). Принципы:
+//   1. Фото = главный источник. Текст НЕ переописывает лицо (никаких geometry-локов).
+//   2. Edit-логика вместо «replace everything»: "change clothing while keeping
+//      the same person", "place the SAME person in a new setting".
+//   3. Текст описывает только одежду / локацию / свет / настроение.
+//   4. Один короткий identity-якорь, без 14 дублей.
+// Включается env-флагом SOCIAL_PORTRAIT_MINIMAL=1 (см. generation.ts) для A/Б теста.
+export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male'): string {
+  const isMale = genderMode === 'male';
+  const outfit = pickFromArray(isMale ? WARDROBE_SOCIAL_MALE : WARDROBE_SOCIAL_FEMALE);
+  const bg = pickFromArray(BACKGROUNDS_SOCIAL);
+  const light = pickFromArray(LIGHTINGS_SOCIAL);
+  const head = (s: string) => s.split(' — ')[0].split(', NO ')[0].split(', no ')[0].trim();
+
+  // Edit-логика: сохрани того же человека, поменяй только одежду/фон/свет.
+  return [
+    `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo.`,
+    `Keep their face, head shape, jawline, age and hairstyle exactly as in the photo — do not redraw or beautify the face, this is the same real person.`,
+    `Change only the clothing to: ${head(outfit)}.`,
+    `Place the same person in a new setting: ${head(bg)}.`,
+    `Lighting: ${head(light)}.`,
+    `Natural confident expression, looking at the camera. Realistic photograph, natural skin texture.`,
+  ].join(' ');
+}
