@@ -1845,12 +1845,18 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
   const head = (s: string) => s.split(' — ')[0].split(', NO ')[0].split(', no ')[0].trim();
 
   // Edit-логика: сохрани того же человека, поменяй только одежду/фон/свет.
+  // v2: добавлена живость глаз/выражения/света (без раздувания обратно к 3200 слов)
+  // — сходство держит фото, текст лишь возвращает «жизнь» и объём.
   return [
     `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo.`,
-    `Keep their face, head shape, jawline, age and hairstyle exactly as in the photo — do not redraw or beautify the face, this is the same real person.`,
+    `Keep their face exactly as in the photo — same real face width, natural lower-face proportions,`,
+    `original chin shape, original jaw width, and preserve the original nose shape and proportions.`,
+    `Do not slim, do not widen, no v-shape jaw, do not beautify — this is the same real person at the same age, same hairstyle.`,
+    `Eyes: alive eyes with natural eye sparkle and a subtle catchlight, warm focused gaze into the camera — not blank eyes, not lifeless expression. Keep eye shape and size exactly as in the photo.`,
+    `Expression: natural calm confidence, soft human presence, a slight natural micro-expression — not a frozen face, not mannequin-like.`,
     `Change only the clothing to: ${head(outfit)}.`,
     `Place the same person in a new setting: ${head(bg)}.`,
-    `Lighting: ${head(light)}.`,
-    `Natural confident expression, looking at the camera. Realistic photograph, natural skin texture.`,
+    `Lighting: ${head(light)}; soft directional light with subtle catchlights and gentle facial depth — not flat lighting, not over-smoothed skin. Natural realistic skin texture with real pores.`,
+    `Avoid: dead eyes, blank stare, lifeless expression, frozen face, mannequin face, flat lighting, over-smoothed skin, altered nose, widened face, slimmed face, changed jawline, changed chin.`,
   ].join(' ');
 }
