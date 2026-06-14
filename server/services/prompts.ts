@@ -668,10 +668,11 @@ export function buildNegativePrompt(): string {
     // Makeup render artifacts
     'lipstick on teeth', 'lipstick stains on teeth', 'red marks on teeth', 'stained teeth',
     'smeared makeup', 'makeup bleed', 'color bleed on teeth',
-    // Lower-face / oval drift (Gemini slims the lower third toward a model face)
+    // Lower-face / oval drift — BOTH directions are wrong, match the reference exactly
     'slimmed face', 'narrowed face', 'V-shape face', 'V-line jaw', 'sharp pointed chin',
-    'tapered lower face', 'reduced cheek volume', 'hollow cheeks', 'sculpted model jawline',
-    'model face geometry', 'face slimming', 'thinner jaw', 'reshaped chin', 'narrowed lower third',
+    'tapered lower face', 'hollow cheeks', 'sculpted model jawline', 'model face geometry',
+    'widened face', 'rounded face', 'shortened face', 'broadened jaw', 'puffy cheeks',
+    'added cheek fullness', 'moon face', 'compressed face proportions', 'reshaped face oval',
     // Photo quality
     'digital noise', 'oversharpened edges', 'low detail', 'soft blurry focus on eyes',
     'oversaturated colors', 'cheap digital look', 'smartphone photo quality',
@@ -1447,37 +1448,36 @@ Every generation must look like a professional photoshoot created by a luxury fa
 Photo quality: ultra-realistic photography, Vogue-level, professional premium retouching.
 Natural skin texture — real pores, healthy warm glow. Not AI-looking. Not stylized. Not CGI.
 
-LOCK FACE GEOMETRY — NON-NEGOTIABLE:
+LOCK FACE GEOMETRY — NON-NEGOTIABLE (exact match, no drift either direction):
 Copy the following exactly from the reference photo. Do not interpret. Do not improve. Copy.
-- jaw width: exact same width as in the reference
-- chin width and chin projection: exact same shape and depth
-- lower face volume: preserve natural fullness — do not slim
-- cheek volume: preserve exactly — do not reduce, do not hollow
+- face length & width: EXACTLY as the reference — not longer/shorter, not wider/narrower
+- preserve the natural elongated oval and high cheekbone position exactly as the reference
+- jaw width & chin: exact reference contour — do not slim into a V, do not broaden or round
+- cheek volume: exactly as the reference — do not add fullness, do not hollow
 - eye shape: exact eyelid contour, size, natural openness
 - eye color: exact iris color from reference
 - eye distance: exact spacing between eyes
-- nose bridge width: exact same width
-- nose tip shape: exact same form
-- lip proportions: exact upper-to-lower ratio, exact width
+- nose bridge width and nose tip: exact same form
+- lip proportions: exact upper-to-lower ratio, exact natural width
 
-DO NOT:
-- make the face slimmer
-- make the face younger
-- make the jaw more defined or angular
-- reduce cheek volume
-- beautify facial anatomy in any way
-- apply any facial attractiveness optimization
+DO NOT (in EITHER direction):
+- make the face slimmer OR wider
+- make the face longer OR rounder/shorter
+- make the jaw more angular OR more broad
+- add OR reduce cheek volume
+- make the face younger or beautify facial anatomy in any way
 
 EXACT FACE ANATOMY MATCH (refer strictly to the reference photo):
 1. EYES: keep the exact eye shape, size and depth from the reference. The gaze must be deeply alive,
    warm and present, with natural prominent specular highlights (real lens catchlights) inside the eyes.
    Do NOT distort the eyebrows. Do NOT pull the outer eye corners upward into a stylized look.
-2. LIPS: keep the authentic natural width and soft fullness of the lips from the reference.
-   Lips relaxed and naturally resting — zero artificial plumpness, no pinched corners,
-   no synthetic over-sharp lipstick contouring. Do NOT narrow the mouth.
-3. FACE SHAPE & LIGHT: keep the authentic cheek volume and soft jawline contour.
-   Eliminate harsh shadows in the nasolabial area or under the cheekbones that create artificial
-   stiffness or aging. Skin soft, radiant, lit by even premium diffused light.
+2. LIPS: keep the authentic natural width of the lips from the reference. Lips relaxed and naturally
+   resting — do NOT stretch them wider, do NOT bloat or over-plump, no pinched corners,
+   no synthetic over-sharp lipstick contouring.
+3. FACE SHAPE & LIGHT: preserve the exact reference oval — the natural vertical elongation and high
+   cheekbones — without widening or rounding. Use soft natural portrait light that follows the true
+   reference structure. Eliminate harsh nasolabial / under-cheek shadows that add stiffness or aging.
+   Skin soft and radiant under even premium diffused light.
 
 REFERENCE PHOTO USAGE:
 The uploaded photo is the facial identity reference.
@@ -1667,18 +1667,17 @@ DO NOT MODIFY under any circumstances:
 The person must remain immediately recognizable as the same individual from the reference photo.
 A less beautiful but recognizable result is better than a more beautiful but unrecognizable one.
 
-LOWER FACE — MOST COMMON ERROR, READ CAREFULLY:
+LOWER FACE — MATCH THE REFERENCE EXACTLY (read carefully):
 You consistently make a mistake here. You preserve the eyes and nose but you redraw the lower
-third of the face toward a generic "beautiful" model shape. This is FORBIDDEN.
-Copy the lower face EXACTLY from the reference photo:
-- Keep the soft natural oval of the face — do NOT narrow it.
-- Keep the full cheek volume — do NOT slim, hollow, or sculpt the cheeks.
-- Keep the natural width of the lower third of the face — do NOT taper it.
-- Keep the soft natural chin — do NOT make it sharp, pointed, or V-shaped.
-- Keep the natural jawline — do NOT sharpen or define it into a model jaw.
-NEVER produce a slim V-shape model face. The reference face is the truth, not a beauty ideal.
-Even if the styling is fashion, slimming, or glamorous — the FACE GEOMETRY stays exactly as the reference.
-Face shape fidelity is more important than making the face look slimmer or more photogenic.
+third of the face toward a generic shape — EITHER slimming it into a V-shape, OR widening and
+rounding it. BOTH are wrong. Copy the lower face EXACTLY from the reference photo, no drift either way:
+- Face length & width: EXACTLY as the reference — not longer, not shorter, not wider, not narrower.
+- Keep the natural elongated oval and the high cheekbone position exactly as in the reference.
+- Cheek volume: exactly as the reference — do NOT add fullness/roundness, do NOT hollow or sculpt.
+- Jawline & chin: exactly the reference contour — do NOT sharpen into a model jaw, and do NOT
+  broaden or round it either.
+The reference face is the single source of truth. Do not beautify, do not slim, do not widen.
+Face shape fidelity (exact match) is more important than any beauty direction.
 
 HEAD ANGLE: keep the face close to the same angle as in the reference photo — frontal or near-frontal.
 Avoid strong head turns, profiles, or extreme tilts: rendering the face at a steep angle distorts identity.`,
