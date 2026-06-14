@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { db } from '../db/pool';
 import * as openrouter from '../services/openrouter';
-import { buildPrompt } from '../services/prompts';
+import * as replicate from '../services/replicate';
+import { buildPrompt, buildSocialPortraitShortPrompt } from '../services/prompts';
 import { buildPairPrompt } from '../services/pairPrompts';
 import { getFilteredParts, WISH_MAX_LENGTH } from '../services/wishFilter';
 
@@ -207,27 +208,44 @@ router.post('/single', async (req, res) => {
       }
     }
 
-    // styleId передаётся в buildPrompt() как дополнительный сигнал детектирования:
-    // некоторые стили (bw_portrait) могут приходить с пустым stylePrompt при bundle-fallback,
-    // и styleId служит страховочным идентификатором для активации нужных блоков.
-    const prompt = buildPrompt({
-      styleId,
-      stylePrompt,
-      customPrompt: body.customPrompt,
-      isFullBody: !!body.isFullBody,
-      genderMode: body.genderMode,
-      aspectRatio,
-    });
+    // === IDENTITY-PRESERVING ROUTE ===
+    // social_portrait — единственный стиль, где критично точное лицо. Если задан
+    // REPLICATE_API_TOKEN, гоним его через InstantID (face-embedding identity),
+    // а не через Gemini (где фото = style reference и лицо «плывёт»).
+    // Все остальные стили и весь fallback — прежний путь через OpenRouter/Gemini.
+    const useIdentityPipeline = styleId === 'social_portrait' && replicate.isReplicateConfigured();
 
-    let aiResult: openrouter.GenerateImageResult;
+    let aiResult: { imageDataUrl: string; modelUsed: string };
     try {
-      aiResult = await openrouter.generateImage({
-        prompt,
-        imageInput: imageInputDataUrl,
-      });
+      if (useIdentityPipeline) {
+        const short = buildSocialPortraitShortPrompt(body.genderMode);
+        console.log(`[gen/single] identity pipeline (InstantID) for ${generationId}`);
+        aiResult = await replicate.generatePortrait({
+          faceImage: imageInputDataUrl,
+          prompt: short.prompt,
+          negativePrompt: short.negativePrompt,
+          aspectRatio: dim?.width && dim?.height ? { width: dim.width, height: dim.height } : undefined,
+        });
+      } else {
+        // styleId передаётся в buildPrompt() как дополнительный сигнал детектирования:
+        // некоторые стили (bw_portrait) могут приходить с пустым stylePrompt при bundle-fallback,
+        // и styleId служит страховочным идентификатором для активации нужных блоков.
+        const prompt = buildPrompt({
+          styleId,
+          stylePrompt,
+          customPrompt: body.customPrompt,
+          isFullBody: !!body.isFullBody,
+          genderMode: body.genderMode,
+          aspectRatio,
+        });
+        aiResult = await openrouter.generateImage({
+          prompt,
+          imageInput: imageInputDataUrl,
+        });
+      }
     } catch (e: any) {
       const reason = `${e?.code || 'ai_error'}: ${e?.message || 'unknown'}`;
-      console.error(`[gen/single] OpenRouter error for ${generationId}:`, reason);
+      console.error(`[gen/single] generation error for ${generationId}:`, reason);
       await refundCredit(accountId!, generationId, reason, 1);
 
       const status = e?.status >= 400 && e?.status < 600 ? e.status : 502;

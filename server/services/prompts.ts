@@ -1783,3 +1783,46 @@ Avoid strong head turns, profiles, or extreme tilts: rendering the face at a ste
     avoidBlock,
   ].filter(Boolean).join('\n');
 }
+
+// ── INSTANTID SHORT PROMPT ────────────────────────────────────────────────────
+// Для identity-preserving пайплайна (Replicate InstantID / FLUX-PuLID) нужен
+// КОРОТКИЙ промпт: SDXL/FLUX text-encoder (CLIP) теряет фокус на длинных текстах,
+// а сохранение лица там делает не промпт, а face-embedding. Поэтому здесь — только
+// стиль (одежда/фон/свет), переиспользуя те же variety-пулы, что и Gemini-путь.
+// Идентичность держит сама модель (controlnet + ip-adapter), не текст.
+
+export interface ShortPortraitPrompt {
+  prompt: string;
+  negativePrompt: string;
+}
+
+export function buildSocialPortraitShortPrompt(genderMode?: 'female' | 'male'): ShortPortraitPrompt {
+  const isMale = genderMode === 'male';
+  const outfit = pickFromArray(isMale ? WARDROBE_SOCIAL_MALE : WARDROBE_SOCIAL_FEMALE);
+  const bg = pickFromArray(BACKGROUNDS_SOCIAL);
+  const light = pickFromArray(LIGHTINGS_SOCIAL);
+  const subject = isMale ? 'man' : 'woman';
+
+  // Берём только головную часть описаний (до em-dash / "NO ...") — компактно для CLIP.
+  const head = (s: string) => s.split(' — ')[0].split(', NO ')[0].split(', no ')[0].trim();
+
+  const prompt = [
+    `professional premium social media portrait of a ${subject}`,
+    `wearing ${head(outfit)}`,
+    head(bg),
+    head(light),
+    'natural realistic skin texture with real pores',
+    'sharp detailed eyes with bright catchlights',
+    'soft flattering portrait light, photographic, shot on 85mm lens',
+    'keep the exact same face, face shape and age from the reference photo',
+  ].join(', ');
+
+  const negativePrompt = [
+    'different person', 'face slimming', 'v-shape jaw', 'narrowed face', 'widened face',
+    'rounded face', 'younger face', 'model face', 'beauty filter', 'airbrushed',
+    'plastic skin', 'over-smoothed skin', 'cartoon', 'illustration', '3d render',
+    'deformed face', 'distorted face', 'blurry', 'lipstick on teeth', 'duplicate', 'watermark',
+  ].join(', ');
+
+  return { prompt, negativePrompt };
+}
