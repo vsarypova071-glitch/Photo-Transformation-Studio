@@ -1842,10 +1842,10 @@ export function buildSocialPortraitShortPrompt(genderMode?: 'female' | 'male'): 
 // edit-промпт заставляет Gemini рисовать сам прибор в кадре. Здесь — только эффект.
 const LIGHTINGS_MINIMAL: readonly string[] = [
   'soft directional daylight with gentle facial depth and subtle catchlights',
-  'soft window light from the side, natural and flattering, gentle shadow falloff',
+  'soft window light from the side, natural and even, gentle shadow falloff',
   'soft diffused natural light, even and warm, with subtle catchlights in the eyes',
   'gentle warm side light with soft natural shadows and real facial depth',
-  'soft overcast daylight, even and flattering, natural skin texture',
+  'soft overcast daylight, even and natural, real skin texture',
   'warm soft indoor light, gentle and natural, subtle depth on the face',
 ];
 
@@ -1856,31 +1856,27 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
   const light = pickFromArray(LIGHTINGS_MINIMAL);
   const head = (s: string) => s.split(' — ')[0].split(', NO ')[0].split(', no ')[0].trim();
 
-  // Edit-логика: сохрани того же человека, поменяй только одежду/фон/свет.
-  // v5: фиксация кадра (крупный head-and-shoulders) — иначе Gemini уходил в полный
-  //     рост → мелкое лицо → ложная потеря сходства.
-  // v6: ЭНЕРГЕТИЧЕСКИЙ слой поверх стабильной геометрии — гипотеза «короткий промпт
-  //     держит лицо» подтверждена, теперь возвращаем «жизнь»: динамика корпуса (3/4),
-  //     магнетичный живой взгляд, отдохнувший вид, боковой свет для объёма, воздух.
-  //     КРИТИЧНО: крутим только КОРПУС — голова остаётся фронтальной (поворот головы
-  //     = главный триггер дрейфа лица у Gemini). Геометрические якоря не тронуты.
+  // v9: переработка по приоритетам identity-first (ТЗ владелицы).
+  //   P1 IDENTITY LOCK (первым блоком) → P2 geometry → P3 age → P4 hair → P5 outfit/scene.
+  //   Удалены glamour/beauty-триггеры: magnetic, allure, magazine presence, radiant,
+  //   flattering. Живые глаза + catchlight сохранены (одобрено), улыбка убрана (ломала
+  //   нижнюю треть). Голова строго фронтальна (поворот = дрейф). Другие стили не тронуты.
   return [
-    // Композиция: крупный кадр, ЛИЦО И КОРПУС строго фронтально (поворот = дрейф лица).
-    `Tight close-up head-and-shoulders portrait, the face fills a large part of the frame like a magazine cover — only head and shoulders, NOT full body, no legs or waist.`,
-    `Face and head fully frontal and straight to the camera — do NOT turn or tilt the head, no 3/4 face, no profile. Leave a little air above the head, face not dead-centred.`,
-    // Identity-якорь (геометрия — не менять; явный запрет «полных щёк»).
-    `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo. Keep the face exactly as in the photo — same face shape and width, same chin, same jaw, same nose, same eyes, same hairstyle. Keep the exact cheek volume and lower-face width from the photo — do NOT add cheek fullness, do NOT round the face, do NOT slim it. This is the same real person.`,
-    // Возраст: не старить (жалоба «фото старит»).
-    `Age: keep the exact same real age as in the photo — fresh, rested, radiant skin, but do NOT add any wrinkles, age lines, tiredness or make the face look older.`,
-    // Энергия / магнетизм — ТОЛЬКО через взгляд. БЕЗ улыбки: улыбка ломает нижнюю
-    // треть лица (зубы, рот, подбородок). Спокойное собранное выражение как у
-    // дорогого editorial-портрета.
-    `Expression: calm, composed, confident and magnetic — a serene high-end magazine presence. Lips relaxed and closed, NO smile, no teeth showing, mouth at rest. The energy comes only from the eyes: bright alive eyes with a real catchlight, a steady magnetic confident gaze straight into the camera. Quiet allure and inner power — not a smile, not a flat passport face, not a tired expression.`,
-    // Стиль (одежда/фон/свет).
-    `Change only the clothing to: ${head(outfit)}, modest neckline.`,
-    `Place the same person in a new setting: ${head(bg)}.`,
-    `Lighting: ${head(light)}; soft directional side light giving the face natural depth and dimension on the cheekbones — soft, not flat, not harsh.`,
-    `Natural healthy skin texture with real pores, no fatigue shadows. Do not show any lighting equipment in the frame.`,
-    `Avoid: smile, toothy smile, wide smile, showing teeth, open mouth, distorted mouth, passport photo, flat frontal lighting, tired face, aged face, added wrinkles, dead eyes, frozen mannequin, turned or tilted head, 3/4 face, profile, slimmed or widened face, added cheek fullness, rounder face, beautified geometry, over-smoothed skin.`,
+    // ── PRIORITY 1 — IDENTITY LOCK (до style/outfit/light/background) ──
+    `IDENTITY LOCK (absolute priority). Recognizability is more important than beauty. The person in the reference image must remain the same person. Do not beautify. Do not improve attractiveness. Do not make the face slimmer. Do not narrow the jaw. Do not reduce cheek volume. Do not alter facial geometry. Do not alter facial proportions. Do not alter lip shape. Do not alter eye shape. Do not alter eye spacing. Do not alter nose shape. Do not alter apparent age. Do not smooth skin excessively. Keep natural skin texture. Keep natural asymmetry. A less beautiful but more recognizable result is preferred over a more beautiful but less recognizable result. Identity preservation has absolute priority over styling.`,
+    // ── PRIORITY 2 — FACIAL GEOMETRY ──
+    `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo and copy the face exactly: same face shape and width, same jaw width, same cheek volume, same lower-face width, same chin, same nose shape, same lip shape, same eye shape and eye spacing. Do not slim, widen, round or reshape any part of the face. This is the same real person.`,
+    // ── PRIORITY 3 — AGE ──
+    `Keep the exact same real age as in the photo — do not rejuvenate, do not remove existing lines, do not add new wrinkles. Healthy natural skin with real pores and real texture — not smoothed, not retouched, not plastic.`,
+    // ── PRIORITY 4 — HAIR ──
+    `Keep the exact same hairstyle, hair length and hair colour as in the photo.`,
+    // ── Композиция (контроль масштаба лица + строго фронтально) ──
+    `Tight close-up head-and-shoulders portrait, the face fills a large part of the frame — only head and shoulders, NOT full body, no legs or waist. Face and head fully frontal and straight to the camera — do NOT turn or tilt the head, no 3/4 face, no profile. A little air above the head, face not dead-centred.`,
+    // ── Выражение (спокойное, живые глаза, БЕЗ улыбки и glamour-слов) ──
+    `Expression: calm, composed and confident, lips relaxed and closed, no smile, no teeth, mouth at rest. Eyes alive and present with a real natural catchlight, a steady direct gaze into the camera — not a tired face, not a frozen mannequin, not an empty stare.`,
+    // ── PRIORITY 5 — OUTFIT & SCENE (наименьший вес) ──
+    `Change only the clothing to: ${head(outfit)}, modest neckline. Place the same person in a new setting: ${head(bg)}. Lighting: ${head(light)}; soft even light with gentle natural depth on the face — not flat, not harsh, no studio equipment visible in the frame.`,
+    // ── Avoid ──
+    `Avoid: beautified face, slimmer face, narrowed jaw, reduced cheeks, rounder face, altered lips, altered eyes, altered eye spacing, altered nose, changed age, younger face, smoothed or plastic skin, retouched skin, model face, glamour, editorial beauty enhancement, smile, teeth, open mouth, turned or tilted head, 3/4 face, profile, full body.`,
   ].join(' ');
 }
