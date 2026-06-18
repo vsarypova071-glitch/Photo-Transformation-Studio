@@ -1840,11 +1840,14 @@ export function buildSocialPortraitShortPrompt(genderMode?: 'female' | 'male'): 
 // Свет для минимального промпта — описывает КАЧЕСТВО света, без названий приборов.
 // LIGHTINGS_SOCIAL называет оборудование (softbox, beauty-dish), и короткий
 // edit-промпт заставляет Gemini рисовать сам прибор в кадре. Здесь — только эффект.
+// v10: смягчено к фронтально-обволакивающему свету — убраны боковые/directional
+// варианты, дававшие тени в носогубке и под глазами (усталость/возраст). Объём
+// сохранён, но без старящих теней.
 const LIGHTINGS_MINIMAL: readonly string[] = [
-  'soft directional daylight with gentle facial depth and subtle catchlights',
-  'soft window light from the side, natural and even, gentle shadow falloff',
+  'soft wrapping daylight with gentle facial depth and subtle catchlights',
+  'soft frontal window light, even and clean, gentle natural volume on the face',
   'soft diffused natural light, even and warm, with subtle catchlights in the eyes',
-  'gentle warm side light with soft natural shadows and real facial depth',
+  'gentle warm frontal light with soft even illumination and real facial depth',
   'soft overcast daylight, even and natural, real skin texture',
   'warm soft indoor light, gentle and natural, subtle depth on the face',
 ];
@@ -1872,10 +1875,10 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
     `Keep the exact same hairstyle, hair length and hair colour as in the photo.`,
     // ── Композиция (контроль масштаба лица + строго фронтально) ──
     `Tight close-up head-and-shoulders portrait, the face fills a large part of the frame — only head and shoulders, NOT full body, no legs or waist. Face and head fully frontal and straight to the camera — do NOT turn or tilt the head, no 3/4 face, no profile. A little air above the head, face not dead-centred.`,
-    // ── Выражение (спокойное, живые глаза, БЕЗ улыбки и glamour-слов) ──
-    `Expression: calm, composed and confident, lips relaxed and closed, no smile, no teeth, mouth at rest. Eyes alive and present with a real natural catchlight, a steady direct gaze into the camera — not a tired face, not a frozen mannequin, not an empty stare.`,
+    // ── Выражение (тёплое, живые глаза, БЕЗ улыбки; negation убран → позитив) ──
+    `Expression: calm, warm and approachable, genuine and rested. Mouth naturally relaxed and closed, soft and at ease (no smile, no teeth). Eyes alive, warm and present with a real natural catchlight and an authentic, gently warm gaze into the camera.`,
     // ── PRIORITY 5 — OUTFIT & SCENE (наименьший вес) ──
-    `Change only the clothing to: ${head(outfit)}, modest neckline. Place the same person in a new setting: ${head(bg)}. Lighting: ${head(light)}; soft even light with gentle natural depth on the face — not flat, not harsh, no studio equipment visible in the frame.`,
+    `Change only the clothing to: ${head(outfit)}, modest neckline. Place the same person in a new setting: ${head(bg)}. Lighting: ${head(light)}; soft portrait light that gently wraps the face and keeps natural facial volume, with minimal shadow under the eyes and around the nose and mouth — soft and clean, not flat, no studio equipment visible in the frame.`,
     // ── Avoid ──
     `Avoid: beautified face, slimmer face, narrowed jaw, reduced cheeks, rounder face, altered lips, altered eyes, altered eye spacing, altered nose, changed age, younger face, smoothed or plastic skin, retouched skin, model face, glamour, editorial beauty enhancement, smile, teeth, open mouth, turned or tilted head, 3/4 face, profile, full body.`,
   ].join(' ');
