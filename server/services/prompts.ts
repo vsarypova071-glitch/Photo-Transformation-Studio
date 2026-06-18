@@ -1872,13 +1872,15 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
     `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo. Keep the face exactly as in the photo — same face shape and width, same chin, same jaw, same nose, same eyes, same hairstyle. Keep the exact cheek volume and lower-face width from the photo — do NOT add cheek fullness, do NOT round the face, do NOT slim it. This is the same real person.`,
     // Возраст: не старить (жалоба «фото старит»).
     `Age: keep the exact same real age as in the photo — fresh, rested, radiant skin, but do NOT add any wrinkles, age lines, tiredness or make the face look older.`,
-    // Энергия / магнетизм — через взгляд и улыбку, НЕ через ракурс.
-    `Presence: a magnetic, alluring, confident woman at her best — alive and radiant. Bright sparkling eyes with a real catchlight and warm inviting gaze. A genuine warm confident half-smile that reaches the eyes — lips relaxed with a soft natural smile, full of life and quiet allure. Not a weak lifeless smile, not a flat passport face, not a tired or frozen expression.`,
+    // Энергия / магнетизм — ТОЛЬКО через взгляд. БЕЗ улыбки: улыбка ломает нижнюю
+    // треть лица (зубы, рот, подбородок). Спокойное собранное выражение как у
+    // дорогого editorial-портрета.
+    `Expression: calm, composed, confident and magnetic — a serene high-end magazine presence. Lips relaxed and closed, NO smile, no teeth showing, mouth at rest. The energy comes only from the eyes: bright alive eyes with a real catchlight, a steady magnetic confident gaze straight into the camera. Quiet allure and inner power — not a smile, not a flat passport face, not a tired expression.`,
     // Стиль (одежда/фон/свет).
     `Change only the clothing to: ${head(outfit)}, modest neckline.`,
     `Place the same person in a new setting: ${head(bg)}.`,
     `Lighting: ${head(light)}; soft directional side light giving the face natural depth and dimension on the cheekbones — soft, not flat, not harsh.`,
     `Natural healthy skin texture with real pores, no fatigue shadows. Do not show any lighting equipment in the frame.`,
-    `Avoid: passport photo, flat frontal lighting, tired face, aged face, added wrinkles, dead eyes, weak lifeless smile, frozen mannequin, turned or tilted head, 3/4 face, profile, slimmed or widened face, added cheek fullness, rounder face, beautified geometry, over-smoothed skin.`,
+    `Avoid: smile, toothy smile, wide smile, showing teeth, open mouth, distorted mouth, passport photo, flat frontal lighting, tired face, aged face, added wrinkles, dead eyes, frozen mannequin, turned or tilted head, 3/4 face, profile, slimmed or widened face, added cheek fullness, rounder face, beautified geometry, over-smoothed skin.`,
   ].join(' ');
 }
