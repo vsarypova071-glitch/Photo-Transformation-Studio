@@ -1865,18 +1865,20 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
   //     КРИТИЧНО: крутим только КОРПУС — голова остаётся фронтальной (поворот головы
   //     = главный триггер дрейфа лица у Gemini). Геометрические якоря не тронуты.
   return [
-    // Композиция: крупный кадр + динамика корпуса БЕЗ поворота головы.
+    // Композиция: крупный кадр, ЛИЦО И КОРПУС строго фронтально (поворот = дрейф лица).
     `Tight close-up head-and-shoulders portrait, the face fills a large part of the frame like a magazine cover — only head and shoulders, NOT full body, no legs or waist.`,
-    `Body and shoulders turned slightly to a 3/4 angle with the near shoulder toward the camera for natural dynamic energy — BUT the face stays fully frontal to the camera, do NOT turn or tilt the head. Leave a little air above and to the side, face not dead-centred.`,
-    // Identity-якорь (геометрия — не менять).
-    `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo. Keep the face exactly as in the photo — same face shape and width, same chin, same jaw, same nose, same eyes, same age, same hairstyle. Do not slim, widen, beautify or reshape the face. This is the same real person.`,
-    // Энергия / живость — то, что делает фото «вау» без потери личности.
-    `Energy: show this person's best alive version — rested, healthy and radiant, NOT tired. Bright alert magnetic eyes with a real catchlight, warm confident present gaze, a subtle genuine micro-expression — full of life and quiet magnetism. Not a passport photo, not a flat frozen mannequin, not a tired face.`,
+    `Face and head fully frontal and straight to the camera — do NOT turn or tilt the head, no 3/4 face, no profile. Leave a little air above the head, face not dead-centred.`,
+    // Identity-якорь (геометрия — не менять; явный запрет «полных щёк»).
+    `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo. Keep the face exactly as in the photo — same face shape and width, same chin, same jaw, same nose, same eyes, same hairstyle. Keep the exact cheek volume and lower-face width from the photo — do NOT add cheek fullness, do NOT round the face, do NOT slim it. This is the same real person.`,
+    // Возраст: не старить (жалоба «фото старит»).
+    `Age: keep the exact same real age as in the photo — fresh, rested, radiant skin, but do NOT add any wrinkles, age lines, tiredness or make the face look older.`,
+    // Энергия / магнетизм — через взгляд и улыбку, НЕ через ракурс.
+    `Presence: a magnetic, alluring, confident woman at her best — alive and radiant. Bright sparkling eyes with a real catchlight and warm inviting gaze. A genuine warm confident half-smile that reaches the eyes — lips relaxed with a soft natural smile, full of life and quiet allure. Not a weak lifeless smile, not a flat passport face, not a tired or frozen expression.`,
     // Стиль (одежда/фон/свет).
     `Change only the clothing to: ${head(outfit)}, modest neckline.`,
     `Place the same person in a new setting: ${head(bg)}.`,
     `Lighting: ${head(light)}; soft directional side light giving the face natural depth and dimension on the cheekbones — soft, not flat, not harsh.`,
     `Natural healthy skin texture with real pores, no fatigue shadows. Do not show any lighting equipment in the frame.`,
-    `Avoid: passport photo, flat frontal lighting, tired face, dead eyes, frozen mannequin, turned or tilted head, profile, slimmed or widened face, beautified geometry, over-smoothed skin.`,
+    `Avoid: passport photo, flat frontal lighting, tired face, aged face, added wrinkles, dead eyes, weak lifeless smile, frozen mannequin, turned or tilted head, 3/4 face, profile, slimmed or widened face, added cheek fullness, rounder face, beautified geometry, over-smoothed skin.`,
   ].join(' ');
 }
