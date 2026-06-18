@@ -1857,23 +1857,26 @@ export function buildSocialPortraitMinimalPrompt(genderMode?: 'female' | 'male')
   const head = (s: string) => s.split(' — ')[0].split(', NO ')[0].split(', no ')[0].trim();
 
   // Edit-логика: сохрани того же человека, поменяй только одежду/фон/свет.
-  // v2: добавлена живость глаз/выражения/света (без раздувания обратно к 3200 слов).
-  // v5: ЖЁСТКАЯ фиксация кадра — крупный портрет head-and-shoulders. Без неё Gemini
-  // свободно выбирал полный рост → мелкое лицо → ложная потеря сходства. Фиксируем
-  // масштаб лица, чтобы при A/B тесте менялся ТОЛЬКО промпт, а не дистанция камеры.
-  // ЧИСТЫЙ режим теста гипотезы: только контроль композиции (фиксированный крупный
-  // портрет) + identity-якорь + одежда/фон/свет. БЕЗ художественных блоков (глаза,
-  // эмоции, асимметрия, объём света) — они вводят лишние переменные и мешают
-  // изолированно измерить влияние длины промпта. Их вернём ПОСЛЕ доказательства гипотезы.
+  // v5: фиксация кадра (крупный head-and-shoulders) — иначе Gemini уходил в полный
+  //     рост → мелкое лицо → ложная потеря сходства.
+  // v6: ЭНЕРГЕТИЧЕСКИЙ слой поверх стабильной геометрии — гипотеза «короткий промпт
+  //     держит лицо» подтверждена, теперь возвращаем «жизнь»: динамика корпуса (3/4),
+  //     магнетичный живой взгляд, отдохнувший вид, боковой свет для объёма, воздух.
+  //     КРИТИЧНО: крутим только КОРПУС — голова остаётся фронтальной (поворот головы
+  //     = главный триггер дрейфа лица у Gemini). Геометрические якоря не тронуты.
   return [
-    // Контроль композиции — фиксируем масштаб лица (не художество, а условие чистоты теста).
-    `Tight close-up head-and-shoulders portrait. The face fills a large part of the frame, like a magazine-cover headshot. Only head and shoulders visible — NOT full body, NOT a wide or distant shot, do NOT show legs or waist.`,
-    // Identity-якорь.
+    // Композиция: крупный кадр + динамика корпуса БЕЗ поворота головы.
+    `Tight close-up head-and-shoulders portrait, the face fills a large part of the frame like a magazine cover — only head and shoulders, NOT full body, no legs or waist.`,
+    `Body and shoulders turned slightly to a 3/4 angle with the near shoulder toward the camera for natural dynamic energy — BUT the face stays fully frontal to the camera, do NOT turn or tilt the head. Leave a little air above and to the side, face not dead-centred.`,
+    // Identity-якорь (геометрия — не менять).
     `Take the exact same ${isMale ? 'man' : 'woman'} from the uploaded photo. Keep the face exactly as in the photo — same face shape and width, same chin, same jaw, same nose, same eyes, same age, same hairstyle. Do not slim, widen, beautify or reshape the face. This is the same real person.`,
-    // Стиль (одежда/фон/свет) — минимально, нейтрально.
+    // Энергия / живость — то, что делает фото «вау» без потери личности.
+    `Energy: show this person's best alive version — rested, healthy and radiant, NOT tired. Bright alert magnetic eyes with a real catchlight, warm confident present gaze, a subtle genuine micro-expression — full of life and quiet magnetism. Not a passport photo, not a flat frozen mannequin, not a tired face.`,
+    // Стиль (одежда/фон/свет).
     `Change only the clothing to: ${head(outfit)}, modest neckline.`,
     `Place the same person in a new setting: ${head(bg)}.`,
-    `Lighting: ${head(light)}.`,
-    `Realistic photograph, natural skin texture. Do not show any lighting equipment in the frame.`,
+    `Lighting: ${head(light)}; soft directional side light giving the face natural depth and dimension on the cheekbones — soft, not flat, not harsh.`,
+    `Natural healthy skin texture with real pores, no fatigue shadows. Do not show any lighting equipment in the frame.`,
+    `Avoid: passport photo, flat frontal lighting, tired face, dead eyes, frozen mannequin, turned or tilted head, profile, slimmed or widened face, beautified geometry, over-smoothed skin.`,
   ].join(' ');
 }
