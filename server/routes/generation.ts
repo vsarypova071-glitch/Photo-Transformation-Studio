@@ -8,6 +8,7 @@ import * as replicate from '../services/replicate';
 import { buildPrompt, buildSocialPortraitShortPrompt, buildSocialPortraitMinimalPrompt } from '../services/prompts';
 import { buildPairPrompt } from '../services/pairPrompts';
 import { getFilteredParts, WISH_MAX_LENGTH } from '../services/wishFilter';
+import { createSignedLink } from '../services/signedPhotoLink';
 
 const TEMP_DIR = process.env.PHOTO_TEMP_DIR || '/var/www/ai-fotosessia.ru/temp-photos';
 const TTL_MIN = Number(process.env.PHOTO_TTL_MINUTES ?? 30);
@@ -62,16 +63,17 @@ async function refundCredit(
 }
 
 // ---------------------------------------------------------------------------
-// Вспомогательная функция: загружает изображение из TEMP_DIR, проверяет TTL.
-// Возвращает data URL или null (с уже отправленным ответом).
+// resolveTempFilename — проверяет существование файла в TEMP_DIR и TTL,
+// НЕ читает содержимое. Возвращает безопасное имя файла или null (ответ уже
+// отправлен). Вызывается ДО списания кредитов, как и раньше.
 // ---------------------------------------------------------------------------
-async function loadTempImage(
+async function resolveTempFilename(
   res: any,
   filename: string,
   label: string,
 ): Promise<string | null> {
   const safeName = path.basename(filename);
-  const srcPath = path.join(TEMP_DIR, safeName);
+  const srcPath = path.resolve(TEMP_DIR, safeName);
   if (!srcPath.startsWith(path.resolve(TEMP_DIR))) {
     res.status(400).json({ error: `Bad filename for ${label}` });
     return null;
@@ -86,15 +88,34 @@ async function loadTempImage(
       });
       return null;
     }
-    const buf = await fs.readFile(srcPath);
-    const mime = safeName.endsWith('.png')  ? 'image/png'
-               : safeName.endsWith('.webp') ? 'image/webp'
-               : 'image/jpeg';
-    return `data:${mime};base64,${buf.toString('base64')}`;
+    return safeName;
   } catch {
     res.status(404).json({ error: `Фото ${label} не найдено`, code: 'source_missing' });
     return null;
   }
+}
+
+// Читает файл как data URL — нужен только для Replicate (InstantID), который
+// принимает исключительно base64/data URL. Путь к OpenRouter теперь идёт
+// через createSignedTempImageUrl() ниже и файл вообще не читает.
+async function readTempImageDataUrl(safeName: string): Promise<string> {
+  const srcPath = path.join(TEMP_DIR, safeName);
+  const buf = await fs.readFile(srcPath);
+  const mime = safeName.endsWith('.png')  ? 'image/png'
+             : safeName.endsWith('.webp') ? 'image/webp'
+             : 'image/jpeg';
+  return `data:${mime};base64,${buf.toString('base64')}`;
+}
+
+// Временная подписанная ссылка (10 мин, HMAC) вместо base64 в теле запроса
+// к OpenRouter/AI Gateway — см. server/services/signedPhotoLink.ts.
+// Чисто в памяти, файл не читает — можно звать сколько угодно раз без гонки
+// с TTL-очисткой (реальная проверка свежести — в момент фактического fetch
+// по /api/photos/signed/:token).
+function createSignedTempImageUrl(safeName: string): string {
+  const { token } = createSignedLink(safeName);
+  const base = (process.env.APP_URL || 'https://www.ai-fotosessia.ru').replace(/\/+$/, '');
+  return `${base}/api/photos/signed/${token}`;
 }
 
 // =============================================================================
@@ -117,9 +138,9 @@ router.post('/single', async (req, res) => {
       return res.status(400).json({ error: 'sourcePhotoFilename required', code: 'missing_source' });
     }
 
-    // === 1. Load source photo ===
-    const imageInputDataUrl = await loadTempImage(res, sourcePhotoFilename, 'A');
-    if (!imageInputDataUrl) return;
+    // === 1. Validate source photo exists (before charging credits) ===
+    const safePhotoName = await resolveTempFilename(res, sourcePhotoFilename, 'A');
+    if (!safePhotoName) return;
 
     // === 2. Resolve style prompt server-side ===
     const { rows: styleRows } = await db.query(
@@ -218,6 +239,7 @@ router.post('/single', async (req, res) => {
     let aiResult: { imageDataUrl: string; modelUsed: string };
     try {
       if (useIdentityPipeline) {
+        const imageInputDataUrl = await readTempImageDataUrl(safePhotoName);
         const short = buildSocialPortraitShortPrompt(body.genderMode);
         console.log(`[gen/single] identity pipeline (InstantID) for ${generationId}`);
         aiResult = await replicate.generatePortrait({
@@ -249,7 +271,7 @@ router.post('/single', async (req, res) => {
         if (useMinimal) console.log(`[gen/single] EXPERIMENT minimal prompt for ${generationId}`);
         aiResult = await openrouter.generateImage({
           prompt,
-          imageInput: imageInputDataUrl,
+          imageInput: createSignedTempImageUrl(safePhotoName),
         });
       }
     } catch (e: any) {
@@ -349,12 +371,12 @@ router.post('/pair', async (req, res) => {
       return res.status(400).json({ error: 'sourcePhotoFilenameB required', code: 'missing_source_b' });
     }
 
-    // === 1. Load both source photos from TEMP_DIR (TTL check) ===
-    const imageInputA = await loadTempImage(res, sourcePhotoFilenameA, 'A');
-    if (!imageInputA) return;
+    // === 1. Validate both source photos exist (TTL check, before charging credits) ===
+    const safePhotoNameA = await resolveTempFilename(res, sourcePhotoFilenameA, 'A');
+    if (!safePhotoNameA) return;
 
-    const imageInputB = await loadTempImage(res, sourcePhotoFilenameB, 'B');
-    if (!imageInputB) return;
+    const safePhotoNameB = await resolveTempFilename(res, sourcePhotoFilenameB, 'B');
+    if (!safePhotoNameB) return;
 
     // === 2. Resolve style prompt server-side ===
     const { rows: styleRows } = await db.query(
@@ -413,7 +435,7 @@ router.post('/pair', async (req, res) => {
            (id, customer_key, style_id, status, is_full_body, gender_mode,
             source_photo_b, credits_charged)
            VALUES ($1, $2, $3, 'running', false, 'female', $4, $5)`,
-        [generationId, customerKey, styleId, path.basename(sourcePhotoFilenameB), PAIR_CREDITS],
+        [generationId, customerKey, styleId, safePhotoNameB, PAIR_CREDITS],
       );
 
       await client.query('COMMIT');
@@ -432,8 +454,8 @@ router.post('/pair', async (req, res) => {
     try {
       aiResult = await openrouter.generatePairImage({
         prompt,
-        imageInputA,
-        imageInputB,
+        imageInputA: createSignedTempImageUrl(safePhotoNameA),
+        imageInputB: createSignedTempImageUrl(safePhotoNameB),
       });
     } catch (e: any) {
       const reason = `${e?.code || 'ai_error'}: ${e?.message || 'unknown'}`;

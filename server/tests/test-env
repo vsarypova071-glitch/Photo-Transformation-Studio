@@ -5,3 +5,7 @@ DATABASE_URL=postgres://test:test@127.0.0.1:5432/test
 YOOKASSA_SHOP_ID=000000
 YOOKASSA_SECRET_KEY=test_stub_key_not_used_in_tests
 NODE_ENV=test
+PHOTO_LINK_SIGNING_SECRET=test-only-signing-secret-do-not-use-in-prod
+APP_URL=https://www.ai-fotosessia.ru
+PHOTO_TEMP_DIR=tests/.tmp-photos
+PHOTO_TTL_MINUTES=30

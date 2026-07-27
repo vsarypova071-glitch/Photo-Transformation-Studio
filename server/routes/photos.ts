@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { verifySignedToken } from '../services/signedPhotoLink';
 
 const TEMP_DIR = process.env.PHOTO_TEMP_DIR || '/var/www/ai-fotosessia.ru/temp-photos';
 const TTL_MIN = Number(process.env.PHOTO_TTL_MINUTES ?? 30);
@@ -87,7 +88,7 @@ interface ResolveError {
 
 function resolveFile(rawName: string): ResolvedFile | ResolveError {
   const safe = path.basename(rawName);
-  const filePath = path.join(TEMP_DIR, safe);
+  const filePath = path.resolve(TEMP_DIR, safe);
   if (!filePath.startsWith(path.resolve(TEMP_DIR))) {
     return { ok: false, status: 400, body: { error: 'Bad filename' } };
   }
@@ -113,6 +114,31 @@ function resolveFile(rawName: string): ResolvedFile | ResolveError {
     ext: path.extname(safe).toLowerCase(),
   };
 }
+
+// GET /api/photos/signed/:token — временная подписанная ссылка (по умолчанию 10 мин)
+// для server-to-server fetch (AI Gateway/OpenRouter), а не для браузера.
+// Токен несёт имя файла + срок действия внутри HMAC-подписи — путь не принимает
+// имя файла напрямую, поэтому обход путей структурно невозможен (resolveFile
+// ниже дополнительно перепроверяет через path.basename/containment).
+// ВАЖНО: token/URL сюда никогда не логировать.
+router.get('/signed/:token', (req, res) => {
+  const result = verifySignedToken(req.params.token);
+  if (!result.ok) {
+    if (result.reason === 'expired') {
+      return res.status(410).json({ error: 'Link expired', code: 'expired' });
+    }
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  const r = resolveFile(result.filename);
+  if (!r.ok) return res.status(r.status).json(r.body);
+
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Type', r.mime);
+  res.setHeader('Content-Length', String(r.size));
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.sendFile(r.filePath);
+});
 
 // GET /api/photos/:filename — обычная отдача (для <img src>)
 router.get('/:filename', (req, res) => {
