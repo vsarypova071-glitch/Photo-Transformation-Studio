@@ -54,3 +54,8 @@ server/tests/.tmp-photos/
 
 # reference/source images — не импортируются в код, только для локальной работы
 src/assets/styles/reference/
+
+# Playwright — прогонные артефакты, не коммитим
+test-results/
+playwright-report/
+e2e/screenshots/

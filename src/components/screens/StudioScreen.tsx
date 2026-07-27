@@ -366,18 +366,37 @@ export default function StudioScreen({
     }
   };
 
-  // === После результата — обратно к выбору стиля ===
-  const handleNext = () => {
+  // === После результата — «Выбрать другой стиль»: только очистка результата,
+  // исходное фото (и фото B для парных) остаётся — работает независимо от баланса.
+  // Покупка при нехватке кредитов — отдельное действие, срабатывает только
+  // при попытке реально сгенерировать (см. handleGenerateClick).
+  const handleSelectAnotherStyle = () => {
     setResultImage('');
     setResultStyleName('');
+    setStep('choose');
+  };
+
+  // === «Заменить исходное фото» — единственное место, где фото реально стирается ===
+  const handleReplacePhoto = () => {
+    setResultImage('');
+    setResultStyleName('');
+    setUploadedImage('');
+    setUploadedUrl('');
+    setUploadedFilename('');
     setUploadedImageB('');
     setUploadedFilenameB('');
-    if (balance > 0) {
-      setStep('choose');
-    } else {
-      // Кредиты кончились — идём покупать, не сбрасываем фото
+    setStep('upload');
+  };
+
+  // === Клик «Сгенерировать» — при нехватке баланса открывает покупку,
+  // а не просто блокирует кнопку ===
+  const handleGenerateClick = () => {
+    const requiredCredits = isPairMode ? PAIR_CREDITS : 1;
+    if (balance < requiredCredits) {
       onBuyMore?.();
+      return;
     }
+    handleGenerate();
   };
 
   // ─────────────────────── RENDER ───────────────────────
@@ -493,15 +512,7 @@ export default function StudioScreen({
             <div>
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Ваше фото</p>
               <button
-                onClick={() => {
-                  setUploadedImage('');
-                  setUploadedUrl('');
-                  // При замене фото A сбрасываем и фото B:
-                  // оно принадлежит этой паре и больше не актуально
-                  setUploadedImageB('');
-                  setUploadedFilenameB('');
-                  setStep('upload');
-                }}
+                onClick={handleReplacePhoto}
                 className="text-xs text-primary hover:underline mt-1"
               >
                 Заменить фото
@@ -663,7 +674,7 @@ export default function StudioScreen({
                   ) : (
                     <label className={`block w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-wider text-center cursor-pointer transition-all active:scale-95 ${isUploadingB ? 'bg-primary/30 text-primary-foreground cursor-wait' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}>
                       {isUploadingB ? 'Загрузка...' : '+ Загрузить фото 2'}
-                      {!isUploadingB && <input type="file" accept="image/*" onChange={handleFileChangeB} className="hidden" />}
+                      {!isUploadingB && <input id="photo-b-input" type="file" accept="image/*" onChange={handleFileChangeB} className="hidden" />}
                     </label>
                   )}
                 </div>
@@ -676,24 +687,26 @@ export default function StudioScreen({
             </div>
           )}
 
-          {/* Кнопка генерации */}
+          {/* Кнопка генерации — при нехватке баланса не блокируется, а открывает
+              покупку по клику (см. handleGenerateClick). Заблокирована только
+              когда действие объективно невозможно: нет согласия, не выбран
+              стиль, или (для парных) не загружено второе фото. */}
           <button
-            onClick={handleGenerate}
+            onClick={handleGenerateClick}
             disabled={
               !biometryConsent ||
               !selectedStyleId ||
-              balance < (isPairMode ? PAIR_CREDITS : 1) ||
               (isPairMode && !uploadedFilenameB)
             }
             className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-bold uppercase tracking-wider text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary/90 transition-all"
           >
             {isPairMode
-              ? (balance < PAIR_CREDITS
-                  ? `Нужно минимум ${PAIR_CREDITS} генерации`
-                  : !uploadedFilenameB
-                    ? 'Загрузите второе фото'
+              ? (!uploadedFilenameB
+                  ? 'Загрузите второе фото'
+                  : balance < PAIR_CREDITS
+                    ? 'Купить ещё фото'
                     : `Сгенерировать (−${PAIR_CREDITS} фото)`)
-              : (balance < 1 ? 'Закончились генерации' : `Сгенерировать (−1 фото)`)
+              : (balance < 1 ? 'Купить ещё фото' : `Сгенерировать (−1 фото)`)
             }
           </button>
 
@@ -746,6 +759,35 @@ export default function StudioScreen({
       {/* === ШАГ 4: РЕЗУЛЬТАТ === */}
       {step === 'result' && resultImage && (
         <div className="space-y-6">
+          {/* TTL-уведомление — в потоке документа, НЕ fixed-модалка: не может
+              перекрыть кнопки ниже (Скачать / Выбрать другой стиль / Заменить
+              исходное фото), т.к. просто отодвигает их вниз обычной вёрсткой.
+              Явная кнопка-крестик для закрытия — не полагаемся на клик по фону. */}
+          {showTtlNotice && (
+            <div className="relative flex items-start gap-3 rounded-2xl border-2 border-yellow-400/60 bg-card px-4 py-3 shadow-lg">
+              <div className="text-2xl leading-none flex-shrink-0">⏳</div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-black text-yellow-300 mb-1">
+                  Фото доступны {resultTtlMinutes} минут
+                </h3>
+                <p className="text-xs text-slate-200 leading-relaxed">
+                  Скачайте сразу — после {resultTtlMinutes} минут файл будет автоматически удалён с сервера.{' '}
+                  <span className="text-muted-foreground">Это требование 152-ФЗ: фото нигде не хранится постоянно.</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTtlNotice(false)}
+                aria-label="Закрыть уведомление"
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-yellow-200 flex items-center justify-center transition-colors active:scale-90"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           <div className="text-center">
             <h2 className="text-xl font-sans uppercase tracking-tighter mb-1">Готово</h2>
             <p className="text-sm text-muted-foreground font-serif">{resultStyleName}</p>
@@ -779,11 +821,22 @@ export default function StudioScreen({
             ) : '↓ Скачать фото'}
           </button>
 
+          {/* «Выбрать другой стиль» — всегда доступна, независимо от баланса.
+              Исходное фото сохраняется; покупка (если кредитов не хватит)
+              откроется отдельно, только при реальной попытке сгенерировать
+              на экране выбора стиля — см. handleGenerateClick. */}
           <button
-            onClick={handleNext}
+            onClick={handleSelectAnotherStyle}
             className="w-full py-3 rounded-2xl border border-border text-foreground font-medium uppercase tracking-wider text-sm hover:bg-secondary/40 transition-all"
           >
-            {balance > 0 ? `Сгенерировать ещё (осталось ${balance})` : 'Купить ещё фото'}
+            Выбрать другой стиль
+          </button>
+
+          <button
+            onClick={handleReplacePhoto}
+            className="w-full py-3 text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+          >
+            Заменить исходное фото
           </button>
 
           {/* 🎁 Реферальный блок — показывается после первого результата.
@@ -827,39 +880,6 @@ export default function StudioScreen({
         </div>
       )}
 
-      {/* Popup: фото живут 30 минут на VPS */}
-      {showTtlNotice && (
-        <div
-          className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0"
-          onClick={() => setShowTtlNotice(false)}
-        >
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div
-            className="relative w-full max-w-sm rounded-3xl border-2 border-yellow-400/60 bg-card p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-center">
-              <div className="text-4xl mb-3">⏳</div>
-              <h3 className="text-lg font-black text-yellow-300 mb-2">
-                Фото доступны {resultTtlMinutes} минут
-              </h3>
-              <p className="text-sm text-slate-200 leading-relaxed mb-5">
-                Скачайте сразу — после {resultTtlMinutes} минут файл будет автоматически удалён с сервера.
-                <br />
-                <span className="text-xs text-muted-foreground">
-                  Это требование 152-ФЗ: фото нигде не хранится постоянно.
-                </span>
-              </p>
-              <button
-                onClick={() => setShowTtlNotice(false)}
-                className="w-full py-3 rounded-xl bg-yellow-400 text-black font-bold text-sm uppercase tracking-wider active:scale-[0.98] transition"
-              >
-                Понятно
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
