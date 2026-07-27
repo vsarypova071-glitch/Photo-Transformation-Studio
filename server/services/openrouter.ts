@@ -1,9 +1,22 @@
 // Клиент OpenRouter для image-output моделей.
 // Ключ и модель — только из env. Если ключа нет — выбрасываем именованную ошибку,
 // чтобы роут вернул понятный 503 и сделал refund.
+//
+// Два режима, переключаются наличием AI_GATEWAY_URL:
+//  - direct (по умолчанию, без AI_GATEWAY_URL): как раньше — прямой вызов
+//    OpenRouter с OPENROUTER_API_KEY.
+//  - gateway (AI_GATEWAY_URL задан): запрос идёт на общий AI Gateway,
+//    авторизация — AI_GATEWAY_TOKEN (это НЕ реальный ключ OpenRouter — тот
+//    хранится только на самом Gateway). Формат тела/ответа тот же
+//    OpenAI-совместимый chat-completions, Gateway — тонкий прокси.
 
-const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-const PER_CALL_TIMEOUT_MS = 90_000;
+const DEFAULT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+// Direct-режим: как и раньше, 90с — прямой запрос к OpenRouter.
+// Gateway-режим: у самого Gateway upstream-таймаут для этого проекта — 120с
+// (+ретраи), поэтому наш клиентский таймаут должен быть заведомо больше, иначе
+// мы отвалимся раньше, чем Gateway успеет легитимно ответить.
+const DIRECT_TIMEOUT_MS = 90_000;
+const GATEWAY_TIMEOUT_MS = 130_000;
 // Дефолт — image-input + image-output модель Google через OpenRouter.
 // Точное имя в каталоге OpenRouter может отличаться; конфигурируется через env.
 const DEFAULT_MODEL = 'google/gemini-2.5-flash-image-preview';
@@ -35,9 +48,39 @@ export interface GenerateImageResult {
   rawTokens?: number;
 }
 
-function readConfig(): { apiKey: string; model: string } {
-  const apiKey = (process.env.OPENROUTER_API_KEY ?? '').trim();
+interface RuntimeConfig {
+  apiKey: string;
+  model: string;
+  endpoint: string;
+  timeoutMs: number;
+}
+
+// exported для тестов (server/tests/openrouterConfig.test.ts) — резолвинг
+// direct/gateway режима достаточно самостоятельная логика, чтобы тестировать
+// её напрямую, а не только через сетевой мок generateImage().
+export function readConfig(): RuntimeConfig {
   const model = (process.env.OPENROUTER_MODEL ?? '').trim() || DEFAULT_MODEL;
+  const overrideTimeoutMs = Number(process.env.AI_CALL_TIMEOUT_MS);
+  const gatewayUrl = (process.env.AI_GATEWAY_URL ?? '').trim();
+
+  if (gatewayUrl) {
+    const gatewayToken = (process.env.AI_GATEWAY_TOKEN ?? '').trim();
+    if (!gatewayToken) {
+      throw new OpenRouterError(
+        'AI_GATEWAY_TOKEN is not configured',
+        503,
+        'no_api_key',
+      );
+    }
+    return {
+      apiKey: gatewayToken,
+      model,
+      endpoint: gatewayUrl,
+      timeoutMs: Number.isFinite(overrideTimeoutMs) && overrideTimeoutMs > 0 ? overrideTimeoutMs : GATEWAY_TIMEOUT_MS,
+    };
+  }
+
+  const apiKey = (process.env.OPENROUTER_API_KEY ?? '').trim();
   if (!apiKey) {
     throw new OpenRouterError(
       'OPENROUTER_API_KEY is not configured',
@@ -45,7 +88,12 @@ function readConfig(): { apiKey: string; model: string } {
       'no_api_key',
     );
   }
-  return { apiKey, model };
+  return {
+    apiKey,
+    model,
+    endpoint: DEFAULT_ENDPOINT,
+    timeoutMs: Number.isFinite(overrideTimeoutMs) && overrideTimeoutMs > 0 ? overrideTimeoutMs : DIRECT_TIMEOUT_MS,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -62,13 +110,13 @@ export interface GeneratePairImageInput {
 }
 
 export async function generatePairImage(input: GeneratePairImageInput): Promise<GenerateImageResult> {
-  const { apiKey, model } = readConfig();
+  const { apiKey, model, endpoint, timeoutMs } = readConfig();
 
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), PER_CALL_TIMEOUT_MS);
+  const t = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const resp = await fetch(ENDPOINT, {
+    const resp = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -147,13 +195,13 @@ export async function generatePairImage(input: GeneratePairImageInput): Promise<
 }
 
 export async function generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {
-  const { apiKey, model } = readConfig();
+  const { apiKey, model, endpoint, timeoutMs } = readConfig();
 
   const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), PER_CALL_TIMEOUT_MS);
+  const t = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const resp = await fetch(ENDPOINT, {
+    const resp = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
