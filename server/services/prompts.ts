@@ -627,95 +627,296 @@ export interface BuildPromptInput {
 
 // [NEGATIVE PROMPT] — встраивается в конец buildPrompt() как раздел AVOID:.
 // Отдельной функцией, чтобы можно было переиспользовать или расширять независимо.
+//
+// v11 (live photoshoot redesign): убраны синонимичные кластеры (было по 4-9 почти
+// одинаковых терминов на одну идею — "tired/fatigued/grey/dull/washed-out/unwell/
+// aging/wrinkles/exhausted/older/worn/fatigue shadows" сжаты в 3), убран блок
+// 'looking away from camera'/'side glance'/'averted gaze' — он противоречил новой
+// вариативности COMPOSITION (профиль/три четверти теперь разрешены намеренно).
+// Добавлено: text/logo/watermark (были явно нужны по ТЗ и отсутствовали), extra
+// or fused fingers/deformed hands (анатомия рук — раньше только в позитиве не было
+// нигде), identical repeated pose across a series (анти-повтор на уровне негатива).
 export function buildNegativePrompt(): string {
   return [
-    'plastic skin', 'wax face', 'mannequin', 'doll-like face', 'dead eyes',
-    'blank stare', 'CGI', '3D render', 'over-smoothed skin', 'airbrushed skin',
-    'flawless artificial face', 'beauty filter', 'fake face', 'altered identity',
-    'changed face structure', 'passport photo look', 'stiff pose',
-    'artificial smile', 'synthetic portrait', 'uncanny valley',
-    'overly glossy commercial retouching',
-    'centered static pose', 'HR portrait framing', 'passport composition',
-    'flat even studio lighting',
-    'generic office shoes', 'stiff mannequin posture', 'static fashion pose',
-    'influencer glamour aesthetic', 'over-styled CGI fashion',
+    // Identity & face integrity
+    'plastic skin', 'wax face', 'mannequin doll face', 'blank dead-eyed stare',
+    'CGI', '3D render', 'over-smoothed airbrushed skin', 'flawless artificial face',
+    'beauty filter', 'altered identity', 'changed face structure', 'uncanny valley',
+    'different person', 'generic AI face', 'wrong eye spacing', 'distorted face',
     'fashion model face', 'runway model transformation', 'beauty-face geometry',
-    'altered facial proportions', 'editorial face reinterpretation', 'stylized facial anatomy',
-    'different person', 'generic AI face', 'changed facial proportions', 'wrong eye spacing',
-    'distorted face', 'AI doll face',
-    // Magnetism / femininity
-    'duck lips', 'exaggerated seduction', 'artificial sexiness', 'emotionally empty posing',
-    'escort aesthetic', 'vulgar glamour', 'nightclub energy', 'cheap luxury',
-    // Anti-cheap luxury
-    'flashy rich aesthetic', 'fake billionaire visuals', 'gold overload', 'casino luxury',
-    'fast fashion energy', 'hypersexual styling',
-    // Non-premium backgrounds (positive location list in LOCATION block overrides these)
-    'cafe interior', 'coffee shop', 'domestic interior', 'budget location', 'non-premium background',
-    'cheap office', 'random room', 'home interior', 'casual restaurant',
+    'altered facial proportions', 'stylized facial anatomy',
+    // Lower-face drift — either direction is wrong
+    'slimmed V-shape jaw', 'sharp pointed chin', 'hollow sculpted cheeks',
+    'widened rounded face', 'puffy cheeks', 'moon face', 'reshaped face oval',
+    // Composition & pose
+    'passport photo look', 'stiff pose', 'artificial smile', 'centered static pose',
+    'HR portrait framing', 'passport composition', 'flat even studio lighting',
+    'stiff mannequin posture', 'static fashion pose', 'identical repeated pose across a series',
+    // Glamour / cheap luxury
+    'influencer glamour aesthetic', 'duck lips', 'exaggerated seduction', 'artificial sexiness',
+    'escort aesthetic', 'vulgar glamour', 'nightclub energy', 'flashy rich aesthetic',
+    'gold overload', 'casino luxury', 'hypersexual styling',
+    // Non-premium backgrounds
+    'cafe interior', 'coffee shop', 'domestic interior', 'budget location', 'cheap office',
+    'random home interior',
     // Anti-fatigue / anti-aging
-    'tired face', 'fatigued look', 'grey skin', 'dull skin', 'washed out skin',
-    'visually unwell', 'aging effect', 'added wrinkles', 'exhausted expression',
-    'older appearance', 'worn face', 'fatigue shadows',
-    // Anti-hair-change
-    'changed hairstyle', 'different haircut', 'longer hair', 'shorter hair',
-    'different hair color', 'bleached hair', 'darkened hair',
-    // Eye contact & eyewear
-    'sunglasses', 'wearing sunglasses', 'tinted glasses', 'eyewear covering eyes',
-    'looking away from camera', 'side glance', 'averted gaze',
-    'empty model stare', 'constant side-looking editorial pose', 'emotionless beauty shot',
-    // Cinematic realism
-    'plastic beauty', 'fake perfection', 'synthetic lighting', 'AI glamour',
+    'tired fatigued face', 'grey dull washed-out skin', 'added wrinkles', 'older worn appearance',
+    // Hair
+    'changed hairstyle', 'different haircut or length', 'changed hair color',
+    // Eyes & eyewear
+    'sunglasses', 'eyewear covering the eyes', 'vacant unfocused gaze',
     // Makeup render artifacts
-    'lipstick on teeth', 'lipstick stains on teeth', 'red marks on teeth', 'stained teeth',
-    'smeared makeup', 'makeup bleed', 'color bleed on teeth',
-    // Lower-face / oval drift — BOTH directions are wrong, match the reference exactly
-    'slimmed face', 'narrowed face', 'V-shape face', 'V-line jaw', 'sharp pointed chin',
-    'tapered lower face', 'hollow cheeks', 'sculpted model jawline', 'model face geometry',
-    'widened face', 'rounded face', 'shortened face', 'broadened jaw', 'puffy cheeks',
-    'added cheek fullness', 'moon face', 'compressed face proportions', 'reshaped face oval',
+    'lipstick stains on teeth', 'smeared bleeding makeup',
+    // Anatomy
+    'extra or fused fingers', 'deformed hands', 'floating or extra limbs',
+    // Text & branding
+    'text overlay', 'typography', 'captions or subtitles', 'logos', 'watermark', 'signature',
     // Photo quality
-    'digital noise', 'oversharpened edges', 'low detail', 'soft blurry focus on eyes',
-    'oversaturated colors', 'cheap digital look', 'smartphone photo quality',
+    'digital noise', 'oversharpened edges', 'oversaturated colors', 'smartphone photo quality',
   ].join(', ');
 }
 
-// ── BODY SHAPE & IDENTITY LOCK ───────────────────────────────────────────────
-// Permanent block — inserted into EVERY prompt regardless of style or mode.
-// Covers body weight / proportions for portrait AND full-body.
-// Complements identityBlock (face) and fullBodyFaceLockBlock (full-body face+body).
-// Positioned BEFORE user styling note — establishes inviolable priority hierarchy.
-const BODY_SHAPE_LOCK = `\
-BODY SHAPE & IDENTITY LOCK (always enforced — overrides all user input):
-User styling notes are always secondary to identity and body preservation.
+// ── IDENTITY LOCK (v11 live-photoshoot redesign) ─────────────────────────────
+// Единственный источник правды по identity/anatomy/age/weight/hair. Раньше эта
+// же мысль повторялась 4 раза разными словами: инлайновый "ABSOLUTE PRIORITY"
+// заголовок в buildPrompt(), identityBlock (FACE GEOMETRY LOCK), BODY_SHAPE_LOCK
+// (вес/возраст), fullBodyFaceLockBlock (та же face geometry ещё раз для
+// full-body). Все 4 объединены в один блок — воспроизводится один раз,
+// освобождает ~6000 символов на добавление живых блоков ниже.
+// Порядок приоритета внутри блока соответствует ТЗ: identity → анатомия →
+// возраст/вес/кожа → волосы → что разрешено менять.
+const IDENTITY_LOCK = `\
+IDENTITY LOCK — HIGHEST PRIORITY, OVERRIDES EVERYTHING BELOW:
+Priority order for this entire generation: 1) identity  2) anatomical correctness  3) natural
+emotion  4) action  5) environment interaction  6) composition  7) clothing and style.
+Whenever any instruction below conflicts with identity preservation, identity wins. A less
+flattering but recognizable result is always better than a beautiful but different-looking person.
 
-NEVER change regardless of user request:
-- Body weight, waist, hips, chest/bust, stomach, arms, legs — do NOT slim, enlarge, or reshape.
-- Facial anatomy: nose shape, eye shape, lip shape, jaw, cheekbones, chin — do NOT alter.
-- Age: do NOT make younger, older, or rejuvenated. Preserve exact visible age from the reference photo.
-- Ethnicity, skin undertone, and natural distinguishing features — do NOT generalize or change.
-- Do NOT transform the subject into a fitness model, editorial beauty archetype, or any celebrity/model likeness.
-The subject must remain visually identical to the reference photo in body type, face geometry, and age.
+Goal: this must read as "the same person, photographed on a different day" — not "someone who
+resembles them."
 
-ALLOWED via user styling note (these do not alter identity):
-- Accessories: glasses, sunglasses (accent), earrings, necklace, hat, scarf, bag.
-- Clothing: outfit, dress, jacket, suit, coat — color, style, fabric type.
-- Background: indoor, outdoor, location, architecture, nature setting, city.
-- Lighting: golden hour, dramatic, soft, cinematic, colored atmosphere.
-- Cinematic mood, color palette, overall visual atmosphere.
-- Subtle natural expression: soft smile, calm, confident energy.`;
+FACE GEOMETRY (copy exactly from the reference photo, at whatever angle the composition below
+calls for): inter-eye distance, eye shape and size, iris color and pattern, eye placement, brow
+shape and position, nose shape/width/bridge/tip, lip shape and width, cheekbone position and
+volume, jawline shape, chin shape, and the overall face oval. None of these are adjusted, slimmed,
+widened, sharpened, or softened toward a more "attractive" or "generic model" version — copy them,
+don't reinterpret them. This holds true at ANY head angle — head angle itself is set by the
+composition instruction later in this prompt, not restricted here.
+
+AGE, BODY & SKIN: preserve the subject's exact visible age (no rejuvenation, no added years, no
+extra wrinkles or fatigue beyond what the reference shows), exact body weight and proportions
+(waist, hips, chest, arms, legs — do not slim or enlarge), and natural skin tone/ethnicity. Keep
+real skin texture — visible pores and the natural fine lines the reference shows — healthy and
+well lit, not erased or aged.
+
+HAIR: same length, cut, color, and texture as the reference — no restyling, no color change.
+
+WHAT MAY CHANGE (this is the entire scope of styling — nothing else touches the measurements
+above): clothing, accessories, background/location, lighting, and the emotional expression and
+action described later in this prompt.
+
+Acceptance test: the viewer must say "this is them, photographed by someone excellent" — never
+"this looks like them" or "this is a nicer version of them."`;
+
+// Короткая реплика для full-body (раньше — fullBodyFaceLockBlock на ~2500 символов,
+// почти целиком дублировавший FACE GEOMETRY из IDENTITY_LOCK выше). Оставлена только
+// уникальная мысль: на дальней дистанции лицо мельче и склонно "плыть" к generic —
+// напоминание держать тот же lock, не переупрощая его.
+const FULL_BODY_IDENTITY_ADDENDUM = `\
+FULL-BODY DISTANCE (reinforcement): at full-body distance the face is smaller in frame and easy
+to drift toward a generic look — hold the exact same face-geometry lock above, don't simplify it.
+Body proportions, head-to-body ratio, and limb length stay anatomically natural — no elongation,
+no slimming, no doll-like proportions, no tiny head.`;
+
+// ── REALISM & ANATOMY (v11) ──────────────────────────────────────────────────
+// Объединяет realismBlock + realPhotographyBlock + cinematicRealismBlock +
+// уникальную часть bestVersionBlock (~4200 символов вместе) в один блок.
+// Новое: явное позитивное требование к рукам/пальцам и посадке одежды —
+// раньше это упоминалось только в негативном списке ("broken fingers"), а не
+// как позитивная инструкция, хотя пользователь прямо просил "правильные руки
+// и пальцы", "реалистичная посадка одежды", "натуральные складки ткани".
+const REALISM_AND_ANATOMY = `\
+PHOTOGRAPHIC REALISM:
+This must read as a real photograph taken by a working photographer — not a render, not CGI, not
+an AI illustration. Skin has real texture and a healthy natural glow, not airbrushed plastic
+smoothness. Eyes are sharp, alive, with genuine catchlights and visible iris detail — whether they
+meet the lens directly or follow the gaze called for by the chosen composition below, they must
+never look vacant, glassy, or dead. Hands and fingers are anatomically correct — five fingers,
+natural joints, no fused or extra digits. Clothing sits and folds the way real fabric does under
+gravity and movement, not like a flat texture wrap. Light and shadow are physically consistent
+with a single believable source. Small natural imperfections — asymmetry, a stray hair, an uneven
+fold — are welcome; hyper-symmetrical, over-corrected perfection reads as fake.`;
+
+// ── CHARACTER & EMOTION (новое) ──────────────────────────────────────────────
+// 8 состояний из ТЗ. На каждую генерацию выбирается РОВНО ОДНО — не весь список,
+// поэтому стоимость почти нулевая (одна строка ~150-250 символов), а не +8 блоков.
+// "soft_presence" — единственный пункт с гендерной веткой (мягкая женственность
+// неуместна для мужского портрета) — заменяется на спокойную мужскую сдержанность.
+interface CharacterState { id: string; describe: (isMale: boolean) => string; }
+
+const CHARACTER_STATES: readonly CharacterState[] = [
+  { id: 'calm_confidence', describe: (m) =>
+    `Calm confidence: settled and composed, weight fully in the body, gaze steady and unhurried, quietly certain of ${m ? 'himself' : 'herself'}.` },
+  { id: 'genuine_joy', describe: () =>
+    'Genuine joy: a real, unforced warmth in the eyes and the corners of the mouth — authentic delight, not a performed camera smile.' },
+  { id: 'focus', describe: () =>
+    'Focus: quiet concentration, eyes sharp and present, attention pulled toward something just past the lens — engaged, not a blank stare.' },
+  { id: 'creative_energy', describe: () =>
+    'Creative energy: alert, curious, faintly playful — the sense of someone mid-thought, alive with an idea.' },
+  { id: 'quiet_thoughtful', describe: () =>
+    'Quiet thoughtfulness: a soft, inward gaze, unhurried breath — a private moment the camera happened to catch.' },
+  { id: 'freedom', describe: () =>
+    'Freedom: open, unguarded body language, breath and motion loose, a sense of lightness and release.' },
+  { id: 'soft_presence', describe: (m) => m
+    ? 'Quiet composure: grounded, unshowy masculine ease — steadiness without needing to prove anything.'
+    : 'Soft femininity: gentle, warm, unforced grace in the posture and gaze — tenderness without performance.' },
+  { id: 'strength_leadership', describe: () =>
+    'Strength and leadership: shoulders open, gaze direct and unwavering, the presence of someone used to being listened to.' },
+];
+
+function pickCharacterState(isMale: boolean): string {
+  return pickFromArray(CHARACTER_STATES).describe(isMale);
+}
+
+// ── ACTION (новое) ────────────────────────────────────────────────────────────
+// Конкретные, привязанные к кадрированию действия — раньше живость держалась
+// только на POSES_PORTRAIT/FULLBODY (в основном про положение тела, почти без
+// взаимодействия с предметами). Разделены на portrait/full-body, чтобы не
+// просить "идёт по улице" в кадре, обрезанном по грудь.
+// ВАЖНО: ни одно действие не описывает направление взгляда — за это отвечает
+// ТОЛЬКО COMPOSITION (см. ниже). Раньше здесь были формулировки вроде "glancing
+// back toward the camera" / "attention drifting up toward the lens", которые
+// при случайном сочетании с профильной/смотрящей-в-сторону композицией давали
+// прямое противоречие ("смотрит на камеру" + "смотрит в сторону" одновременно).
+// ACTION — только про руки/тело/предметы, COMPOSITION — про кадр и взгляд.
+const ACTIONS_PORTRAIT: readonly string[] = [
+  'adjusting an earring or a loose strand of hair with one hand',
+  'fingertips resting lightly at the collar, mid-gesture',
+  'holding a cup or glass just below the chin, caught mid-sip or mid-thought',
+  'gently adjusting a sleeve or cuff',
+  'shoulders turning slightly, weight shifting mid-motion',
+  'one hand lightly touching the opposite shoulder, mid-turn',
+  'holding a phone loosely in one hand, thumb paused mid-scroll',
+  'resting a forearm on a table or ledge, leaning in slightly',
+  'caught between expressions, as if mid-sentence',
+  'taking off or putting on a pair of glasses',
+];
+
+const ACTIONS_FULLBODY: readonly string[] = [
+  'caught mid-step, walking naturally toward or across the frame',
+  'shoulders and torso turning, weight shifting mid-motion',
+  'leaning back against a wall or column, weight settled on one leg',
+  'sitting and leaning slightly forward, elbows near the knees',
+  'resting a hand on a table, chair, or railing while shifting weight',
+  'pausing beside a window or doorway, one hand near the frame',
+  'gesturing naturally with one hand, as if mid-conversation',
+  'pausing mid-motion, coat or hair still settling from a step',
+];
+
+// keepHeadFrontal=true (только bw_portrait — см. isFrontalLocked в buildPrompt())
+// вырезает единственное действие, подразумевающее поворот головы ("over one
+// shoulder"), чтобы не спорить с зафиксированной фронтальной композицией.
+function pickAction(isFullBody: boolean, keepHeadFrontal = false): string {
+  const pool = isFullBody ? ACTIONS_FULLBODY : ACTIONS_PORTRAIT;
+  const safePool = keepHeadFrontal ? pool.filter((a) => !/shoulder/i.test(a)) : pool;
+  return pickFromArray(safePool.length ? safePool : pool);
+}
+
+// ── ENVIRONMENT INTERACTION (новое) ──────────────────────────────────────────
+// GENERAL безопасен для любой сцены, включая закрытый студийный фон (без ветра/
+// улицы). SCENE — только для открытых/предметных локаций (editorial, lifestyle),
+// не используется для isSocialPortrait (студийный фон из BACKGROUNDS_SOCIAL).
+const ENV_INTERACTION_GENERAL: readonly string[] = [
+  'Light falls across the face from a clear, identifiable direction — the kind of light you could point to.',
+  'A soft natural shadow on the near side of the face gives real dimension, not flat frontal flatness.',
+  'The background holds genuine depth — a natural separation between subject and surroundings, not a flat cutout.',
+  'The fabric of the outfit shows natural, physically believable weight and folds, not a flat digital texture.',
+];
+
+const ENV_INTERACTION_SCENE: readonly string[] = [
+  'A light breeze lifts a few strands of hair or stirs the fabric of the outfit.',
+  'One hand rests naturally against a nearby surface — a table, railing, wall, or chair.',
+  'The person is genuinely inhabiting the space — passing through it, not standing in front of a backdrop.',
+  'Shadows and light on the body follow the real geometry of the surrounding space.',
+];
+
+function pickEnvironmentInteraction(allowScene: boolean): string {
+  const pool = allowScene ? [...ENV_INTERACTION_GENERAL, ...ENV_INTERACTION_SCENE] : ENV_INTERACTION_GENERAL;
+  return pickFromArray(pool);
+}
+
+// ── COMPOSITION (новое) ──────────────────────────────────────────────────────
+// Раньше вариативность кадра сводилась к одному булеву флагу isFullBody
+// ("Portrait composition: head and shoulders, magazine cover style." — сам
+// текст подталкивал к центрированному кадру) плюс глобальному запрету
+// "avoid strong head turns, profiles" на ВСЕ стили без исключения — это и есть
+// главная причина статичных фронтальных фото. Теперь: для style'ей без
+// доказанной чувствительности к развороту головы (см. isFrontalLocked ниже,
+// это ТОЛЬКО social_portrait — v7 commit истории этого проекта явно
+// зафиксировал регресс identity при повороте головы именно для этого стиля и
+// откатил его) разрешены три четверти/профиль/взгляд в сторону. Для остальных
+// clean-portrait (bw_portrait) и обычных editorial — полная вариативность.
+const COMPOSITIONS_CLEAN_PORTRAIT: readonly string[] = [
+  'Tight close-up crop — the face fills most of the frame, head and top of shoulders only.',
+  'Close portrait crop with a little more air around the head — face and shoulders, slightly off-center in the frame.',
+  'Waist-up crop, body turned slightly to one side while the face stays frontal to the camera.',
+];
+
+const COMPOSITIONS_CLEAN_PORTRAIT_FULLBODY: readonly string[] = [
+  'Full-body crop, body turned slightly to one side, face frontal to the camera, natural standing weight on one leg.',
+];
+
+const COMPOSITIONS_STANDARD_PORTRAIT: readonly string[] = [
+  'Tight beauty close-up, direct gaze into the lens.',
+  'Waist-up portrait, body turned three-quarters, face turned back toward the camera.',
+  'Waist-up portrait, gaze directed just past the camera toward the light — a candid, unposed feel.',
+  'Clean profile composition — face in a true side view, gaze forward into the distance, not at the lens.',
+  'Slightly off-center portrait crop, asymmetrical framing, direct eye contact.',
+];
+
+const COMPOSITIONS_STANDARD_FULLBODY: readonly string[] = [
+  'Full-body composition, walking naturally with a slight off-center frame.',
+  'Full-body composition, three-quarter body turn, head turned back toward the camera over one shoulder.',
+  'Full-body composition, seated or leaning, gaze directed away from the lens into the scene.',
+  'Full-body profile silhouette against the environment, gaze forward, not at the camera.',
+  'Three-quarter-length composition (knees up), body at a natural angle, direct gaze into the lens.',
+];
+
+function pickComposition(isFullBody: boolean, isCleanPortrait: boolean): string {
+  if (isCleanPortrait) {
+    return pickFromArray(isFullBody ? COMPOSITIONS_CLEAN_PORTRAIT_FULLBODY : COMPOSITIONS_CLEAN_PORTRAIT);
+  }
+  return pickFromArray(isFullBody ? COMPOSITIONS_STANDARD_FULLBODY : COMPOSITIONS_STANDARD_PORTRAIT);
+}
+
+// ── MAGNETIC PRESENCE (v11) ───────────────────────────────────────────────────
+// Объединяет magnetismBlock + femininityBlock (раньше два раздельных блока с
+// заметным смысловым перекрытием — оба про "спокойная сила без демонстрации").
+const presenceBlock = `\
+MAGNETIC PRESENCE:
+She feels emotionally powerful, calm, self-possessed, and quietly magnetic — her presence draws
+attention without reaching for it. Expression: composed, subtly warm, a sense of an inner world
+the viewer can't fully see. Luxury reads as restraint and confidence, not exposure — expensive
+rather than performative.
+Avoid: exaggerated seduction, influencer expressions, artificial sexiness, escort or nightclub
+energy, vulgar glamour, explicit sexuality, excessive exposure, emotionally empty posing.`;
 
 export function buildPrompt(input: BuildPromptInput): string {
   // Filter user wish — backend enforcement, cannot be bypassed from browser.
   // Raw customPrompt is stored in DB for audit; filtered version goes to AI.
   const filteredWish = filterWish(input.customPrompt);
 
-  const fullBodyHint = input.isFullBody
-    ? 'Full body composition: include subject from head to feet.'
-    : 'Portrait composition: head and shoulders, magazine cover style.';
+  // Нейтральная подсказка по кадрированию — используется только в lifestyle-ветке
+  // (детские стили), у которой нет своего пула COMPOSITIONS_*. Editorial и
+  // clean-portrait получают кадрирование через pickComposition() ниже.
+  const lifestyleFramingHint = input.isFullBody
+    ? 'Full-body framing: include the subject from head to feet.'
+    : 'Portrait framing: head and shoulders.';
 
   // Определяем режим один раз — используется для условных блоков ниже.
   const isEditorial = detectIsEditorial(input.stylePrompt, input.styleCategory);
   const isMale = input.genderMode === 'male';
+  const isFullBody = !!input.isFullBody;
 
   // ── GENDER MODIFIER BLOCKS ──────────────────────────────────────────────────
 
@@ -748,134 +949,9 @@ COMPLETELY REPLACE in the output: background, location, clothing, furniture, set
 The background/environment from the reference photo MUST NOT appear in the output. Replace it entirely with the premium location from the style.
 Rule: take the PERSON, place them in a completely new premium scene.`;
 
-  // [IDENTITY] — строгое сохранение лица, структуры, возраста и индивидуальности.
-  // Запрещает любую «улучшающую» обработку, которая убирает индивидуальность.
-  const identityBlock = `\
-IDENTITY PRESERVATION — PRIORITY #1 (overrides all other instructions):
-Goal: "This is the SAME person in a different photoshoot" — NOT "this is a similar-looking person."
-The subject must be immediately and unmistakably recognizable as the exact individual from the reference photo.
-If unsure whether a change is safe — do NOT make the change. Preserve the face.
-
-FACE GEOMETRY LOCK (copy exactly from reference — every item):
-- Inter-eye distance: exact same spacing as in the reference image.
-- Eye shape: exact eyelid contour, eye size, natural openness.
-- Eye color: preserve natural iris color and pattern exactly.
-- Eye placement: exact vertical and horizontal position within face.
-- Brow shape, thickness, arch, and position — identical to reference.
-- Nose shape, nose width, bridge height, and tip form — identical to reference.
-- Lip shape, fullness, cupid's bow, and mouth width — identical to reference.
-- Cheekbone position and volume — identical to reference.
-- Facial oval and face silhouette — preserve natural contour.
-- Jawline shape and definition — identical to reference.
-- Chin shape and projection — identical to reference.
-- Age: preserve the subject's exact visible age — do not rejuvenate or age the face.
-- Ethnicity and natural skin undertone — do not generalize or Westernize features.
-- Natural face proportions — do not reinterpret for editorial aesthetics.
-- Face identity accuracy is MORE important than cinematic styling.
-- Do not beautify, idealize, or transform the person into a fashion-model archetype.
-- Preserve the exact face proportions and vertical facial structure.
-- Preserve natural cheek volume distribution and facial proportions from the reference image.
-- Avoid artificial facial softening or generalized beauty-face geometry.
-
-HAIR IDENTITY LOCK (copy exactly from reference — no exceptions):
-- Hairstyle and cut: identical shape, volume, and style direction as in reference.
-- Hair length: exact same length — do NOT grow longer, shorten, add layers, or alter structure.
-- Hair color: exact same natural color from reference — do NOT bleach, darken, add highlights, or change tone.
-- Hair texture: preserve natural texture from reference — straight, wavy, curly, fine, or thick as shown.
-- Do NOT restyle, reshape, or "improve" the hairstyle — keep it exactly as the person wears it.
-
-ALLOWED grooming (enhances without altering the person):
-- Style-appropriate makeup applied naturally over the real face.
-- Skin: healthy natural glow, premium cinematic light on skin — same person, better light.
-FORBIDDEN: changing facial anatomy, changing hairstyle or hair length, changing hair color,
-creating a fashion-model version of this face, smoothing away natural asymmetry,
-generalizing ethnic features, replacing the face with a different-looking person.`;
-
-  // [REALISM] — живость кожи, выразительность глаз, натуральная мимика.
-  // Противодействует эффекту манекена и CGI-рендера.
-  const realismBlock = `\
-REALISM (natural photo):
-- Eyes must be expressive and alive: realistic catchlights, natural wet sheen, visible depth and iris detail.
-- EYE CONTACT: subject looks directly into the camera with natural confident gaze. No looking away, no side glance.
-- NO SUNGLASSES OR EYEWEAR — eyes and gaze must be fully visible at all times.
-- Skin: healthy natural glow, warm cinematic light on skin — not grey, not dull, not washed out.
-- Expression: natural, human, emotionally present. Warm confident energy — not blank stare, not artificial smile.
-- Face vitality: the subject must look HEALTHY and ALIVE. Do NOT make the face tired, fatigued, older, or visually unwell.
-- Do NOT add wrinkles, aging lines, or fatigue shadows beyond what the reference shows.
-- Lighting: soft cinematic natural light with believable environmental shadows and realistic lens depth.
-- Final result must look like a real candid editorial photograph — not CGI, not a render, not a wax figure.`;
-
-  // [REAL PHOTOGRAPHY FEEL] — глобальная директива: ощущение настоящей дорогой фотосессии.
-  // Применяется ко всем стилям без исключения.
-  const realPhotographyBlock = `\
-REAL PHOTOGRAPHY FEEL (mandatory global directive):
-This image must feel like it was captured by a real professional photographer on a real photoshoot — not generated by AI.
-The viewer must sense: a real human being was photographed in a real moment.
-
-WHAT MUST BE PRESENT:
-- Captured candid moment: the subject feels caught mid-breath, mid-thought — alive and present.
-- Natural body tension: authentic weight distribution, relaxed muscles, subtle human asymmetry.
-- Breathing realism: the body feels like it exhales — no frozen stiffness, no mannequin rigidity.
-- Authentic posture: natural spine alignment, organic weight shift, a real person standing in a real space.
-- Natural skin response to lighting: realistic subsurface glow, gentle micro-shadows, visible skin texture — not airbrushed plastic.
-- Emotional realism: inner life radiates from the expression — a real emotional state, not a posed performance.
-- Imperfect human beauty: natural asymmetry, subtle life in the features — not hyper-corrected CGI.
-- Cinematic human depth: the subject has interiority, personality, presence beyond the frame.
-- Luxury magazine photography: Vogue / Harper's Bazaar / Condé Nast real photoshoot aesthetic.
-
-THE VIEWER MUST FEEL: "This was shot by an expensive real photographer — not generated by AI."
-
-FORBIDDEN:
-- Mannequin stiffness, doll-like frozen posture, AI doll energy.
-- Hyper-symmetrical hyper-smooth artificial perfection — looks generated, not photographed.
-- Fashion render energy: 3D CGI model aesthetic instead of a real human being.
-- Plastic skin without texture, airbrushed face without natural detail.
-- Empty eyes with no soul, no depth, no inner world.`;
-
-  // [FULL BODY FACE LOCK] — усиленный блок при full-body режиме.
-  // При дальней дистанции кадра лица дрейфуют к generic/doll. Этот блок предотвращает это.
-  const fullBodyFaceLockBlock = `\
-FULL BODY FACE IDENTITY LOCK (reinforced):
-In full-body framing, faces are rendered smaller and drift toward generic or doll-like appearance.
-This MUST be prevented. The face in full-body must be the same person as the reference photo.
-
-FACE AT FULL-BODY DISTANCE:
-- High facial consistency: the face must be recognizable as the exact same person from the reference.
-- Preserve exact eye spacing — inter-eye distance must match the reference at any frame scale.
-- Preserve exact eye shape, eye color, iris pattern — do not simplify or generalize.
-- Preserve exact eye placement within the face — vertical and horizontal position.
-- Preserve brow shape, arch, thickness, position — identical to reference.
-- Preserve nose shape, width, bridge, tip — do not soften at any size.
-- Preserve lip shape, fullness, cupid's bow — identical to reference.
-- Preserve cheekbone position and volume — identical to reference.
-- Preserve jaw shape and chin form — no softening at full-body scale.
-- Preserve face oval and facial silhouette — natural contour from reference.
-- Preserve the subject's exact age — do not rejuvenate the face.
-- Preserve ethnicity and natural skin undertone — do not generalize features.
-- Do not switch to a generic editorial-model face because the face is smaller in frame.
-
-BODY TYPE PRESERVATION:
-- Preserve the subject's natural body type and proportions from the reference photo.
-- Preserve realistic body structure — do not alter the person's actual build.
-- Preserve natural weight appearance — do not slim down or enlarge the body.
-- Head size: anatomically correct relative to body — standard human head-to-body ratio.
-- Shoulder width, waist, hip proportions: natural — do not distort or idealize.
-- Leg and torso proportions: realistic — no fashion-model elongation.
-- Body language: natural, elegant, grounded — not mannequin-stiff or doll-posed.
-
-ALLOWED:
-- Beautiful realistic skin, natural cinematic glow.
-- Style-appropriate makeup, elegant hairstyle.
-- Cinematic lighting that flatters without distorting.
-
-FORBIDDEN in full-body mode:
-- Tiny head: head rendered too small relative to body.
-- Face replacement: different-looking person's face due to smaller face size in frame.
-- Body slimming or body enlargement — preserve the real person's body type.
-- Unrealistic skinny waist, exaggerated slim body, oversized curves, fitness-model body swap.
-- Doll anatomy: plastic proportions, fake silhouette, porcelain skin.
-- Limb distortion: elongated legs, impossibly narrow waist, altered anatomy.
-- Mannequin appearance, body distortion, doll posture.`;
+  // identityBlock/realismBlock/realPhotographyBlock/fullBodyFaceLockBlock объединены
+  // в top-level IDENTITY_LOCK / FULL_BODY_IDENTITY_ADDENDUM / REALISM_AND_ANATOMY —
+  // см. определение выше (v11, устраняет 4-кратное дублирование identity-текста).
 
   // ── EDITORIAL БЛОКИ (только для взрослых business/luxury/fashion стилей) ──
 
@@ -952,138 +1028,38 @@ FASHION & INDIVIDUAL STYLE:
 - Full outfit should feel curated by a personal stylist — cohesive, intentional, beautifully chosen.
 - Premium but believable: real clothes, real person, real moment.`;
 
-  // [NATURAL PORTRAIT PRESENCE] — уверенная осанка без runway/walking энергии.
-  // Walking motion провоцировал уход лица в "fashion campaign human" геометрию.
-  const candorBlock = `\
-NATURAL PORTRAIT PRESENCE:
-- Natural relaxed posture with subtle asymmetry.
-- Calm confident presence.
-- Realistic portrait-session body language.
-- Subject may stand naturally or interact subtly with environment,
-  but should NOT appear to walk, stride, or perform runway movement.
-- Avoid exaggerated editorial motion or fashion-walk energy.`;
-
-  // ── PREMIUM EMOTIONAL DIRECTION БЛОКИ (editorial-only) ──────────────────────
-
-  const magnetismBlock = `\
-MAGNETIC PRESENCE:
-The woman feels emotionally powerful, calm and magnetic.
-She does not try to attract attention aggressively — her presence naturally draws it.
-Expression: confident, emotionally composed, subtle mystery, calm sensuality, quiet power, elegant restraint.
-The magnetism comes from eye contact, posture, silence, confidence, and cinematic emotional depth.
-Avoid: exaggerated seduction, influencer facial expressions, duck lips, artificial sexiness, emotionally empty fashion posing.`;
-
-  const femininityBlock = `\
-HIGH VALUE FEMININITY:
-The woman feels expensive, emotionally unavailable, elegant, self-sufficient, desired but unattainable.
-Luxury femininity is expressed through restraint, confidence, subtle emotion, graceful body language, premium styling, calm emotional control.
-Avoid: escort aesthetic, vulgar glamour, cheap luxury, nightclub energy, explicit sexuality, excessive body exposure.`;
-
-  const eyeContactBlock = `\
-EYE CONTACT & EMOTION:
-Eyes must feel alive, intelligent and emotionally present.
-Use: direct eye contact, calm observational gaze, cinematic candid moments, subtle emotional tension.
-Avoid: mannequin expressions, empty model stare, constant side-looking editorial poses, emotionless beauty shots.
-The viewer should feel: "she has an inner world."`;
-
-  const cinematicRealismBlock = `\
-CINEMATIC REALISM:
-Every image must feel like a frame from a premium cinematic universe — not an AI-generated fashion render.
-Preferred: realistic skin texture, natural asymmetry, believable movement, cinematic light, emotional realism, Vogue / Netflix luxury atmosphere.
-Avoid: overprocessed skin, plastic beauty, fake perfection, synthetic lighting, AI glamour clichés.`;
-
-  const bestVersionBlock = `\
-BEST VERSION — SAME PERSON (mandatory):
-Goal: show this exact person as they would look photographed by a luxury editorial team.
-NOT: generate someone who looks similar. NOT: change facial geometry to beautify.
-
-WHAT "BEST VERSION" MEANS:
-- Radiant skin: healthy warm glow from cinematic light — same face, better lighting.
-- Alert alive eyes: bright catchlights, natural depth, energetic direct gaze.
-- Professional makeup: editorial-appropriate, applied naturally over the real face.
-- Premium styling: beautiful outfit chosen for this person's coloring and archetype.
-- Cinematic light that flatters without distorting the real face.
-
-ACCEPTANCE CRITERION:
-The viewer must say: "This is ME, photographed by an expensive photographer."
-NOT: "This is a person who looks like me."
-NOT: "This looks like a random photo in a café."
-
-FORBIDDEN:
-- Making the face look tired, fatigued, or exhausted.
-- Making the skin look grey, dull, or washed out.
-- Making the person look older or more worn than the reference.
-- Adding wrinkles or age effects beyond the reference photo.
-- Empty, blank, or dead-eye stare.
-- Copying the background, furniture, or location from the reference photo.`;
+  // candorBlock/magnetismBlock/femininityBlock/eyeContactBlock/cinematicRealismBlock/
+  // bestVersionBlock объединены в top-level presenceBlock + REALISM_AND_ANATOMY +
+  // IDENTITY_LOCK's acceptance test (v11) — четыре block'а почти дословно повторяли
+  // "не CGI / не пластик / живые глаза", а candorBlock's "не ходить" теперь снят:
+  // ACTIONS_FULLBODY явно описывает "caught mid-step, walking naturally" как
+  // допустимое действие для full-body композиции.
 
   const antiCheapBlock = `\
 ANTI-CHEAP LUXURY:
 Luxury must feel quiet, restrained, editorial, cinematic, emotionally intelligent, timeless.
 Avoid: flashy rich aesthetics, fake billionaire visuals, gold overload, casino luxury, cheap glamour, influencer posing, fast fashion energy, hypersexual styling.`;
 
+  // v11: описания локаций сжаты в однострочники (было ~2760 символов, стало ~1250) —
+  // название и материал/свет сохранены, декоративные повторы убраны.
   const premiumLocationBlock = `\
-LOCATION — MANDATORY SELECTION (choose exactly one):
-This photoshoot takes place in one of these twelve approved locations only.
-Select the one that best serves this style and feels most cinematic for this person.
-No other location exists. No other background is possible.
+LOCATION — MANDATORY SELECTION (choose exactly one, no other location exists):
+1. Luxury penthouse — floor-to-ceiling glass, Manhattan/city skyline, warm amber light, high above the city.
+2. Five-star hotel suite — marble floors, tall windows, golden light, timeless architectural luxury.
+3. Vogue editorial studio — seamless grey/cream/deep-tone backdrop, dramatic controlled light.
+4. Luxury business lounge — private members club, dark leather, brass, warm light, no other guests.
+5. Private jet interior — cream leather seats, oval windows, clouds outside, warm golden cabin light.
+6. Yacht deck — Mediterranean or modern waterfront, ocean horizon, golden hour, chrome railings.
+7. Rooftop skyline terrace — city panorama at golden hour/twilight, glass or concrete railing.
+8. Designer architectural interior — sculptural space, marble/terrazzo, high ceilings, no clutter.
+9. Premium fashion campaign set — bold backdrop or architectural set, editorial dramatic light.
+10. Luxury Manhattan office — floor-to-ceiling glass, NY skyline, executive power atmosphere.
+11. Milan fashion district — cobblestone piazza, luxury boutique facades, golden afternoon light.
+12. Paris luxury street — Haussmann stone architecture, golden afternoon light, soft bokeh.
 
-1. LUXURY PENTHOUSE
-   Floor-to-ceiling glass walls, Manhattan or city skyline panorama, architectural interior,
-   warm amber ambient light, premium furniture, high altitude above the city.
-
-2. FIVE-STAR HOTEL SUITE
-   Grand marble floors, floor-to-ceiling windows, golden editorial light,
-   premium soft furnishings, architectural luxury details, timeless elegance.
-
-3. VOGUE EDITORIAL STUDIO
-   Seamless professional backdrop (grey, cream, or deep tone), dramatic controlled light,
-   high-fashion campaign atmosphere, shallow depth of field, editorial precision.
-
-4. LUXURY BUSINESS LOUNGE
-   Private members club, dark leather, brass details, architectural warm lighting,
-   premium hospitality space, quiet exclusivity, no other guests visible.
-
-5. PRIVATE JET INTERIOR
-   Plush cream or tan leather seats, oval cabin windows with clouds and sky outside,
-   warm golden cabin light, polished wood trim, above-the-clouds luxury atmosphere.
-
-6. YACHT DECK
-   Open Mediterranean or modern waterfront, ocean horizon, warm golden hour light,
-   polished chrome railings, luxury deck surface, blue sky or sunset behind.
-
-7. ROOFTOP SKYLINE TERRACE
-   Open rooftop, city panorama at golden hour or twilight, architectural concrete or glass railing,
-   warm directional evening light, urban skyline glowing in background.
-
-8. DESIGNER ARCHITECTURAL INTERIOR
-   Sculptural modern space, marble or terrazzo floors, high ceilings, dramatic architectural light,
-   minimal luxury — no clutter, no domestic objects, pure premium form.
-
-9. PREMIUM FASHION CAMPAIGN SET
-   High-end commercial photoshoot staging, bold color backdrop or architectural set,
-   editorial dramatic lighting, Vogue / Harper's Bazaar campaign atmosphere.
-
-10. LUXURY MANHATTAN OFFICE
-    Floor-to-ceiling glass, New York city skyline, executive space,
-    premium design details, power atmosphere, city lights or daytime sky panorama.
-
-11. MILAN FASHION DISTRICT
-    Elegant cobblestone street or piazza, luxury boutique facades (Gucci, Versace, Armani),
-    golden afternoon light, refined European atmosphere, shallow depth of field on background.
-
-12. PARIS LUXURY STREET
-    Haussmann stone architecture, golden warm afternoon light, elegant refined atmosphere,
-    premium European urban luxury, soft bokeh background, timeless Parisian sophistication.
-
-QUALITY STANDARD:
-Every element of the image — light source, architecture, surface material, atmosphere —
-must signal premium quality before the viewer consciously notices anything else.
-This image is a commercial brand photoshoot worth ₽50,000–100,000.
-The person is not visiting this location. She BELONGS here. She owns this space.
-
-LIGHTING (mandatory): 85mm lens, shallow depth of field, cinematic directional light.
-Golden hour / editorial studio / dramatic architectural light. Magazine cover quality.`;
+QUALITY STANDARD: every element — light source, architecture, surface, atmosphere — signals premium
+quality before the viewer consciously notices anything else. She belongs in this space, not visiting it.
+LIGHTING: 85mm lens, shallow depth of field, cinematic directional light. Magazine quality.`;
 
   const antiRepetitionBlock = `\
 ANTI-REPETITION:
@@ -1643,94 +1619,65 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     : '';
   const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}${genderAvoidExtra}${menAvoidExtra}`;
 
+  // Только social_portrait и bw_portrait сохраняют строгую фронтальность головы.
+  // Причина: v7 в истории коммитов этого проекта явно зафиксировал регресс
+  // identity при развороте головы для social_portrait и откатил его ("revert
+  // corpus 3/4 (pulled head turn), energy via gaze not angle") — это единственная
+  // подтверждённая на практике чувствительная точка. bw_portrait — тот же тип
+  // продукта (точный headshot, не editorial-фотосессия), поэтому для него
+  // применена та же осторожность по умолчанию, хотя отдельно не тестировалась.
+  // Весь остальной каталог (business_elite, МОНАКО, БОГИНЯ, РОМАНТИКА, ДИКАЯ
+  // ПРИРОДА, old money, wild luxury, goddess, elite sport, summer/future city)
+  // получает полную вариативность композиции ниже — профиль, три четверти,
+  // взгляд в сторону — это и была главная причина «стоит по центру, смотрит
+  // прямо в камеру» из исходного запроса.
+  const isFrontalLocked = isCleanPortrait;
+
+  // Единая точка выбора "живых" элементов фотосессии — по одному значению на
+  // генерацию каждый, не весь список целиком (дёшево по символам).
+  const characterStateLine = isEditorial ? pickCharacterState(isMale) : '';
+  const envInteractionLine = pickEnvironmentInteraction(!isCleanPortrait);
+  // ACTION/COMPOSITION — не для MEN (свой pickMenPose уже несёт оба измерения)
+  // и не для social_portrait (свой _spPose внутри socialPortraitBlock, уже
+  // проверенный v6-v10). Получают: обычный editorial + bw_portrait.
+  const wantsGenericActionComposition = isEditorial && !isMenCinematic && !isSocialPortrait;
+  const actionLine = wantsGenericActionComposition ? pickAction(isFullBody, isFrontalLocked) : '';
+  const compositionLine = wantsGenericActionComposition ? pickComposition(isFullBody, isFrontalLocked) : '';
+
   return [
-    // ── Глобальные блоки ──────────────────────────────────────────────────────
-    // Social portrait: identity is the absolute top priority — stated first so the model
-    // reads it before any other instruction.
-    // Identity-first: глобально для ВСЕХ стилей (не только social_portrait).
-    `ABSOLUTE PRIORITY — READ THIS FIRST:
-Identity preservation is the highest priority.
-Recognizability is more important than beauty.
-If there is any conflict between style and identity — preserve the face. Always.
-
-DO NOT MODIFY under any circumstances:
-- jaw width
-- chin shape
-- lower face proportions
-- eye shape
-- eye color
-- eye spacing
-- nose shape and proportions
-- age appearance
-- facial asymmetry
-
-The person must remain immediately recognizable as the same individual from the reference photo.
-A less beautiful but recognizable result is better than a more beautiful but unrecognizable one.
-
-LOWER FACE — MATCH THE REFERENCE EXACTLY (read carefully):
-You consistently make a mistake here. You preserve the eyes and nose but you redraw the lower
-third of the face toward a generic shape — EITHER slimming it into a V-shape, OR widening and
-rounding it. BOTH are wrong. Copy the lower face EXACTLY from the reference photo, no drift either way:
-- Face length & width: EXACTLY as the reference — not longer, not shorter, not wider, not narrower.
-- Keep the natural elongated oval and the high cheekbone position exactly as in the reference.
-- Cheek volume: exactly as the reference — do NOT add fullness/roundness, do NOT hollow or sculpt.
-- Jawline & chin: exactly the reference contour — do NOT sharpen into a model jaw, and do NOT
-  broaden or round it either.
-The reference face is the single source of truth. Do not beautify, do not slim, do not widen.
-Face shape fidelity (exact match) is more important than any beauty direction.
-
-HEAD ANGLE: keep the face close to the same angle as in the reference photo — frontal or near-frontal.
-Avoid strong head turns, profiles, or extreme tilts: rendering the face at a steep angle distorts identity.`,
-    '',
     referenceBlock,
     '',
-    identityBlock,
+    IDENTITY_LOCK,
     '',
-    // MEN: явный запрет макияжа — переопределяет "makeup allowed" строку из identityBlock
+    // MEN: явный запрет макияжа — переопределяет нейтральную формулировку gender-блока
     ...(isMenCinematic ? [menGroomingBlock, ''] : []),
-    // MEN: мужская идентичность без prescription одежды (одежда в stylePrompt)
     isMenCinematic ? menGenderBlock : genderPositiveBlock,
     '',
-    // fullBodyFaceLock: всегда для MEN (все 4 сцены — полный рост) + при isFullBody
-    ...((input.isFullBody || isMenCinematic) ? [fullBodyFaceLockBlock, ''] : []),
-    // BODY SHAPE LOCK: всегда активен — запрещает изменения веса/фигуры/возраста/лица.
-    // Позиционирован ДО пользовательских пожеланий — identity имеет наивысший приоритет.
-    BODY_SHAPE_LOCK,
-    '',
-    realismBlock,
-    '',
-    // MEN: замена Vogue/Harper's Bazaar на GQ/National Geographic
-    isMenCinematic ? menRealPhotographyBlock : realPhotographyBlock,
+    ...((isFullBody || isMenCinematic) ? [FULL_BODY_IDENTITY_ADDENDUM, ''] : []),
+    REALISM_AND_ANATOMY,
     '',
     // ── Editorial-only блоки ──────────────────────────────────────────────────
     ...(isEditorial
       ? isMenCinematic
         ? [
             // MEN: 100% мужские editorial блоки.
-            // menEditorialBlock заменяет editorialBlock (убраны Vogue/Harper's Bazaar).
-            // menCandorBlock заменяет candorBlock (убран запрет ходьбы/движения).
-            // Без женских: aura, luxuryAdapt, fashion, magnetism, femininity.
             menEditorialBlock, '',
             menCandorBlock, '',
-            eyeContactBlock, '',
-            cinematicRealismBlock, '',
+            menRealPhotographyBlock, '',
             antiRepetitionBlock, '',
             menCinematicBlock, '',
             ...(isMasterOfLife ? [menLionBlock, ''] : []),
+            `CHARACTER: ${characterStateLine}`, '',
+            `ENVIRONMENT INTERACTION: ${envInteractionLine}`, '',
           ]
         : [
-            // Стандартные editorial блоки (не изменились)
+            // Стандартные editorial блоки
             ...(!isCleanPortrait ? [auraBlock, ''] : []),
             ...(!isCleanPortrait ? [luxuryAdaptBlock, ''] : []),
             editorialBlock, '',
             ...(!isCleanPortrait ? [fashionBlock, ''] : []),
-            candorBlock, '',
-            ...(!isCleanPortrait ? [magnetismBlock, ''] : []),
-            ...(!isCleanPortrait && !isMale ? [femininityBlock, ''] : []),
-            eyeContactBlock, '',
-            cinematicRealismBlock, '',
+            ...(!isCleanPortrait && !isMale ? [presenceBlock, ''] : []),
             ...(!isCleanPortrait ? [antiCheapBlock, ''] : []),
-            ...(!isCleanPortrait ? [bestVersionBlock, ''] : []),
             antiRepetitionBlock, '',
             ...(!isCleanPortrait ? [premiumLocationBlock, ''] : []),
             ...(isSummerCity ? [summerCityBlock, ''] : []),
@@ -1741,11 +1688,18 @@ Avoid strong head turns, profiles, or extreme tilts: rendering the face at a ste
             ...(isEliteSport ? [eliteSportBlock, ''] : []),
             ...(isSocialPortrait ? [socialPortraitBlock, ''] : []),
             ...(isBWPortrait ? [bwPortraitBlock, ''] : []),
+            `CHARACTER: ${characterStateLine}`, '',
+            `ENVIRONMENT INTERACTION: ${envInteractionLine}`, '',
+            ...(actionLine ? [`ACTION: ${actionLine}`, ''] : []),
+            ...(compositionLine ? [`COMPOSITION: ${compositionLine}`, ''] : []),
           ]
-      : [childLifestyleBlock, '', ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : [])]),
+      : [
+          childLifestyleBlock, '',
+          ...(isLittleCeoGirl ? [littleCeoGirlBlock, ''] : []),
+          `ENVIRONMENT INTERACTION: ${envInteractionLine}`, '',
+          lifestyleFramingHint,
+        ]),
     // ── Состав и технические параметры ───────────────────────────────────────
-    // MEN: кадрирование описано в stylePrompt — fullBodyHint не нужен и будет конфликтовать
-    ...(isMenCinematic ? [] : [fullBodyHint]),
     // OUTFIT + PERSONAL COLOR ADAPTATION:
     ...(isMenCinematic
       ? [`OUTFIT: ${pickMenWardrobe(input.stylePrompt)} — wear exactly as described in the scene, no substitution.`]
@@ -1755,13 +1709,13 @@ Avoid strong head turns, profiles, or extreme tilts: rendering the face at a ste
             buildColorInstruction(filteredWish),
           ]
         : []),
-    // POSE:
+    // POSE — общая физичность позы (дополняет ACTION/COMPOSITION выше, не заменяет):
     // P2: женские editorial стили используют pickFemaleEditorialPose() — она возвращает
     // style-specific позы для БОГИНЯ/МОНАКО/РОМАНТИКА/ДИКАЯ ПРИРОДА, иначе — общий пул.
     ...(isMenCinematic
       ? [`POSE: ${pickMenPose(input.stylePrompt)} — authentic, alive, cinematic. Not stiff, not staged.`]
       : isEditorial && !isCleanPortrait
-        ? [`POSE: ${pickFemaleEditorialPose(input.stylePrompt, input.isFullBody)} — feel candid, alive, editorial. Not stiff, not staged, not runway.`]
+        ? [`POSE: ${pickFemaleEditorialPose(input.stylePrompt, isFullBody)} — feel candid, alive, editorial. Not stiff, not staged, not runway.`]
         : []),
     // LIGHTING / ATMOSPHERE:
     ...(isMenCinematic
@@ -1776,7 +1730,7 @@ Avoid strong head turns, profiles, or extreme tilts: rendering the face at a ste
     input.stylePrompt ? `Style direction: ${input.stylePrompt}` : '',
     // [USER STYLING NOTE] — пользовательские пожелания, прошедшие backend-фильтр.
     // filteredWish уже очищен от запросов на изменение тела/лица/возраста.
-    // BODY_SHAPE_LOCK выше имеет приоритет над этим блоком.
+    // IDENTITY_LOCK выше имеет приоритет над этим блоком.
     filteredWish ? `User styling note (accessories/clothing/background/lighting only — body and identity preserved): ${filteredWish}` : '',
     '',
     // ── Глобальный AVOID ──────────────────────────────────────────────────────
