@@ -152,17 +152,6 @@ router.post('/single', async (req, res) => {
     }
     const stylePrompt = styleRows[0].prompt as string;
 
-    // social_portrait — портрет для аватарки, продукт не поддерживает полный рост
-    // (см. COMPOSITIONS_SOCIAL_PORTRAIT в prompts.ts — там только close-up/waist-up).
-    // Отклоняем ДО списания кредита: фронт уже скрывает этот тумблер для этого
-    // стиля, но прямой API-запрос его не видит — нужна серверная защита тоже.
-    if (styleId === 'social_portrait' && body.isFullBody) {
-      return res.status(400).json({
-        error: 'Стиль «Образ для соцсетей» — это портрет крупным планом, полный рост для него не поддерживается.',
-        code: 'full_body_not_supported',
-      });
-    }
-
     // === 3. Atomic debit + create generation row ===
     const generationId = crypto.randomUUID();
     const debitKey = `debit_gen_${generationId}`;

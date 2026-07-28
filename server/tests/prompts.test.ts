@@ -244,21 +244,54 @@ test('social_portrait no longer contains the old conflicting bans (anti-beauty, 
   assert.doesNotMatch(p, /NO three-quarter face angle/);
 });
 
-test('social_portrait composition allows safe variability (turn/tilt/off-center/gaze-past-camera) across repeated calls, but never true profile or full body', () => {
+test('social_portrait PORTRAIT mode allows safe variability (turn/tilt/off-center/gaze-past-camera) across repeated calls, but never true profile or full-body framing', () => {
   withSeededRandom(7, () => {
     const compositions = new Set<string>();
     for (let i = 0; i < 40; i++) {
-      const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+      const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female', isFullBody: false });
       const c = p.match(/^COMPOSITION: (.+)$/m)?.[1] ?? '';
       compositions.add(c);
       assert.doesNotMatch(c, /\bprofile\b/i, `social_portrait composition leaked a profile shot: "${c}"`);
-      assert.doesNotMatch(c, /full.?body/i, `social_portrait composition leaked full-body framing: "${c}"`);
+      assert.doesNotMatch(c, /full.?body/i, `portrait-mode composition leaked full-body framing: "${c}"`);
       assert.doesNotMatch(c, /extreme/i, `social_portrait composition leaked an extreme angle: "${c}"`);
     }
     assert.ok(compositions.size >= 3, `expected safe variability across 40 draws, got: ${[...compositions]}`);
     const hasBoundedTurn = [...compositions].some((c) => /three-quarter|tilt|off-center|past the (lens|camera)/i.test(c));
     assert.ok(hasBoundedTurn, `expected at least one bounded turn/tilt/off-center/gaze-past-camera composition, got: ${[...compositions]}`);
   });
+});
+
+// v14: full body reinstated for social_portrait (product decision — social media
+// covers posts/Reels/personal brand, not only an avatar close-up). FULL BODY mode
+// must use its own pool (COMPOSITIONS_SOCIAL_PORTRAIT_FULLBODY), never leaking
+// close-up/waist-up wording from the portrait pool.
+test('social_portrait FULL BODY mode uses its own living composition pool, distinct from portrait mode, with no close-up/full-body contradiction', () => {
+  withSeededRandom(70, () => {
+    const compositions = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female', isFullBody: true });
+      const c = p.match(/^COMPOSITION: (.+)$/m)?.[1] ?? '';
+      compositions.add(c);
+      assert.match(c, /full body in frame/i, `full-body composition should describe full body framing: "${c}"`);
+      assert.doesNotMatch(c, /close-up|waist-up/i, `full-body composition contradicts itself with close-up/waist-up wording: "${c}"`);
+      assert.doesNotMatch(c, /\bprofile\b/i, `social_portrait full-body composition leaked a profile shot: "${c}"`);
+    }
+    assert.ok(compositions.size >= 3, `expected safe variability across 40 draws, got: ${[...compositions]}`);
+  });
+});
+
+test('social_portrait full-body generation preserves identity/anatomy/beauty standard and carries the full-body-specific framing guard', () => {
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female', isFullBody: true });
+  assert.match(p, /FULL-BODY FRAMING \(social_portrait\)/);
+  assert.match(p, /both feet and both hands fully/);
+  assert.match(p, /never cropped at the ankles or wrists/);
+  assert.match(p, /avoid a stiff, static mannequin stance/i);
+  assert.match(p, /avoid an extreme head turn or a true side profile/i);
+  assert.match(p, /FULL-BODY DISTANCE \(reinforcement\)/, 'the shared full-body identity addendum must still apply');
+  assert.match(p, /BEAUTY & FRESHNESS/);
+  assert.match(p, /professional, natural-looking beauty retouching/);
+  assert.match(p, /^ACTION: /m, 'living action must still be present for full-body social_portrait');
+  assert.match(p, /^CHARACTER: /m);
 });
 
 test('social_portrait identity lock (bone structure, geometry, recognizability) is preserved unchanged', () => {
@@ -333,6 +366,7 @@ test('buildPrompt output stays under the 27000-char safety cap for realistic wor
       buildPrompt({ styleId: 'business_elite', stylePrompt: BUSINESS_ELITE, genderMode: 'male', isFullBody: true }),
       buildPrompt({ styleId: 'master_of_life', stylePrompt: MASTER_OF_LIFE, genderMode: 'male', isFullBody: true }),
       buildPrompt({ styleId: 'kids_ice_grace', stylePrompt: KIDS_ICE_GRACE, genderMode: 'male', isFullBody: true }),
+      buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female', isFullBody: true }),
     ];
     for (const p of cases) {
       assert.ok(p.length < 27000, `expected < 27000 chars, got ${p.length}`);

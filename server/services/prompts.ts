@@ -1015,7 +1015,9 @@ const COMPOSITIONS_STANDARD_FULLBODY: readonly string[] = [
 // profile and strong three-quarter turns). This pool is a deliberately narrower
 // middle ground: bounded head turn/tilt and off-center framing (the "safe
 // variability" the owner asked for), but never true profile, never an extreme
-// angle, never full body — the specific things that regressed identity before.
+// angle — the specific things that regressed identity before. Portrait crop
+// only — full body has its own pool below (v14, product decision: social
+// media covers posts/Reels/personal brand, not just an avatar close-up).
 const COMPOSITIONS_SOCIAL_PORTRAIT: readonly string[] = [
   'Direct gaze into the lens, shoulders turned slightly to one side — a natural, unposed angle.',
   'Head turned gently into a soft three-quarter angle, eyes still finding the camera.',
@@ -1025,6 +1027,37 @@ const COMPOSITIONS_SOCIAL_PORTRAIT: readonly string[] = [
   'Close-up crop, face turned a few degrees off frontal, direct warm eye contact.',
   'Waist-up crop, one shoulder slightly forward, head softly turned toward the lens.',
 ];
+
+// ── SOCIAL PORTRAIT — FULL BODY COMPOSITION (v14) ────────────────────────────
+// Reversal of the earlier "social_portrait has no full body" product decision —
+// social media covers posts/Reels/personal brand, not only an avatar close-up.
+// Same bounded-turn philosophy as the portrait pool above (never true profile,
+// never an extreme angle), but for a full-length frame: living, in-motion
+// poses rather than a static full-length mannequin stand. SOCIAL_PORTRAIT_
+// FULLBODY_ADDENDUM (below) carries the shared anatomy/cropping/frontality
+// guards so they aren't repeated in every line here.
+const COMPOSITIONS_SOCIAL_PORTRAIT_FULLBODY: readonly string[] = [
+  'Confident step toward the camera, full body in frame, caught mid-stride.',
+  'Body turned three-quarters, face gently turned back toward the camera, full body in frame.',
+  'A natural pause mid-motion, full body in frame, as if caught between one step and the next.',
+  'Light, natural support against a table, wall, or chair, full body in frame, relaxed unposed stance.',
+  'One leg slightly forward, weight naturally shifted onto it, full body in frame, grounded stance.',
+  'Direct gaze into the lens — or resting just past it — full body in frame, calm confident presence.',
+  'Frame slightly off-center, full body in frame, natural asymmetry rather than a centred stance.',
+];
+
+// Общие для всех COMPOSITIONS_SOCIAL_PORTRAIT_FULLBODY строк ограничения —
+// не дублируются в каждой строке пула выше. Пункты 4/5 из ТЗ (что сохранять /
+// что запретить именно для full-body social_portrait).
+const SOCIAL_PORTRAIT_FULLBODY_ADDENDUM = `\
+FULL-BODY FRAMING (social_portrait): the entire body is in frame — both feet and both hands fully
+visible, never cropped at the ankles or wrists. At this distance the face is smaller but must stay
+clear, sharp and instantly recognizable — do not let it soften, blur, or generalize. Hands and
+fingers stay anatomically correct, body proportions natural — no elongation, no doll-like limbs.
+Clothing sits and fits the body naturally, following the same beauty and styling standard as the
+portrait crop. Avoid a stiff, static mannequin stance; avoid passport-style straight-on frontality;
+avoid an extreme head turn or a true side profile — the face stays gently toward the camera, never
+fully away from it.`;
 
 function pickComposition(isFullBody: boolean, isCleanPortrait: boolean): string {
   if (isCleanPortrait) {
@@ -1795,10 +1828,12 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
   // Не для MEN (свой pickMenPose уже несёт оба измерения).
   const wantsGenericAction = isEditorial && !isMenCinematic;
   const actionLine = wantsGenericAction ? pickAction(isFullBody, isBWPortrait) : '';
-  // COMPOSITION — social_portrait получает свой узкий "safe variability" пул;
-  // bw_portrait и обычный editorial — прежний механизм без изменений.
+  // COMPOSITION — social_portrait получает свой узкий "safe variability" пул,
+  // с отдельным full-body вариантом (v14: полный рост снова поддерживается —
+  // соцсети это не только аватарка); bw_portrait и обычный editorial — прежний
+  // механизм без изменений.
   const compositionLine = isSocialPortrait
-    ? pickFromArray(COMPOSITIONS_SOCIAL_PORTRAIT)
+    ? pickFromArray(isFullBody ? COMPOSITIONS_SOCIAL_PORTRAIT_FULLBODY : COMPOSITIONS_SOCIAL_PORTRAIT)
     : (isEditorial && !isMenCinematic)
       ? pickComposition(isFullBody, isFrontalLocked)
       : '';
@@ -1817,6 +1852,7 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     isEditorial ? (isMenCinematic ? menGenderBlock : genderPositiveBlock) : buildChildSubjectBlock(input.genderMode),
     '',
     ...((isFullBody || isMenCinematic) ? [FULL_BODY_IDENTITY_ADDENDUM, ''] : []),
+    ...(isSocialPortrait && isFullBody ? [SOCIAL_PORTRAIT_FULLBODY_ADDENDUM, ''] : []),
     REALISM_AND_ANATOMY,
     '',
     // ── Editorial-only блоки ──────────────────────────────────────────────────

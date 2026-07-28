@@ -1,7 +1,10 @@
 // Regression tests from the full-catalog audit (2026-07-28), updated after the
 // fix pass for the two FAIL findings (scandinavian_minimal misclassification,
-// adult gender-block leaking into kids styles) plus the two WARNING findings
-// (social_portrait full-body, bw_portrait full-body composition variety).
+// adult gender-block leaking into kids styles) and the bw_portrait WARNING
+// (full-body composition variety). The social_portrait "no full body" WARNING
+// fix was itself reversed the same day — full body is a supported product
+// decision again (social media = posts/Reels/personal brand, not just an
+// avatar) — see section 8 below for the reinstated full-body pool/tests.
 // Run: `npm test --prefix server`
 //
 // Style-prompt fixtures below are verbatim copies of the real production DB
@@ -216,21 +219,53 @@ test('FIXED: bw_portrait full-body compositions now vary (no longer a single sta
 });
 
 // ---------------------------------------------------------------------------
-// 8. FIXED (audit WARNING): social_portrait doesn't support full body — the
-//    frontend toggle is now hidden for this style, and the backend rejects
-//    isFullBody:true for it with a clear message, BEFORE the credit debit.
+// 8. REVERSED (product decision, 2026-07-28): social_portrait full body was
+//    briefly disallowed (audit WARNING fix), then reinstated — social media
+//    covers posts/Reels/personal brand, not only an avatar close-up. This
+//    section replaces the old "reject full body" tests with their opposite:
+//    full body must work end-to-end again, with its own composition pool.
 //    No DI-testable Express harness exists for routes/generation.ts yet (it
 //    imports the real db pool directly, unlike routes/payment.ts's factory
-//    pattern), so this is a source-level regression guard: the reject clause
-//    must exist and must appear before the debit transaction in the file.
+//    pattern), so the route-level checks here are source-level regression
+//    guards, same technique as elsewhere in this file.
 // ---------------------------------------------------------------------------
 
-test('FIXED: generation.ts rejects social_portrait + isFullBody before the credit debit transaction', () => {
+test('REVERSED: generation.ts no longer rejects social_portrait + isFullBody — the old guard and its error code are gone', () => {
   const src = fs.readFileSync(path.join(__dirname, '../routes/generation.ts'), 'utf8');
-  const guardIdx = src.indexOf("styleId === 'social_portrait' && body.isFullBody");
+  assert.doesNotMatch(src, /full_body_not_supported/);
+  assert.doesNotMatch(src, /styleId === 'social_portrait' && body\.isFullBody/);
+});
+
+test('credit debit still runs unconditionally right after style resolution — no residual per-style bypass left behind by the reverted guard', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../routes/generation.ts'), 'utf8');
+  const marker = 'const stylePrompt = styleRows[0].prompt as string;';
+  const styleIdx = src.indexOf(marker);
   const debitIdx = src.indexOf('Atomic debit + create generation row');
-  assert.ok(guardIdx !== -1, 'full_body_not_supported guard not found in generation.ts');
-  assert.ok(debitIdx !== -1, 'debit transaction marker not found in generation.ts');
-  assert.ok(guardIdx < debitIdx, 'the social_portrait full-body guard must run before the credit debit transaction');
-  assert.match(src, /full_body_not_supported/);
+  assert.ok(styleIdx !== -1 && debitIdx !== -1, 'expected markers not found in generation.ts');
+  const between = src.slice(styleIdx + marker.length, debitIdx);
+  assert.doesNotMatch(between, /if\s*\(/, `unexpected conditional between style resolution and credit debit: ${JSON.stringify(between)}`);
+});
+
+test('REVERSED: StudioScreen.tsx shows the "Во весь рост" toggle for social_portrait again (no style-specific exclusion left in the JSX condition)', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../src/components/screens/StudioScreen.tsx'), 'utf8');
+  assert.doesNotMatch(src, /selectedStyleId !== 'social_portrait'/);
+  assert.match(src, /!isPairMode && studioTab !== 'together' && studioTab !== 'male' && \(/,
+    'expected the original (pair/male-only) toggle-visibility condition, with the social_portrait exclusion removed');
+});
+
+test('social_portrait full body: own COMPOSITIONS_SOCIAL_PORTRAIT_FULLBODY pool is wired in, portrait mode is untouched', () => {
+  const portraitCompositions = new Set<string>();
+  const fullBodyCompositions = new Set<string>();
+  withSeededRandom(9300, () => {
+    for (let i = 0; i < 20; i++) {
+      const pPortrait = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_REAL_PROMPT, genderMode: 'female', isFullBody: false });
+      const pFull = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_REAL_PROMPT, genderMode: 'female', isFullBody: true });
+      portraitCompositions.add(pPortrait.match(/^COMPOSITION: (.+)$/m)?.[1] ?? '');
+      fullBodyCompositions.add(pFull.match(/^COMPOSITION: (.+)$/m)?.[1] ?? '');
+    }
+  });
+  // The two pools must never overlap — proves each mode draws from its own pool.
+  const overlap = [...portraitCompositions].filter((c) => fullBodyCompositions.has(c));
+  assert.equal(overlap.length, 0, `portrait and full-body composition pools must not overlap, found: ${overlap}`);
+  assert.ok(fullBodyCompositions.size >= 2, 'expected full-body composition variety');
 });
