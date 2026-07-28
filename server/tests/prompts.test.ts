@@ -178,12 +178,103 @@ test('bw_portrait (clean, frontal-locked by design) never renders profile or thr
   });
 });
 
-test('social_portrait keeps its own proven frontal HEAD ANGLE rule untouched and gets no separate ACTION/COMPOSITION lines', () => {
-  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: '[PREMIUM INFLUENCER PORTRAIT] sample', genderMode: 'female' });
-  assert.match(p, /HEAD ANGLE — CRITICAL FOR IDENTITY/);
-  assert.match(p, /NO head turn, NO head tilt/);
-  assert.doesNotMatch(p, /^ACTION: /m);
-  assert.doesNotMatch(p, /^COMPOSITION: /m);
+// ---------------------------------------------------------------------------
+// 4b. social_portrait — v12 living beauty workflow (connects it to the same
+//     IDENTITY_LOCK/CHARACTER/ACTION/ENVIRONMENT INTERACTION/negative-prompt
+//     machinery as the rest of the catalog, instead of its own frozen,
+//     anti-beauty, frontal-locked block).
+// ---------------------------------------------------------------------------
+
+// Real production stylePrompt (server/db/migrations/020_fix_missing_styles.sql).
+// Deliberately using the REAL text, not a short stub: it contains "home workspace",
+// which is exactly what tripped the LIFESTYLE_KEYWORDS false-positive this suite
+// would have caught had a test like this existed before.
+const SOCIAL_PORTRAIT_PROMPT = `[PREMIUM INFLUENCER PORTRAIT]
+Modern natural lifestyle portrait — authentic, warm, effortlessly expensive.
+
+Setting: sunlit Scandinavian apartment with white walls and warm oak details, soft beautiful window light streaming across clean surfaces; OR a stylish city specialty coffee shop with natural bright daylight and clean neutral background; OR an airy modern home workspace with indoor greenery, soft light, minimal premium decor.
+
+Styling: quality everyday premium wear — smart casual, tasteful neutrals, wearable real clothing. Natural polished makeup. Clean natural hairstyle — not editorial-styled.
+
+Expression: warm confident presence — genuine smile or calm approachable energy. Real, alive, emotionally present. Not blank model stare, not performative beauty shot.
+
+FORBIDDEN: Vogue editorial aesthetic, luxury mansion interior, grand European villa, fashion campaign energy, dramatic cinematic lighting, evening glamour, yacht or resort backgrounds, staged runway posing, extreme makeup, fantasy or cosplay elements.`;
+
+test('regression: social_portrait is correctly classified as editorial even though its real stylePrompt contains a LIFESTYLE_KEYWORDS false-positive ("home workspace")', () => {
+  // Before the styleId safety net, detectIsEditorial() silently returned false here
+  // (matched 'home' from LIFESTYLE_KEYWORDS), which would have routed social_portrait
+  // into the child/family lifestyle branch instead of the editorial one.
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+  assert.match(p, /^CHARACTER: .+$/m);
+  // If detectIsEditorial() had misfired, buildPrompt() would have fallen into the
+  // child/family lifestyle branch instead — this text is that branch's real marker.
+  assert.doesNotMatch(p, /CHILD EMOTION & CINEMATIC LIFE/);
+});
+
+test('social_portrait now uses the main buildPrompt() machinery: IDENTITY_LOCK, CHARACTER, ACTION, ENVIRONMENT INTERACTION, and its own SOCIAL COMPOSITION line', () => {
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+  assert.match(p, /IDENTITY LOCK — HIGHEST PRIORITY/);
+  assert.match(p, /^CHARACTER: .+$/m);
+  assert.match(p, /^ACTION: .+$/m);
+  assert.match(p, /^ENVIRONMENT INTERACTION: .+$/m);
+  assert.match(p, /^COMPOSITION: .+$/m);
+});
+
+test('social_portrait prompt includes flattering beauty language (retouching, freshness, makeup, hair styling) and pulls in the shared buildNegativePrompt()', () => {
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+  assert.match(p, /BEAUTY & FRESHNESS/);
+  assert.match(p, /professional, natural-looking beauty retouching/);
+  assert.match(p, /subtly younger/);
+  assert.match(p, /natural-looking makeup/);
+  assert.match(p, /hair styling/i);
+  // buildNegativePrompt() output (e.g. the v12 duplicated-face guard) must be present via AVOID.
+  assert.match(p, /duplicated face/);
+  assert.match(p, /cheap obvious social-media beauty-filter look/);
+});
+
+test('social_portrait no longer contains the old conflicting bans (anti-beauty, forced frontal lock, no-smile)', () => {
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+  assert.doesNotMatch(p, /NO BEAUTY TRANSFORMATION/);
+  assert.doesNotMatch(p, /Do not beautify/);
+  assert.doesNotMatch(p, /Do not improve attractiveness/i);
+  assert.doesNotMatch(p, /\bno rejuvenation\b/i);
+  assert.doesNotMatch(p, /must look like THEMSELVES — not like a more attractive/);
+  assert.doesNotMatch(p, /HEAD ANGLE — CRITICAL FOR IDENTITY/);
+  assert.doesNotMatch(p, /do NOT turn or tilt the head/);
+  assert.doesNotMatch(p, /NO three-quarter face angle/);
+});
+
+test('social_portrait composition allows safe variability (turn/tilt/off-center/gaze-past-camera) across repeated calls, but never true profile or full body', () => {
+  withSeededRandom(7, () => {
+    const compositions = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+      const c = p.match(/^COMPOSITION: (.+)$/m)?.[1] ?? '';
+      compositions.add(c);
+      assert.doesNotMatch(c, /\bprofile\b/i, `social_portrait composition leaked a profile shot: "${c}"`);
+      assert.doesNotMatch(c, /full.?body/i, `social_portrait composition leaked full-body framing: "${c}"`);
+      assert.doesNotMatch(c, /extreme/i, `social_portrait composition leaked an extreme angle: "${c}"`);
+    }
+    assert.ok(compositions.size >= 3, `expected safe variability across 40 draws, got: ${[...compositions]}`);
+    const hasBoundedTurn = [...compositions].some((c) => /three-quarter|tilt|off-center|past the (lens|camera)/i.test(c));
+    assert.ok(hasBoundedTurn, `expected at least one bounded turn/tilt/off-center/gaze-past-camera composition, got: ${[...compositions]}`);
+  });
+});
+
+test('social_portrait identity lock (bone structure, geometry, recognizability) is preserved unchanged', () => {
+  const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+  assert.match(p, /LOCK FACE GEOMETRY — NON-NEGOTIABLE/);
+  assert.match(p, /Face identity similarity must remain above 95%/);
+  assert.match(p, /FACE GEOMETRY \(copy exactly from the reference photo/);
+});
+
+test('social_portrait stays well under the Gateway safety cap', () => {
+  withSeededRandom(8, () => {
+    for (let i = 0; i < 10; i++) {
+      const p = buildPrompt({ styleId: 'social_portrait', stylePrompt: SOCIAL_PORTRAIT_PROMPT, genderMode: 'female' });
+      assert.ok(p.length < 27000, `expected < 27000 chars, got ${p.length}`);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -84,20 +84,25 @@ const WARDROBE_SOCIAL_MALE: readonly string[] = [
   'fine-knit crewneck in warm grey over white shirt, clean straight-leg trousers',
 ];
 
-// КРИТИЧНО: лицо всегда фронтально к камере (как в reference фото).
-// Повороты разрешены только корпусу. Поворот/наклон ГОЛОВЫ провоцирует дрейф
-// identity — модель достраивает лицо под углом и теряет геометрию.
+// v12 (living beauty workflow): раньше каждая запись жёстко диктовала "face
+// frontal to camera" — это был единственный источник поворота головы, и именно
+// поэтому social_portrait был исключён из общего COMPOSITION-механизма (см.
+// ниже). Теперь голова/взгляд управляются ИСКЛЮЧИТЕЛЬНО через новый пул
+// COMPOSITIONS_SOCIAL_PORTRAIT (безопасная вариативность из ТЗ владелицы) —
+// формулировка "face frontal" убрана отсюда, чтобы не спорить с ним (тот же
+// принцип разделения ACTION/COMPOSITION, что и для остального каталога, см.
+// комментарий у ACTIONS_PORTRAIT). Тело/жест/эмоция — здесь, голова/взгляд — там.
 const POSES_SOCIAL_PORTRAIT: readonly string[] = [
-  'face frontal to camera, soulful intense eye contact with real emotional depth, lips softly relaxed, arms loosely at sides — alive and present',
-  'face frontal to camera, one hand lightly touching collar, deep alive gaze, natural unforced expression — magnetic quiet presence',
-  'seated naturally facing camera, hands resting in lap, face frontal, intimate present gaze straight into the lens',
-  'face frontal, leaning back gently against a clean surface, relaxed shoulders, warm soulful eyes, effortless calm',
-  'face frontal to camera, one hand casually in pocket, natural weight shift, confident alive gaze with genuine personality',
-  'face frontal, both hands lightly clasped at waist, elegant posture, deep magnetic eye contact — composed inner power',
-  'face frontal to camera, soft natural micro-smile allowed, eyes alive and expressive — caught in a real genuine moment',
-  'face frontal, arms loosely crossed at waist, relaxed and confident, direct soulful eye contact, real human warmth',
-  'face frontal to camera, weight on one leg, hip shifted naturally, deep present gaze with quiet emotional intensity',
-  'face frontal, relaxed open posture, calm alive energy, intimate direct gaze into the lens — vulnerability and quiet strength',
+  'soulful intense eye contact with real emotional depth, lips softly relaxed, arms loosely at sides — alive and present',
+  'one hand lightly touching collar, deep alive gaze, natural unforced expression — magnetic quiet presence',
+  'seated naturally, hands resting in lap, intimate present gaze toward the lens',
+  'leaning back gently against a clean surface, relaxed shoulders, warm soulful eyes, effortless calm',
+  'one hand casually in pocket, natural weight shift, confident alive gaze with genuine personality',
+  'both hands lightly clasped at waist, elegant posture, deep magnetic eye contact — composed inner power',
+  'soft natural smile allowed, eyes alive and expressive — caught in a real genuine moment',
+  'arms loosely crossed at waist, relaxed and confident, direct soulful eye contact, real human warmth',
+  'weight on one leg, hip shifted naturally, deep present gaze with quiet emotional intensity',
+  'relaxed open posture, calm alive energy, intimate gaze toward the lens — vulnerability and quiet strength',
 ];
 
 const BACKGROUNDS_SOCIAL: readonly string[] = [
@@ -599,14 +604,25 @@ const LIFESTYLE_KEYWORDS: readonly string[] = [
   'дет', 'ребен', 'малыш', 'семей', 'домашн',
 ];
 
+// v12 (living beauty workflow bugfix): social_portrait's реальный DB-текст (migration
+// 020, "[PREMIUM INFLUENCER PORTRAIT]") содержит фразу "home workspace" — LIFESTYLE_KEYWORDS
+// ловит в ней подстроку 'home' и без этой страховки detectIsEditorial() молча возвращал
+// false для social_portrait, роня его в childLifestyleBlock-ветку вместо editorial/
+// socialPortraitBlock. Обнаружено при тестировании этой правки реальным stylePrompt, а
+// не тестовой заглушкой — прежде тестов на social_portrait не было вообще. Тот же принцип
+// "styleId как страховка от текста промпта", что и у isBWPortrait ниже (migration 020).
+const EDITORIAL_STYLE_ID_OVERRIDE: ReadonlySet<string> = new Set(['social_portrait']);
+
 // Определяет, нужны ли fashion/editorial блоки для данного стиля.
-// Приоритет: явный styleCategory > keyword detection по stylePrompt > default editorial.
+// Приоритет: явный styleCategory > styleId-страховка > keyword detection по stylePrompt > default editorial.
 function detectIsEditorial(
   stylePrompt: string,
   styleCategory?: 'editorial' | 'lifestyle',
+  styleId?: string,
 ): boolean {
   if (styleCategory === 'editorial') return true;
   if (styleCategory === 'lifestyle') return false;
+  if (styleId && EDITORIAL_STYLE_ID_OVERRIDE.has(styleId)) return true;
   // Fallback: ищем lifestyle-маркеры в тексте промпта (без учёта регистра).
   const lower = stylePrompt.toLowerCase();
   return !LIFESTYLE_KEYWORDS.some((kw) => lower.includes(kw));
@@ -914,6 +930,24 @@ const COMPOSITIONS_STANDARD_FULLBODY: readonly string[] = [
   'Three-quarter-length composition (knees up), body at a natural angle, direct gaze into the lens.',
 ];
 
+// ── SOCIAL PORTRAIT COMPOSITION (v12, living beauty workflow) ────────────────
+// social_portrait used to be fully frontal-locked (see isFrontalLocked history:
+// v7 "revert corpus 3/4 (pulled head turn)" — a real identity regression was
+// observed with the FULL COMPOSITIONS_STANDARD_PORTRAIT pool, which allows true
+// profile and strong three-quarter turns). This pool is a deliberately narrower
+// middle ground: bounded head turn/tilt and off-center framing (the "safe
+// variability" the owner asked for), but never true profile, never an extreme
+// angle, never full body — the specific things that regressed identity before.
+const COMPOSITIONS_SOCIAL_PORTRAIT: readonly string[] = [
+  'Direct gaze into the lens, shoulders turned slightly to one side — a natural, unposed angle.',
+  'Head turned gently into a soft three-quarter angle, eyes still finding the camera.',
+  'A small natural head tilt, warm and relaxed, gaze meeting the lens.',
+  'Gaze resting just past the camera, as if caught in a genuine unguarded moment.',
+  'Portrait crop slightly off-center, close-up or waist-up, natural asymmetry in the frame.',
+  'Close-up crop, face turned a few degrees off frontal, direct warm eye contact.',
+  'Waist-up crop, one shoulder slightly forward, head softly turned toward the lens.',
+];
+
 function pickComposition(isFullBody: boolean, isCleanPortrait: boolean): string {
   if (isCleanPortrait) {
     return pickFromArray(isFullBody ? COMPOSITIONS_CLEAN_PORTRAIT_FULLBODY : COMPOSITIONS_CLEAN_PORTRAIT);
@@ -946,7 +980,7 @@ export function buildPrompt(input: BuildPromptInput): string {
     : 'Portrait framing: head and shoulders.';
 
   // Определяем режим один раз — используется для условных блоков ниже.
-  const isEditorial = detectIsEditorial(input.stylePrompt, input.styleCategory);
+  const isEditorial = detectIsEditorial(input.stylePrompt, input.styleCategory, input.styleId);
   const isMale = input.genderMode === 'male';
   const isFullBody = !!input.isFullBody;
 
@@ -1300,9 +1334,20 @@ WHAT TO AVOID:
 - Aggressive macho gym mood
 - Glossy fitness magazine cheese`;
 
-  // SOCIAL PORTRAIT / ОБРАЗ ДЛЯ СОЦСЕТЕЙ — чистый authentic portrait для соцсетей и личного бренда.
+  // SOCIAL PORTRAIT / ОБРАЗ ДЛЯ СОЦСЕТЕЙ — привлекательный portrait для соцсетей и личного бренда.
   // Отключает тяжёлые luxury-editorial блоки (aura, fashion, magnetism, femininity, antiCheap).
   // Сохраняет: identity, realism, editorialBlock (композиция), candorBlock, eyeContact, cinematicRealism.
+  //
+  // v12 (living beauty workflow, fix для жалобы на статичный "документальный" результат):
+  // до этой версии socialPortraitBlock содержал СОБСТВЕННЫЙ "NO BEAUTY TRANSFORMATION" и
+  // "HEAD ANGLE — CRITICAL" блок, который прямо противоречил новой концепции (запрещал
+  // омоложение/ретушь и жёстко фиксировал фронтальность головы) — независимо от
+  // IDENTITY_LOCK/buildNegativePrompt() выше по файлу. CHARACTER и ENVIRONMENT INTERACTION
+  // уже были подключены и раньше; теперь добавлены ACTION (безопасен по дизайну — только
+  // руки/тело, не взгляд) и свой COMPOSITIONS_SOCIAL_PORTRAIT пул (ограниченная вариативность
+  // взамен жёсткого frontal-lock — см. комментарий у isFrontalLocked). Второй, полностью
+  // независимый путь — buildSocialPortraitMinimalPrompt() за флагом SOCIAL_PORTRAIT_MINIMAL —
+  // этой правкой не затронут; см. отдельный аудит по нему.
   const isSocialPortrait = isEditorial &&
     /PREMIUM INFLUENCER PORTRAIT|ОБРАЗ ДЛЯ СОЦСЕТЕЙ|social.portrait|ИДЕАЛЬНЫЙ КАДР|clean.authentic.portrait|personal.brand.*portrait/i.test(input.stylePrompt);
 
@@ -1468,12 +1513,11 @@ Copy the following exactly from the reference photo. Do not interpret. Do not im
 - nose bridge width and nose tip: exact same form
 - lip proportions: exact upper-to-lower ratio, exact natural width
 
-DO NOT (in EITHER direction):
+DO NOT (in EITHER direction) — geometry only, see BEAUTY & FRESHNESS below for skin/age:
 - make the face slimmer OR wider
 - make the face longer OR rounder/shorter
 - make the jaw more angular OR more broad
 - add OR reduce cheek volume
-- make the face younger or beautify facial anatomy in any way
 
 EXACT FACE ANATOMY MATCH (refer strictly to the reference photo):
 1. EYES: keep the exact eye shape, size and depth from the reference. The gaze must be deeply alive,
@@ -1491,22 +1535,20 @@ REFERENCE PHOTO USAGE:
 The uploaded photo is the facial identity reference.
 PRESERVE EXACTLY from the reference photo: face shape, jaw width, chin shape, lower face
 proportions, cheek volume, eye shape and color, eye spacing, nose shape, lip shape,
-jawline, skin tone, age appearance, facial asymmetry, hairstyle length, hair color, body type.
+jawline, skin tone, facial asymmetry, hair length and hair color, body type. Age stays within the
+same broad recognizable category — see BEAUTY & FRESHNESS below for how much freshness is allowed.
 The generated person must be immediately recognisable as the same individual from the reference.
 Face identity similarity must remain above 95%.
 
-NO BEAUTY TRANSFORMATION (strictly enforced for every generation):
-The AI must NOT apply any of the following — ever:
-- facial enhancement, attractiveness optimization, or beauty filter of any kind
-- face slimming, jaw reshaping, chin refinement, or lower-face proportion change
-- reduction of natural cheek volume or facial fullness
-- removal of authentic facial asymmetry
-- youth filter, skin rejuvenation beyond natural healthy glow, or age reduction
-- influencer aesthetic transformation
-- fashion model face replacement or look-alike generation
-- AI beauty idealization of any feature
-This person must look like THEMSELVES — not like a more attractive or younger version of themselves.
-Preserve: exact natural jaw width, exact chin shape, exact cheek volume, exact facial asymmetry — all from the reference.
+BEAUTY & FRESHNESS (aligned with IDENTITY_LOCK — this is a flattering portrait, not a passport scan):
+Within the exact geometry locked above, this generation should look like the person's best,
+most attractive day: clean, even, radiant skin; a fresh, well-rested under-eye area; gently
+softened fatigue and age markers (never a different generation — see IDENTITY_LOCK); professional,
+natural-looking makeup suited to this person's coloring; hair styling — volume, waves, a polished
+finish — refined without changing the cut, length, or colour from the reference. Professional,
+tasteful beauty retouching is expected and welcome, not a defect to avoid.
+Still forbidden: replacing this person with a different-looking face, generic "model" idealization,
+or a cheap/obvious filtered look — see the global AVOID list at the end of this prompt.
 
 OUTFIT FOR THIS GENERATION (use exactly — no substitution):
 ${_spOutfit}
@@ -1527,12 +1569,10 @@ cartoon or painted backgrounds, low-quality textures.
 POSE FOR THIS GENERATION:
 ${_spPose}
 Natural, confident, approachable — genuinely alive, not stiff, not runway, not corporate.
-Expression: neutral confident by default. Subtle natural smile only if it fits — do NOT force a smile.
-
-HEAD ANGLE — CRITICAL FOR IDENTITY:
-The FACE must be fully frontal to the camera — same angle as the reference photo.
-Body may turn or shift, but the head stays straight and frontal. NO head turn, NO head tilt,
-NO three-quarter face angle, NO profile. Rendering the face at an angle distorts identity — forbidden.
+Expression: warm and genuine. A natural smile is welcome, including a soft smile with teeth if it
+reads as believable and unforced — never a stiff or performed camera smile.
+Head angle and framing for this generation are set by the COMPOSITION line elsewhere in this
+prompt — follow that, not a fixed frontal default.
 
 LIGHTING:
 Natural soft light — window quality, clean premium studio glow, or lifestyle setting light.
@@ -1651,30 +1691,39 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
     : '';
   const avoidBlock = `AVOID: ${buildNegativePrompt()}${isEditorial ? '' : lifestyleAvoidExtra}${fullBodyAvoidExtra}${genderAvoidExtra}${menAvoidExtra}`;
 
-  // Только social_portrait и bw_portrait сохраняют строгую фронтальность головы.
+  // Только bw_portrait сохраняет строгую фронтальность головы через общий
+  // COMPOSITIONS_CLEAN_PORTRAIT/pickComposition() механизм.
   // Причина: v7 в истории коммитов этого проекта явно зафиксировал регресс
-  // identity при развороте головы для social_portrait и откатил его ("revert
-  // corpus 3/4 (pulled head turn), energy via gaze not angle") — это единственная
-  // подтверждённая на практике чувствительная точка. bw_portrait — тот же тип
-  // продукта (точный headshot, не editorial-фотосессия), поэтому для него
-  // применена та же осторожность по умолчанию, хотя отдельно не тестировалась.
-  // Весь остальной каталог (business_elite, МОНАКО, БОГИНЯ, РОМАНТИКА, ДИКАЯ
-  // ПРИРОДА, old money, wild luxury, goddess, elite sport, summer/future city)
-  // получает полную вариативность композиции ниже — профиль, три четверти,
-  // взгляд в сторону — это и была главная причина «стоит по центру, смотрит
-  // прямо в камеру» из исходного запроса.
+  // identity при развороте головы для social_portrait при ПОЛНОЙ вариативности
+  // (COMPOSITIONS_STANDARD_PORTRAIT — профиль, сильные три четверти) и откатил
+  // его ("revert corpus 3/4 (pulled head turn), energy via gaze not angle").
+  // bw_portrait — тот же тип продукта (точный headshot), поэтому для него
+  // сохранена та же осторожность.
+  // v12 (living beauty workflow): social_portrait больше не полностью
+  // frontal-locked и не отключён от ACTION/COMPOSITION — ему нужна была не
+  // "никакой вариативности", а вариативность БЕЗ той конкретной регрессии.
+  // Получает СВОЙ отдельный COMPOSITIONS_SOCIAL_PORTRAIT пул (безопасная
+  // середина: лёгкий поворот/наклон головы, взгляд мимо камеры, кадр не по
+  // центру — но без профиля/экстремального ракурса, которые и вызвали регресс).
   const isFrontalLocked = isCleanPortrait;
 
   // Единая точка выбора "живых" элементов фотосессии — по одному значению на
   // генерацию каждый, не весь список целиком (дёшево по символам).
   const characterStateLine = isEditorial ? pickCharacterState(isMale) : '';
   const envInteractionLine = pickEnvironmentInteraction(!isCleanPortrait);
-  // ACTION/COMPOSITION — не для MEN (свой pickMenPose уже несёт оба измерения)
-  // и не для social_portrait (свой _spPose внутри socialPortraitBlock, уже
-  // проверенный v6-v10). Получают: обычный editorial + bw_portrait.
-  const wantsGenericActionComposition = isEditorial && !isMenCinematic && !isSocialPortrait;
-  const actionLine = wantsGenericActionComposition ? pickAction(isFullBody, isFrontalLocked) : '';
-  const compositionLine = wantsGenericActionComposition ? pickComposition(isFullBody, isFrontalLocked) : '';
+  // ACTION — безопасен для social_portrait: пул ACTIONS_PORTRAIT по дизайну
+  // (см. комментарий выше) описывает только руки/тело/предметы, никогда взгляд
+  // или поворот головы — так что не спорит с COMPOSITIONS_SOCIAL_PORTRAIT.
+  // Не для MEN (свой pickMenPose уже несёт оба измерения).
+  const wantsGenericAction = isEditorial && !isMenCinematic;
+  const actionLine = wantsGenericAction ? pickAction(isFullBody, isBWPortrait) : '';
+  // COMPOSITION — social_portrait получает свой узкий "safe variability" пул;
+  // bw_portrait и обычный editorial — прежний механизм без изменений.
+  const compositionLine = isSocialPortrait
+    ? pickFromArray(COMPOSITIONS_SOCIAL_PORTRAIT)
+    : (isEditorial && !isMenCinematic)
+      ? pickComposition(isFullBody, isFrontalLocked)
+      : '';
 
   return [
     referenceBlock,
