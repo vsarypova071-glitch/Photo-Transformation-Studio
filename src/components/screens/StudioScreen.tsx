@@ -119,6 +119,16 @@ export default function StudioScreen({
     onGeneratingChange?.(step === 'generating');
   }, [step, onGeneratingChange]);
 
+  // social_portrait не поддерживает полный рост (портрет для аватарки) — тумблер
+  // скрыт ниже, но если он был включён на предыдущем стиле и юзер переключился
+  // сюда, состояние нужно сбросить явно, иначе isFullBody:true всё равно уйдёт
+  // на backend несмотря на скрытый чекбокс.
+  useEffect(() => {
+    if (selectedStyleId === 'social_portrait' && isFullBody) {
+      setIsFullBody(false);
+    }
+  }, [selectedStyleId, isFullBody]);
+
   // Prefill после оплаты: подставляем фото и стиль из заказа.
   // Срабатывает ОДИН раз — флаг prefillConsumedRef защищает от повторов
   // при ре-рендерах. Юзер сразу попадает на шаг "выбор стиля", где
@@ -603,7 +613,8 @@ export default function StudioScreen({
 
           {/* Полный рост — скрыт для ПАРНЫЕ и MEN (кадрирование задаётся промптом) */}
           {/* Полный рост: скрыт для ПАРНЫЕ и МУЖСКИЕ — у мужских стилей кадрирование задано в промпте */}
-          {!isPairMode && studioTab !== 'together' && studioTab !== 'male' && (
+          {/* social_portrait — портрет для аватарки, полный рост продуктом не поддерживается */}
+          {!isPairMode && studioTab !== 'together' && studioTab !== 'male' && selectedStyleId !== 'social_portrait' && (
             <label className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/40 border border-border cursor-pointer">
               <input
                 type="checkbox"

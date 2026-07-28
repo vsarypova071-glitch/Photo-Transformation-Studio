@@ -611,7 +611,13 @@ const LIFESTYLE_KEYWORDS: readonly string[] = [
 // socialPortraitBlock. Обнаружено при тестировании этой правки реальным stylePrompt, а
 // не тестовой заглушкой — прежде тестов на social_portrait не было вообще. Тот же принцип
 // "styleId как страховка от текста промпта", что и у isBWPortrait ниже (migration 020).
-const EDITORIAL_STYLE_ID_OVERRIDE: ReadonlySet<string> = new Set(['social_portrait']);
+//
+// v13 (full-catalog audit fix): та же болезнь нашлась у scandinavian_minimal —
+// реальный DB-текст ("cozy premium textiles", "Warm cozy expensive winter lifestyle")
+// дважды ловит 'cozy' из LIFESTYLE_KEYWORDS, и стиль молча падал в childLifestyleBlock —
+// детский блок и детский AVOID внутри взрослого альпийского люкс-стиля. Добавлен сюда
+// по тому же принципу; при появлении новых подобных инцидентов — тот же паттерн.
+const EDITORIAL_STYLE_ID_OVERRIDE: ReadonlySet<string> = new Set(['social_portrait', 'scandinavian_minimal']);
 
 // Определяет, нужны ли fashion/editorial блоки для данного стиля.
 // Приоритет: явный styleCategory > styleId-страховка > keyword detection по stylePrompt > default editorial.
@@ -766,6 +772,71 @@ polished and subtly younger, photographed on their best day by an expensive port
 after professional makeup, hair styling, flattering light, and refined beauty retouching. It must
 never read as "a different person."`;
 
+// ── CHILD IDENTITY LOCK (v13, full-catalog audit fix) ────────────────────────
+// Раньше детские (lifestyle) стили получали ТОТ ЖЕ универсальный IDENTITY_LOCK,
+// что и взрослые editorial-стили — включая "subtly younger", "professional,
+// natural-looking beauty retouching" и acceptance test про "expensive portrait
+// photographer... after professional makeup". Для фото ребёнка это концептуально
+// неуместная рамка (омоложение/взросление, профессиональный макияж, взрослая
+// beauty-подача), даже без прямой опасности. Отдельный блок: тот же приоритет
+// identity/анатомия, но без взрослой beauty-ретуши/омоложения, с явным запретом
+// макияжа и adult grooming (бритьё и т.п.), и с возрастно-уместной, а не
+// "лучшей взрослой версией себя" рамкой результата.
+const CHILD_IDENTITY_LOCK = `\
+IDENTITY LOCK — HIGHEST PRIORITY, OVERRIDES EVERYTHING BELOW:
+This is a photograph of a real child. Priority order: 1) identity  2) anatomical correctness
+3) natural age-appropriate emotion  4) safe, age-appropriate styling and scene.
+Whenever any instruction below conflicts with identity preservation, identity wins. A less
+polished but recognizable result is always better than a stylized but different-looking child.
+
+Goal: this must read as "the same child, photographed on a different day" — never an adult,
+never a different-looking child, never a stylized "model" child.
+
+FACE GEOMETRY (copy exactly from the reference photo): eye shape, size and color, eye placement,
+nose shape, lip shape, cheek and face oval, ethnicity, and natural asymmetry. None of these are
+adjusted, slimmed, sharpened, or idealized toward a "cuter" or generic version — copy them, don't
+reinterpret them.
+
+AGE: preserve the child's exact real age and age category. No de-aging, no aging up, no making a
+younger child look older or an older child look younger or more infantile. This must remain the
+same real child at the same real age.
+
+SKIN & EYES: healthy, clean, naturally glowing child skin, real texture — no adult beauty
+retouching, no plastic or artificial smoothing, no makeup of any kind. Eyes alive, bright, with a
+genuine, natural childhood expression and real catchlights.
+
+HAIR: same length and color as the reference. Only neat, age-appropriate tidying is allowed — no
+adult restyling, no adult hair-coloring technique, no change of length or color.
+
+WHAT MAY CHANGE: clothing, accessories, background/location, lighting, and the natural
+age-appropriate emotion and action described later in this prompt — nothing else touches the
+identity safeguards above.
+
+FORBIDDEN: rejuvenation or aging language, adult makeup, adult beauty-retouching framing, facial
+hair, shaving or adult grooming instructions, sexualized or glamour styling, adult luxury "best
+version of themselves" framing. This is a child's photo, not a beauty campaign.
+
+Acceptance test: this is unmistakably the same real child, the same real age, healthy and happy —
+never an adult, never a different-looking child.`;
+
+// Заменяет genderPositiveBlock/menGenderBlock для lifestyle-ветки (дети) — те
+// блоки говорят "This is a female/male portrait. The subject is a woman/man" и
+// разрешают макияж/бритьё, что неуместно для ребёнка. Нейтральное 'child',
+// если genderMode не передан (данных о поле нет).
+function childSubjectWord(genderMode?: 'female' | 'male'): 'girl' | 'boy' | 'child' {
+  if (genderMode === 'female') return 'girl';
+  if (genderMode === 'male') return 'boy';
+  return 'child';
+}
+
+function buildChildSubjectBlock(genderMode?: 'female' | 'male'): string {
+  const word = childSubjectWord(genderMode);
+  return `\
+SUBJECT: This is a real ${word}. Preserve their natural, real presentation from the reference
+photo — no adult styling cues, no makeup, no adult grooming instructions of any kind. Clothing and
+styling stay age-appropriate for a ${word}, never adult-coded.`;
+}
+
 // Короткая реплика для full-body (раньше — fullBodyFaceLockBlock на ~2500 символов,
 // почти целиком дублировавший FACE GEOMETRY из IDENTITY_LOCK выше). Оставлена только
 // уникальная мысль: на дальней дистанции лицо мельче и склонно "плыть" к generic —
@@ -910,8 +981,15 @@ const COMPOSITIONS_CLEAN_PORTRAIT: readonly string[] = [
   'Waist-up crop, body turned slightly to one side while the face stays frontal to the camera.',
 ];
 
+// v13 (full-catalog audit fix): раньше был ровно 1 вариант — 0% вариативности
+// full-body композиции для bw_portrait. Добавлены ещё 3, тот же строгий
+// frontal-lock головы (не тронут — это единственная подтверждённая практикой
+// чувствительная точка, см. isFrontalLocked выше), варьируется только тело/вес/кадр.
 const COMPOSITIONS_CLEAN_PORTRAIT_FULLBODY: readonly string[] = [
   'Full-body crop, body turned slightly to one side, face frontal to the camera, natural standing weight on one leg.',
+  'Full-body crop, standing straight and centred, face frontal to the camera, arms relaxed at the sides.',
+  'Full-body crop, seated naturally on a stool or ledge, face frontal to the camera, calm grounded posture.',
+  'Full-body crop, one shoulder leaning lightly against a wall or surface, face frontal to the camera, relaxed stance.',
 ];
 
 const COMPOSITIONS_STANDARD_PORTRAIT: readonly string[] = [
@@ -1728,11 +1806,15 @@ AI doll face, repetitive poses, dark horror fantasy, cheap cartoon aesthetic.`;
   return [
     referenceBlock,
     '',
-    IDENTITY_LOCK,
+    isEditorial ? IDENTITY_LOCK : CHILD_IDENTITY_LOCK,
     '',
     // MEN: явный запрет макияжа — переопределяет нейтральную формулировку gender-блока
     ...(isMenCinematic ? [menGroomingBlock, ''] : []),
-    isMenCinematic ? menGenderBlock : genderPositiveBlock,
+    // Lifestyle (дети): buildChildSubjectBlock() вместо genderPositiveBlock/menGenderBlock —
+    // те говорят "This is a female/male portrait. The subject is a woman/man" и разрешают
+    // макияж/бритьё, что неуместно для ребёнка. isMenCinematic всегда false здесь
+    // (сам требует isEditorial), поэтому ветка ниже безопасна.
+    isEditorial ? (isMenCinematic ? menGenderBlock : genderPositiveBlock) : buildChildSubjectBlock(input.genderMode),
     '',
     ...((isFullBody || isMenCinematic) ? [FULL_BODY_IDENTITY_ADDENDUM, ''] : []),
     REALISM_AND_ANATOMY,
