@@ -61,7 +61,21 @@ test('buildPrompt includes the identity lock (face geometry, age/body/skin, hair
   assert.match(p, /IDENTITY LOCK — HIGHEST PRIORITY/);
   assert.match(p, /FACE GEOMETRY/);
   assert.match(p, /AGE, BODY & SKIN/);
-  assert.match(p, /this is them, photographed by someone excellent/);
+  assert.match(p, /unmistakably the same person at their most attractive/);
+});
+
+test('identity lock allows delicate rejuvenation and beauty retouching but bounds them to the same age category', () => {
+  const p = buildPrompt({ styleId: 'business_elite', stylePrompt: BUSINESS_ELITE, genderMode: 'female' });
+  assert.match(p, /subtly younger/);
+  assert.match(p, /professional, natural-looking beauty retouching/);
+  assert.match(p, /never like a different generation or a radically different age/);
+  assert.doesNotMatch(p, /no rejuvenation/);
+});
+
+test('identity lock allows refined hair styling but still locks cut, length and color', () => {
+  const p = buildPrompt({ styleId: 'business_elite', stylePrompt: BUSINESS_ELITE, genderMode: 'female' });
+  assert.match(p, /no change of haircut, length, or color/);
+  assert.match(p, /volume, waves, smoothness, a neat professional finish — may be refined for a polished/);
 });
 
 test('full-body generations get the reinforced (short) full-body identity addendum', () => {
@@ -183,6 +197,37 @@ test('buildNegativePrompt covers text/logo/watermark and no longer blanket-forbi
   assert.match(neg, /text overlay/);
   assert.doesNotMatch(neg, /looking away from camera/);
   assert.doesNotMatch(neg, /side glance/);
+});
+
+test('buildNegativePrompt guards against duplicated/overlapping faces', () => {
+  const neg = buildNegativePrompt();
+  assert.match(neg, /duplicated face/);
+  assert.match(neg, /double face artifact/);
+  assert.match(neg, /overlapping facial features/);
+  assert.match(neg, /second face in frame/);
+});
+
+test('buildNegativePrompt only blocks cheap/extreme beauty artifacts, not flattering retouching', () => {
+  const neg = buildNegativePrompt();
+  assert.match(neg, /cheap obvious social-media beauty-filter look/);
+  assert.doesNotMatch(neg, /\bbeauty filter\b/);
+  assert.match(neg, /over-smoothed airbrushed skin/);
+  assert.match(neg, /flawless artificial face/);
+});
+
+test('buildNegativePrompt bounds age drift both ways without banning delicate rejuvenation', () => {
+  const neg = buildNegativePrompt();
+  assert.match(neg, /radically different apparent age/);
+  assert.match(neg, /unnaturally childlike or excessively rejuvenated face/);
+  assert.doesNotMatch(neg, /added wrinkles/);
+  assert.doesNotMatch(neg, /older worn appearance/);
+});
+
+test('buildNegativePrompt allows hair restyling but still locks haircut and color', () => {
+  const neg = buildNegativePrompt();
+  assert.match(neg, /different haircut or length/);
+  assert.match(neg, /changed hair color/);
+  assert.doesNotMatch(neg, /changed hairstyle/);
 });
 
 // ---------------------------------------------------------------------------

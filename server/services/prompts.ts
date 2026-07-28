@@ -636,15 +636,28 @@ export interface BuildPromptInput {
 // Добавлено: text/logo/watermark (были явно нужны по ТЗ и отсутствовали), extra
 // or fused fingers/deformed hands (анатомия рук — раньше только в позитиве не было
 // нигде), identical repeated pose across a series (анти-повтор на уровне негатива).
+//
+// v12 (flattering beauty retouch): 'over-smoothed airbrushed skin' и 'flawless
+// artificial face' сохранены как есть (нужны, чтобы не потерять объём кожи и не
+// получить искусственное лицо). 'beauty filter' → 'cheap obvious social-media
+// beauty-filter look' — профессиональная ретушь разрешена, дешёвый фильтр нет.
+// 'added wrinkles'/'older worn appearance' → 'radically different apparent age' +
+// 'unnaturally childlike or excessively rejuvenated face' — старый парой запрещал
+// только "старше", но не ограничивал степень омоложения, а новая цель — именно
+// деликатное омоложение, не смена возрастной категории. 'changed hairstyle'
+// убран из Hair-кластера — конфликтовал с разрешённой укладкой/объёмом; стрижка
+// и цвет по-прежнему запрещены. Добавлен кластер против задвоенного лица.
 export function buildNegativePrompt(): string {
   return [
     // Identity & face integrity
     'plastic skin', 'wax face', 'mannequin doll face', 'blank dead-eyed stare',
     'CGI', '3D render', 'over-smoothed airbrushed skin', 'flawless artificial face',
-    'beauty filter', 'altered identity', 'changed face structure', 'uncanny valley',
-    'different person', 'generic AI face', 'wrong eye spacing', 'distorted face',
+    'cheap obvious social-media beauty-filter look', 'altered identity', 'changed face structure',
+    'uncanny valley', 'different person', 'generic AI face', 'wrong eye spacing', 'distorted face',
     'fashion model face', 'runway model transformation', 'beauty-face geometry',
     'altered facial proportions', 'stylized facial anatomy',
+    // Duplicated face / feature doubling
+    'duplicated face', 'double face artifact', 'overlapping facial features', 'second face in frame',
     // Lower-face drift — either direction is wrong
     'slimmed V-shape jaw', 'sharp pointed chin', 'hollow sculpted cheeks',
     'widened rounded face', 'puffy cheeks', 'moon face', 'reshaped face oval',
@@ -659,10 +672,11 @@ export function buildNegativePrompt(): string {
     // Non-premium backgrounds
     'cafe interior', 'coffee shop', 'domestic interior', 'budget location', 'cheap office',
     'random home interior',
-    // Anti-fatigue / anti-aging
-    'tired fatigued face', 'grey dull washed-out skin', 'added wrinkles', 'older worn appearance',
+    // Anti-fatigue / anti-age-extremes
+    'tired fatigued face', 'grey dull washed-out skin',
+    'radically different apparent age', 'unnaturally childlike or excessively rejuvenated face',
     // Hair
-    'changed hairstyle', 'different haircut or length', 'changed hair color',
+    'different haircut or length', 'changed hair color',
     // Eyes & eyewear
     'sunglasses', 'eyewear covering the eyes', 'vacant unfocused gaze',
     // Makeup render artifacts
@@ -685,6 +699,16 @@ export function buildNegativePrompt(): string {
 // освобождает ~6000 символов на добавление живых блоков ниже.
 // Порядок приоритета внутри блока соответствует ТЗ: identity → анатомия →
 // возраст/вес/кожа → волосы → что разрешено менять.
+//
+// v12 (flattering beauty retouch): AGE, BODY & SKIN раньше буквально запрещал
+// "no rejuvenation" и acceptance test явно исключал "a nicer version of them" —
+// это прямо противоречило новой цели (красивый, свежий, деликатно моложе,
+// профессиональная beauty-ретушь). Заменено на явный, но ограниченный допуск:
+// свежесть/лёгкое омоложение разрешены, но только внутри той же широкой
+// возрастной категории — не "другое поколение". Кость/геометрия лица (см. блок
+// FACE GEOMETRY выше) не меняются, это ограничение осталось нетронутым. HAIR
+// аналогично: раньше "no restyling" блокировало даже укладку/объём — теперь
+// укладка разрешена, но стрижка/длина/цвет лица — нет.
 const IDENTITY_LOCK = `\
 IDENTITY LOCK — HIGHEST PRIORITY, OVERRIDES EVERYTHING BELOW:
 Priority order for this entire generation: 1) identity  2) anatomical correctness  3) natural
@@ -703,20 +727,28 @@ widened, sharpened, or softened toward a more "attractive" or "generic model" ve
 don't reinterpret them. This holds true at ANY head angle — head angle itself is set by the
 composition instruction later in this prompt, not restricted here.
 
-AGE, BODY & SKIN: preserve the subject's exact visible age (no rejuvenation, no added years, no
-extra wrinkles or fatigue beyond what the reference shows), exact body weight and proportions
-(waist, hips, chest, arms, legs — do not slim or enlarge), and natural skin tone/ethnicity. Keep
-real skin texture — visible pores and the natural fine lines the reference shows — healthy and
-well lit, not erased or aged.
+AGE, BODY & SKIN: preserve the subject's recognizable identity, bone structure, facial geometry,
+ethnicity, and exact body weight and proportions (waist, hips, chest, arms, legs — do not slim or
+enlarge). Remain within the same broad recognizable age category. The person may look fresher and
+subtly younger, but never like a different generation or a radically different age. Within that
+range, the following are welcome: clean, even, radiant skin; a refreshed, well-rested under-eye
+area; gently softened age markers; professional, natural-looking beauty retouching; and an overall
+fresher, more attractive appearance. Real skin texture is not erased — it is refreshed, not
+plasticized.
 
-HAIR: same length, cut, color, and texture as the reference — no restyling, no color change.
+HAIR: same length, cut, and color as the reference — no change of haircut, length, or color. Hair
+styling — volume, waves, smoothness, a neat professional finish — may be refined for a polished
+look, as long as the underlying cut, length, and color stay identical to the reference.
 
-WHAT MAY CHANGE (this is the entire scope of styling — nothing else touches the measurements
-above): clothing, accessories, background/location, lighting, and the emotional expression and
-action described later in this prompt.
+WHAT MAY CHANGE (this is the entire scope of styling — nothing else touches the identity
+safeguards above): clothing, accessories, hair styling (not cut/length/color), background/location,
+lighting, skin freshness and beauty retouching within the limits above, and the emotional
+expression and action described later in this prompt.
 
-Acceptance test: the viewer must say "this is them, photographed by someone excellent" — never
-"this looks like them" or "this is a nicer version of them."`;
+Acceptance test: this is unmistakably the same person at their most attractive — fresh, rested,
+polished and subtly younger, photographed on their best day by an expensive portrait photographer
+after professional makeup, hair styling, flattering light, and refined beauty retouching. It must
+never read as "a different person."`;
 
 // Короткая реплика для full-body (раньше — fullBodyFaceLockBlock на ~2500 символов,
 // почти целиком дублировавший FACE GEOMETRY из IDENTITY_LOCK выше). Оставлена только
