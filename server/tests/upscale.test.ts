@@ -14,6 +14,9 @@ import {
   UpscaleQueue,
   readUpscaleConfig,
   readPngSize,
+  readJpegSize,
+  readImageSize,
+  kindFromName,
   validateSourcePath,
   type UpscaleConfig,
   type SpawnLike,
@@ -39,6 +42,43 @@ function makePng(width: number, height: number, totalBytes = 20 * 1024): Buffer 
   return buf;
 }
 
+/** Минимальный JPEG-буфер для Node-парсера: SOI + APP0(JFIF) + SOF0/SOF2 +
+ *  EOI, паддинг нулями до totalBytes. Опции воспроизводят повреждения. */
+function makeJpeg(
+  width: number,
+  height: number,
+  opts: {
+    totalBytes?: number;
+    progressive?: boolean;
+    fillBytes?: boolean;
+    truncateBeforeSof?: boolean;
+    badSegmentLength?: boolean;
+  } = {},
+): Buffer {
+  const {
+    totalBytes = 20 * 1024, progressive = false, fillBytes = false,
+    truncateBeforeSof = false, badSegmentLength = false,
+  } = opts;
+  const parts: number[] = [0xff, 0xd8]; // SOI
+  const app0 = [0x4a, 0x46, 0x49, 0x46, 0x00, 1, 1, 0, 0, 1, 0, 1, 0, 0]; // JFIF
+  parts.push(0xff, 0xe0, 0, app0.length + 2, ...app0);
+  if (badSegmentLength) {
+    parts.push(0xff, 0xdb, 0x00, 0x01); // DQT с длиной 1 (< 2) — некорректно
+    const buf = Buffer.alloc(Math.max(totalBytes, parts.length));
+    Buffer.from(parts).copy(buf, 0);
+    return buf;
+  }
+  if (truncateBeforeSof) return Buffer.from(parts); // обрыв: SOF так и не встретится
+  if (fillBytes) parts.push(0xff, 0xff, 0xff); // fill-байты FF перед маркером
+  const sofMarker = progressive ? 0xc2 : 0xc0;
+  const sof = [8, height >> 8, height & 0xff, width >> 8, width & 0xff, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1];
+  parts.push(0xff, sofMarker, 0, sof.length + 2, ...sof);
+  parts.push(0xff, 0xd9); // EOI
+  const buf = Buffer.alloc(Math.max(totalBytes, parts.length));
+  Buffer.from(parts).copy(buf, 0);
+  return buf;
+}
+
 function makeTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'upscale-test-'));
 }
@@ -46,6 +86,12 @@ function makeTempDir(): string {
 function writeSource(dir: string, name: string, w = 100, h = 150): string {
   const p = path.join(dir, name);
   fs.writeFileSync(p, makePng(w, h));
+  return p;
+}
+
+function writeJpegSource(dir: string, name: string, w = 100, h = 150): string {
+  const p = path.join(dir, name);
+  fs.writeFileSync(p, makeJpeg(w, h));
   return p;
 }
 
@@ -92,12 +138,17 @@ function makeFakeSpawn(
   return { spawnFn, state };
 }
 
-/** Успешное поведение: пишет валидный 2x PNG в -o и завершается с кодом 0. */
+/** Успешное поведение: пишет валидный 2x результат в -o в формате,
+ *  соответствующем расширению выходного пути (как настоящий upscale.py),
+ *  и завершается с кодом 0. */
 function successBehavior(args: string[], child: FakeChild): void {
   const src = argOf(args, '-i');
   const out = argOf(args, '-o');
-  const size = readPngSize(fs.readFileSync(src));
-  fs.writeFileSync(out, makePng(size!.width * 2, size!.height * 2, 30 * 1024));
+  const size = readImageSize(fs.readFileSync(src), kindFromName(path.basename(src))!);
+  const outBuf = kindFromName(path.basename(out)) === 'png'
+    ? makePng(size!.width * 2, size!.height * 2, 30 * 1024)
+    : makeJpeg(size!.width * 2, size!.height * 2, { totalBytes: 30 * 1024 });
+  fs.writeFileSync(out, outBuf);
   child.emit('close', 0, null);
 }
 
@@ -266,7 +317,9 @@ async function expectOriginalIntact(setup: QueueSetup, src: string, original: Bu
   assert.ok(fs.readFileSync(src).equals(original), 'оригинал должен остаться байт-в-байт');
   const leftovers = fs.readdirSync(path.dirname(src)).filter((n) => n.includes('.tmp.'));
   assert.deepEqual(leftovers, [], 'tmp-файлы должны быть удалены');
-  assert.ok(!fs.existsSync(src.replace(/\.png$/, '.original.png')), 'бэкап не создаётся при неудаче');
+  const p = path.parse(src);
+  const backup = path.join(p.dir, `${p.name}.original${p.ext}`);
+  assert.ok(!fs.existsSync(backup), 'бэкап не создаётся при неудаче');
 }
 
 test('нехватка RAM: задача пропускается, оригинал нетронут', async () => {
@@ -324,7 +377,7 @@ test('некорректный PNG на выходе: оригинал нетр�
 
   assert.equal(setup.queue.enqueue(src).queued, true);
   await expectOriginalIntact(setup, src, original);
-  assert.ok(logged(setup.logs, 'failed', 'output_not_png'));
+  assert.ok(logged(setup.logs, 'failed', 'output_invalid_image'));
 });
 
 test('неверное разрешение (не 2x): оригинал нетронут', async () => {
@@ -406,10 +459,16 @@ test('успех: файл заменён на 2x, mtime сохранён (M-2),
 // ---------------------------------------------------------------------------
 
 test('артефакты upscale скрыты из публичного API; TTL-cron покрывает их по определению', () => {
-  // Публичные роуты photos.ts обязаны отдавать 404 для внутренних файлов:
+  // Публичные роуты photos.ts обязаны отдавать 404 для внутренних файлов —
+  // для всех трёх расширений:
   assert.equal(isInternalArtifactName('gen_abc.original.png'), true);
+  assert.equal(isInternalArtifactName('gen_abc.original.jpg'), true);
+  assert.equal(isInternalArtifactName('gen_abc.original.jpeg'), true);
   assert.equal(isInternalArtifactName('gen_abc.upscale-1a2b3c.tmp.png'), true);
+  assert.equal(isInternalArtifactName('gen_abc.upscale-1a2b3c.tmp.jpg'), true);
+  assert.equal(isInternalArtifactName('gen_abc.upscale-1a2b3c.tmp.jpeg'), true);
   assert.equal(isInternalArtifactName('gen_abc.png'), false, 'обычный результат остаётся публичным');
+  assert.equal(isInternalArtifactName('gen_abc.jpg'), false, 'обычный jpg-результат остаётся публичным');
   assert.equal(isInternalArtifactName('src_abc.jpg'), false, 'загрузки пользователя не затронуты');
 
   // TTL-очистка: VPS-cron (server/scripts/cleanup-temp-photos.sh) выполняет
@@ -425,13 +484,192 @@ test('артефакты upscale скрыты из публичного API; TTL
 });
 
 // ---------------------------------------------------------------------------
-// L-1. JPG не ставится в очередь (штатный пропуск, а не rejected-событие)
+// generation.ts: enqueue для обоих форматов Gemini (png и jpg), без guard
 // ---------------------------------------------------------------------------
 
-test('L-1: generation.ts вызывает enqueueUpscale только для PNG (оба роута)', () => {
+// ---------------------------------------------------------------------------
+// JPEG: unit-тесты парсера размеров
+// ---------------------------------------------------------------------------
+
+test('readJpegSize: baseline, progressive, fill-байты; повреждения отклоняются', () => {
+  assert.deepEqual(readJpegSize(makeJpeg(320, 240)), { width: 320, height: 240 }, 'baseline SOF0');
+  assert.deepEqual(readJpegSize(makeJpeg(321, 241, { progressive: true })), { width: 321, height: 241 }, 'progressive SOF2');
+  assert.deepEqual(readJpegSize(makeJpeg(100, 200, { fillBytes: true })), { width: 100, height: 200 }, 'fill-байты FF перед маркером');
+  assert.equal(readJpegSize(makeJpeg(100, 200, { truncateBeforeSof: true })), null, 'усечённый до SOF');
+  assert.equal(readJpegSize(makeJpeg(100, 200, { badSegmentLength: true })), null, 'сегмент с длиной < 2');
+  assert.equal(readJpegSize(makePng(100, 200)), null, 'PNG-байты — не JPEG');
+  assert.equal(readJpegSize(Buffer.from([0xff, 0xd8, 0xff])), null, 'обрыв сразу после SOI');
+  assert.equal(readJpegSize(Buffer.alloc(64, 0xab)), null, 'мусор без SOI');
+  // Повреждение после SOI: не-маркерные байты вместо сегмента
+  const broken = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]), Buffer.alloc(64, 0x00)]);
+  assert.equal(readJpegSize(broken), null, 'повреждённый поток после APP0 без SOF');
+});
+
+// ---------------------------------------------------------------------------
+// JPEG: несовпадение сигнатуры и расширения — skip до spawn
+// ---------------------------------------------------------------------------
+
+test('JPEG-байты под именем .png отклоняются до запуска python', async () => {
+  const dir = makeTempDir();
+  const src = path.join(dir, 'gen_lies-png.png');
+  fs.writeFileSync(src, makeJpeg(100, 150));
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, successBehavior);
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.equal(setup.state.calls, 0, 'python не должен запускаться');
+  assert.ok(logged(setup.logs, 'skipped', 'source_invalid_image'));
+});
+
+test('PNG-байты под именем .jpg отклоняются до запуска python', async () => {
+  const dir = makeTempDir();
+  const src = path.join(dir, 'gen_lies-jpg.jpg');
+  fs.writeFileSync(src, makePng(100, 150));
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, successBehavior);
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.equal(setup.state.calls, 0);
+  assert.ok(logged(setup.logs, 'skipped', 'source_invalid_image'));
+});
+
+test('повреждённый JPEG-исходник отклоняется до spawn', async () => {
+  const dir = makeTempDir();
+  const src = path.join(dir, 'gen_broken.jpg');
+  fs.writeFileSync(src, makeJpeg(100, 150, { truncateBeforeSof: true }));
+  const setup = makeQueue(dir, successBehavior);
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await setup.queue.idle();
+  assert.equal(setup.state.calls, 0);
+  assert.ok(logged(setup.logs, 'skipped', 'source_invalid_image'));
+});
+
+test('неизвестное расширение (gen_x.webp) отклоняется по имени', async () => {
+  const dir = makeTempDir();
+  const evil = path.join(dir, 'gen_x.webp');
+  fs.writeFileSync(evil, makePng(100, 150));
+  const { queue, state } = makeQueue(dir, successBehavior);
+  assert.deepEqual(queue.enqueue(evil), { queued: false, reason: 'bad_name' });
+  await queue.idle();
+  assert.equal(state.calls, 0);
+});
+
+// ---------------------------------------------------------------------------
+// JPEG: лимиты и валидация результата
+// ---------------------------------------------------------------------------
+
+test('JPEG крупнее лимита входа пропускается до spawn', async () => {
+  const dir = makeTempDir();
+  const src = writeJpegSource(dir, 'gen_bigjpg.jpg', 2100, 50); // 4200 > 4000
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, successBehavior);
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.equal(setup.state.calls, 0);
+  assert.ok(logged(setup.logs, 'skipped', 'source_too_large'));
+});
+
+test('слишком маленький JPEG-результат не заменяет источник, tmp удалён', async () => {
+  const dir = makeTempDir();
+  const src = writeJpegSource(dir, 'gen_smalljpg.jpg', 100, 150);
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, (args, child) => {
+    fs.writeFileSync(argOf(args, '-o'), makeJpeg(200, 300, { totalBytes: 1024 })); // < minResultBytes
+    child.emit('close', 0, null);
+  });
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.ok(logged(setup.logs, 'failed', 'output_too_small'));
+});
+
+test('JPEG-выход с PNG-сигнатурой отклоняется, оригинал нетронут', async () => {
+  const dir = makeTempDir();
+  const src = writeJpegSource(dir, 'gen_pngout.jpg', 100, 150);
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, (args, child) => {
+    fs.writeFileSync(argOf(args, '-o'), makePng(200, 300, 30 * 1024)); // не тот формат
+    child.emit('close', 0, null);
+  });
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.ok(logged(setup.logs, 'failed', 'output_invalid_image'));
+});
+
+test('PNG-выход с JPEG-сигнатурой отклоняется, оригинал нетронут', async () => {
+  const dir = makeTempDir();
+  const src = writeSource(dir, 'gen_jpgout.png', 100, 150);
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, (args, child) => {
+    fs.writeFileSync(argOf(args, '-o'), makeJpeg(200, 300, { totalBytes: 30 * 1024 }));
+    child.emit('close', 0, null);
+  });
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.ok(logged(setup.logs, 'failed', 'output_invalid_image'));
+});
+
+// ---------------------------------------------------------------------------
+// JPEG: полный успех .jpg и .jpeg
+// ---------------------------------------------------------------------------
+
+async function expectJpegSuccess(name: string): Promise<void> {
+  const dir = makeTempDir();
+  const src = writeJpegSource(dir, name, 100, 150);
+  const original = fs.readFileSync(src);
+  const past = new Date(Date.now() - 5 * 60_000);
+  fs.utimesSync(src, past, past);
+  const spawnedOutputs: string[] = [];
+  const setup = makeQueue(dir, (args, child) => {
+    spawnedOutputs.push(argOf(args, '-o'));
+    successBehavior(args, child);
+  });
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await setup.queue.idle();
+
+  const ext = path.extname(name);
+  // python получил выходной путь с ТЕМ ЖЕ расширением (формат сохранения)
+  assert.equal(spawnedOutputs.length, 1);
+  assert.ok(spawnedOutputs[0].endsWith(`.tmp${ext}`), `-o должен оканчиваться на .tmp${ext}`);
+
+  // файл заменён на 2x JPEG по тому же пути (тот же URL)
+  const replaced = fs.readFileSync(src);
+  assert.deepEqual(readJpegSize(replaced), { width: 200, height: 300 });
+  assert.ok(replaced[0] === 0xff && replaced[1] === 0xd8 && replaced[2] === 0xff, 'JPEG-сигнатура результата');
+
+  // mtime сохранён (M-2)
+  assert.ok(Math.abs(fs.statSync(src).mtimeMs - past.getTime()) < 10, 'mtime обязан сохраниться');
+
+  // backup оригинала с тем же расширением
+  const backup = path.join(dir, `${path.parse(name).name}.original${ext}`);
+  assert.ok(fs.existsSync(backup), `бэкап ${path.basename(backup)} должен существовать`);
+  assert.ok(fs.readFileSync(backup).equals(original), 'бэкап равен исходным байтам');
+
+  // временных файлов не осталось
+  assert.deepEqual(fs.readdirSync(dir).filter((n) => n.includes('.tmp')), []);
+  assert.ok(logged(setup.logs, 'done'));
+}
+
+test('успех .jpg: атомарная замена, original, mtime, тот же URL, tmp нет', async () => {
+  await expectJpegSuccess('gen_okjpg.jpg');
+});
+
+test('успех .jpeg: атомарная замена, original, mtime, тот же URL, tmp нет', async () => {
+  await expectJpegSuccess('gen_okjpeg.jpeg');
+});
+
+test('generation.ts вызывает enqueueUpscale в обоих роутах без PNG-only guard', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'routes', 'generation.ts'), 'utf8');
   const calls = src.match(/enqueueUpscale\(/g) ?? [];
   assert.equal(calls.length, 2, 'ожидаются ровно два вызова: single и pair');
-  const guarded = src.match(/if \(ext === '\.png'\) \{\s*\n\s*try \{ enqueueUpscale\(resultPath\); \}/g) ?? [];
-  assert.equal(guarded.length, 2, 'каждый вызов обязан быть под guard ext === .png');
+  assert.ok(!src.includes("if (ext === '.png')"), 'PNG-only guard должен быть удалён');
+  const wrapped = src.match(/try \{ enqueueUpscale\(resultPath\); \} catch/g) ?? [];
+  assert.equal(wrapped.length, 2, 'оба вызова обязаны быть в try/catch (fire-and-forget)');
 });

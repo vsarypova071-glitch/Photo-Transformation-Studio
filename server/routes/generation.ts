@@ -324,10 +324,9 @@ router.post('/single', async (req, res) => {
 
     // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
     // Ошибка постановки в очередь не должна влиять на успешную генерацию.
-    // Только PNG: jpg-результаты — штатный пропуск, а не ошибка (L-1).
-    if (ext === '.png') {
-      try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
-    }
+    // Поддерживаются оба формата Gemini (.png и .jpg) — сервис сам валидирует
+    // имя и сигнатуру файла.
+    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
 
     // === 7. Mark generation done + return ===
     const { rows: balRows } = await db.query(
@@ -515,10 +514,8 @@ router.post('/pair', async (req, res) => {
     await fs.writeFile(resultPath, Buffer.from(m[2], 'base64'));
 
     // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
-    // Только PNG: jpg-результаты — штатный пропуск, а не ошибка (L-1).
-    if (ext === '.png') {
-      try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
-    }
+    // Поддерживаются оба формата Gemini (.png и .jpg).
+    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
 
     // === 6. Mark generation done + return ===
     const { rows: balRows } = await db.query(

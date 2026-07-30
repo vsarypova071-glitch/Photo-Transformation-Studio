@@ -63,8 +63,11 @@ def main() -> int:
     out_path = Path(args.output)
     if not in_path.is_file():
         fail(EXIT_INPUT_ERROR, "input file does not exist or is not a regular file")
-    if out_path.suffix.lower() != ".png":
-        fail(EXIT_BAD_ARGS, "output must be a .png path")
+    # Формат сохранения выбирается по расширению выходного пути (Node-сторона
+    # всегда передаёт tmp-путь с расширением исходника): png -> PNG, jpg -> JPEG.
+    out_format = {".png": "PNG", ".jpg": "JPEG", ".jpeg": "JPEG"}.get(out_path.suffix.lower())
+    if out_format is None:
+        fail(EXIT_BAD_ARGS, "output must be a .png/.jpg/.jpeg path")
     if not MODEL_PATH.is_file():
         fail(EXIT_MODEL_MISSING, "model file missing next to script (model/real_esrgan_general_x4v3.onnx)")
 
@@ -126,7 +129,15 @@ def main() -> int:
         fail(EXIT_INFERENCE_ERROR, f"inference failed: {type(e).__name__}")
 
     try:
-        final.save(out_path, format="PNG")
+        if out_format == "PNG":
+            final.save(out_path, format="PNG")
+        else:
+            # JPEG не поддерживает alpha/палитру; результат апскейла всегда RGB,
+            # но конвертируем защитно. Параметры зафиксированы: quality=95,
+            # subsampling=0 (4:4:4 — без потери цветовой резкости на деталях).
+            if final.mode != "RGB":
+                final = final.convert("RGB")
+            final.save(out_path, format="JPEG", quality=95, subsampling=0, optimize=False, progressive=False)
     except Exception as e:
         fail(EXIT_OUTPUT_ERROR, f"cannot write output: {type(e).__name__}")
 
