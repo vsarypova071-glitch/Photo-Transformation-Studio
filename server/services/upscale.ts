@@ -61,7 +61,10 @@ export function readUpscaleConfig(): UpscaleConfig {
     timeoutMs: readInt('UPSCALE_TIMEOUT_MS', 180_000, 1_000, 600_000),
     minAvailableRamMb: readInt('UPSCALE_MIN_AVAILABLE_RAM_MB', 1400, 0, 1_000_000),
     maxQueueSize: readInt('UPSCALE_MAX_QUEUE_SIZE', 10, 1, 100),
-    maxResultDimensionPx: 8192,
+    // M-1: согласовано с MAX_INPUT_DIMENSION=2000 в upscale.py (вход ≤2000 px
+    // по стороне ⇒ результат ≤4000). Больший вход означал бы float32-буфер
+    // x4-результата в python на гигабайты — за пределами RAM этого VPS.
+    maxResultDimensionPx: 4000,
     minResultBytes: 10 * 1024,
   };
 }
@@ -345,13 +348,22 @@ export class UpscaleQueue {
         return;
       }
       // Исходник всё ещё на месте (мог быть удалён TTL-очисткой за время работы)?
+      let srcStat: fs.Stats;
       try {
-        const still = await fsp.lstat(src);
-        if (!still.isFile()) throw new Error('gone');
+        srcStat = await fsp.lstat(src);
+        if (!srcStat.isFile()) throw new Error('gone');
       } catch {
         this.note('skipped', { file: base, reason: 'source_expired_during_upscale' });
         return;
       }
+
+      // M-2: перенести atime/mtime оригинала на tmp ДО rename — TTL-часы файла
+      // (cron `find -mmin` и resolveFile считают возраст по mtime) не должны
+      // сбрасываться заменой. Побочная защита: если cron удалит исходник в
+      // микро-окне между lstat выше и rename ниже, rename воссоздаст файл уже
+      // с ИСТЁКШИМ mtime — resolveFile ответит 410 и не отдаст его, а ближайший
+      // проход cron (≤5 мин) удалит. Реанимация живого файла невозможна.
+      await fsp.utimes(tmp, srcStat.atime, srcStat.mtime);
 
       // --- Бэкап оригинала + атомарная замена ---
       const backup = src.replace(/\.png$/, '.original.png');

@@ -170,23 +170,44 @@ router.get('/download/:filename', (req, res) => {
   const r = resolveFile(req.params.filename);
   if (!r.ok) return res.status(r.status).json(r.body);
 
-  const dlName = downloadFilename(r.ext);
-  // Двойное кодирование: ASCII-fallback + UTF-8 (RFC 5987) — наш dlName ASCII,
-  // но оставляем оба для совместимости с любыми будущими именами.
-  const asciiName = dlName;
-  const utf8Name = encodeURIComponent(dlName);
+  // Content-Length и поток обязаны относиться к ОДНОМУ открытому файлу:
+  // фоновый upscale атомарно заменяет gen_<id>.png, и между stat в resolveFile
+  // и открытием стрима файл может стать другим (другого размера). Поэтому:
+  // open → fstat(fd) → createReadStream по этому же fd.
+  fs.open(r.filePath, 'r', (openErr, fd) => {
+    if (openErr) {
+      return res.status(404).json({ error: 'Photo not found or expired' });
+    }
+    fs.fstat(fd, (statErr, st) => {
+      if (statErr || !st.isFile()) {
+        fs.close(fd, () => {});
+        return res.status(404).json({ error: 'Photo not found or expired' });
+      }
 
-  res.setHeader('Content-Type', r.mime);
-  res.setHeader('Content-Length', String(r.size));
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${asciiName}"; filename*=UTF-8''${utf8Name}`,
-  );
-  // Безопасность: не позволять браузеру угадывать MIME
-  res.setHeader('X-Content-Type-Options', 'nosniff');
+      const dlName = downloadFilename(r.ext);
+      // Двойное кодирование: ASCII-fallback + UTF-8 (RFC 5987) — наш dlName ASCII,
+      // но оставляем оба для совместимости с любыми будущими именами.
+      const asciiName = dlName;
+      const utf8Name = encodeURIComponent(dlName);
 
-  fs.createReadStream(r.filePath).pipe(res);
+      res.setHeader('Content-Type', r.mime);
+      res.setHeader('Content-Length', String(st.size));
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${asciiName}"; filename*=UTF-8''${utf8Name}`,
+      );
+      // Безопасность: не позволять браузеру угадывать MIME
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      // autoClose закрывает fd при end/error/destroy; на обрыв соединения
+      // клиентом явно останавливаем чтение.
+      const stream = fs.createReadStream(r.filePath, { fd, autoClose: true });
+      stream.on('error', () => res.destroy());
+      res.on('close', () => stream.destroy());
+      stream.pipe(res);
+    });
+  });
 });
 
 export default router;

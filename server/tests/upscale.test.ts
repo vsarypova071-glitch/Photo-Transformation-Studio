@@ -109,7 +109,7 @@ function makeConfig(tempDir: string, overrides: Partial<UpscaleConfig> = {}): ()
     timeoutMs: 5_000,
     minAvailableRamMb: 0,
     maxQueueSize: 10,
-    maxResultDimensionPx: 8192,
+    maxResultDimensionPx: 4000,
     minResultBytes: 10 * 1024,
     ...overrides,
   });
@@ -341,6 +341,18 @@ test('неверное разрешение (не 2x): оригинал нетр
   assert.ok(logged(setup.logs, 'failed', 'wrong_resolution'));
 });
 
+test('M-1: вход крупнее лимита (результат > 4000 px) пропускается до spawn, оригинал нетронут', async () => {
+  const dir = makeTempDir();
+  const src = writeSource(dir, 'gen_big.png', 2100, 50); // 2100*2=4200 > 4000
+  const original = fs.readFileSync(src);
+  const setup = makeQueue(dir, successBehavior);
+
+  assert.equal(setup.queue.enqueue(src).queued, true);
+  await expectOriginalIntact(setup, src, original);
+  assert.equal(setup.state.calls, 0, 'python не должен запускаться вовсе');
+  assert.ok(logged(setup.logs, 'skipped', 'source_too_large'));
+});
+
 test('подозрительно маленький результат: оригинал нетронут', async () => {
   const dir = makeTempDir();
   const src = writeSource(dir, 'gen_small.png', 100, 150);
@@ -359,10 +371,13 @@ test('подозрительно маленький результат: ориг
 // 12. Успех: атомарная замена + бэкап
 // ---------------------------------------------------------------------------
 
-test('успех: файл заменён на 2x, оригинал сохранён как .original.png, tmp нет', async () => {
+test('успех: файл заменён на 2x, mtime сохранён (M-2), оригинал в .original.png, tmp нет', async () => {
   const dir = makeTempDir();
   const src = writeSource(dir, 'gen_okay.png', 100, 150);
   const original = fs.readFileSync(src);
+  // M-2: TTL-часы не должны сбрасываться заменой — фиксируем "старый" mtime.
+  const past = new Date(Date.now() - 5 * 60_000);
+  fs.utimesSync(src, past, past);
   const setup = makeQueue(dir, successBehavior);
 
   assert.equal(setup.queue.enqueue(src).queued, true);
@@ -370,6 +385,12 @@ test('успех: файл заменён на 2x, оригинал сохран
 
   const replaced = readPngSize(fs.readFileSync(src));
   assert.deepEqual(replaced, { width: 200, height: 300 }, 'по прежнему URL теперь HD 2x');
+
+  const mtimeAfter = fs.statSync(src).mtimeMs;
+  assert.ok(
+    Math.abs(mtimeAfter - past.getTime()) < 10,
+    `mtime итогового файла обязан равняться mtime исходника (получено расхождение ${Math.abs(mtimeAfter - past.getTime())}ms)`,
+  );
 
   const backup = src.replace(/\.png$/, '.original.png');
   assert.ok(fs.existsSync(backup), 'бэкап оригинала должен существовать');
@@ -401,4 +422,16 @@ test('артефакты upscale скрыты из публичного API; TTL
   );
   assert.match(script, /find "\$TEMP_DIR" -type f -mmin \+"\$TTL_MIN"/);
   assert.ok(!script.includes('-name'), 'cleanup не должен фильтровать по имени файла');
+});
+
+// ---------------------------------------------------------------------------
+// L-1. JPG не ставится в очередь (штатный пропуск, а не rejected-событие)
+// ---------------------------------------------------------------------------
+
+test('L-1: generation.ts вызывает enqueueUpscale только для PNG (оба роута)', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'routes', 'generation.ts'), 'utf8');
+  const calls = src.match(/enqueueUpscale\(/g) ?? [];
+  assert.equal(calls.length, 2, 'ожидаются ровно два вызова: single и pair');
+  const guarded = src.match(/if \(ext === '\.png'\) \{\s*\n\s*try \{ enqueueUpscale\(resultPath\); \}/g) ?? [];
+  assert.equal(guarded.length, 2, 'каждый вызов обязан быть под guard ext === .png');
 });
