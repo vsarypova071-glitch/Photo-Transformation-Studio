@@ -15,11 +15,23 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import photosRouter from '../routes/photos';
+import type { Router } from 'express';
 
-const TEMP_DIR = process.env.PHOTO_TEMP_DIR!;
+// Изоляция от photosSignedRoute.test.ts: node --test запускает тест-файлы
+// параллельными процессами, и общая temp-папка приводила к гонке с чужим
+// rmSync-cleanup (flaky ENOTEMPTY на Windows). Каждый файл владеет СВОЕЙ
+// папкой и удаляет только её. PHOTO_TEMP_DIR выставляется ДО загрузки
+// роутера — photos.ts читает его на уровне модуля, поэтому роутер грузится
+// отложенно через createRequire в before() (статический import хойстился бы
+// выше этого присваивания).
+const TEMP_DIR = 'tests/.tmp-photos-race';
+process.env.PHOTO_TEMP_DIR = TEMP_DIR;
+
+const requireModule = createRequire(__filename);
+
 const SD_CONTENT = Buffer.alloc(1_000, 0x41); // "SD-версия", 1000 байт
 const HD_CONTENT = Buffer.alloc(5_000, 0x42); // "HD-версия", 5000 байт
 
@@ -28,6 +40,7 @@ let baseUrl: string;
 
 before(async () => {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
+  const photosRouter: Router = requireModule('../routes/photos').default;
   const app = express();
   app.use('/api/photos', photosRouter);
   server = app.listen(0);
@@ -37,6 +50,7 @@ before(async () => {
 
 after(async () => {
   await new Promise<void>((r) => server.close(() => r()));
+  fs.rmSync(TEMP_DIR, { recursive: true, force: true });
 });
 
 test('download без подмены: Content-Length совпадает с телом', async () => {
