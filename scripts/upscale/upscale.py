@@ -36,9 +36,11 @@ STRIDE = TILE - 2 * OVERLAP  # 96
 MODEL_SCALE = 4
 OUT_SCALE = 2
 THREADS = 2
-# Предохранитель по RAM: вход крупнее не обрабатываем (результирующий float32
-# буфер x4 растёт квадратично).
-MAX_INPUT_DIMENSION = 4096
+# Предохранитель по RAM: вход крупнее не обрабатываем — float32-буфер
+# x4-результата растёт квадратично (2000 px по стороне ⇒ ~0.77 ГБ буфер;
+# 4096 дал бы ~3.2 ГБ и OOM на VPS). Согласовано с maxResultDimensionPx=4000
+# в server/services/upscale.ts (вход ≤2000 ⇒ результат ≤4000).
+MAX_INPUT_DIMENSION = 2000
 
 MODEL_PATH = Path(__file__).resolve().parent / "model" / "real_esrgan_general_x4v3.onnx"
 

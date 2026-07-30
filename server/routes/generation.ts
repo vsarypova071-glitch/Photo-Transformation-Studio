@@ -324,7 +324,10 @@ router.post('/single', async (req, res) => {
 
     // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
     // Ошибка постановки в очередь не должна влиять на успешную генерацию.
-    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
+    // Только PNG: jpg-результаты — штатный пропуск, а не ошибка (L-1).
+    if (ext === '.png') {
+      try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
+    }
 
     // === 7. Mark generation done + return ===
     const { rows: balRows } = await db.query(
@@ -512,7 +515,10 @@ router.post('/pair', async (req, res) => {
     await fs.writeFile(resultPath, Buffer.from(m[2], 'base64'));
 
     // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
-    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
+    // Только PNG: jpg-результаты — штатный пропуск, а не ошибка (L-1).
+    if (ext === '.png') {
+      try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
+    }
 
     // === 6. Mark generation done + return ===
     const { rows: balRows } = await db.query(
