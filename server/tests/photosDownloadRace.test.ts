@@ -52,6 +52,59 @@ test('download без подмены: Content-Length совпадает с те�
   assert.ok(body.equals(SD_CONTENT));
 });
 
+test('download .jpg: Content-Type image/jpeg, Content-Length совпадает с телом', async () => {
+  const name = 'gen_plain-dl.jpg';
+  fs.writeFileSync(path.join(TEMP_DIR, name), SD_CONTENT);
+
+  const res = await fetch(`${baseUrl}/api/photos/download/${name}`);
+  const body = Buffer.from(await res.arrayBuffer());
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/jpeg');
+  assert.equal(res.headers.get('content-length'), String(SD_CONTENT.length));
+  assert.ok(body.equals(SD_CONTENT));
+});
+
+test('download .jpeg: Content-Type image/jpeg', async () => {
+  const name = 'gen_plain-dl.jpeg';
+  fs.writeFileSync(path.join(TEMP_DIR, name), SD_CONTENT);
+
+  const res = await fetch(`${baseUrl}/api/photos/download/${name}`);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/jpeg');
+});
+
+test('M-3 (JPEG): замена .jpg между resolveFile и open — заголовок и тело согласованы', async () => {
+  const name = 'gen_race-dl.jpg';
+  const target = path.join(TEMP_DIR, name);
+  fs.writeFileSync(target, SD_CONTENT);
+  const staged = path.join(TEMP_DIR, 'gen_race-dl.upscale-test.tmp.jpg');
+  fs.writeFileSync(staged, HD_CONTENT);
+
+  const realOpen = fs.open;
+  let swapped = false;
+  (fs as any).open = function patchedOpen(...args: any[]) {
+    const p = args[0];
+    if (!swapped && typeof p === 'string' && path.resolve(p) === path.resolve(target)) {
+      swapped = true;
+      fs.renameSync(staged, target);
+    }
+    return (realOpen as any).apply(fs, args);
+  };
+
+  try {
+    const res = await fetch(`${baseUrl}/api/photos/download/${name}`);
+    const body = Buffer.from(await res.arrayBuffer());
+    assert.equal(res.status, 200);
+    assert.ok(swapped, 'подмена обязана была произойти до открытия файла');
+    assert.equal(res.headers.get('content-type'), 'image/jpeg');
+    assert.equal(res.headers.get('content-length'), String(HD_CONTENT.length));
+    assert.ok(body.equals(HD_CONTENT), 'тело — цельная HD-версия, не partial-файл');
+  } finally {
+    (fs as any).open = realOpen;
+  }
+});
+
 test('M-3: файл заменён между resolveFile и open — заголовок и тело согласованы (HD)', async () => {
   const name = 'gen_race-dl.png';
   const target = path.join(TEMP_DIR, name);

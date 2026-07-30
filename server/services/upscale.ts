@@ -14,8 +14,9 @@
 //
 // Python-процесс запускается ТОЛЬКО по фиксированным путям внутри UPSCALE_DIR
 // (venv/bin/python + upscale.py), через spawn без shell. Пользовательский ввод
-// в аргументы не попадает: путь к файлу генерируется сервером (gen_<uuid>.png)
-// и дополнительно валидируется здесь.
+// в аргументы не попадает: путь к файлу генерируется сервером
+// (gen_<uuid>.png|.jpg|.jpeg — формат выбирает Gemini) и дополнительно
+// валидируется здесь, включая соответствие сигнатуры файла расширению.
 
 import { spawn as nodeSpawn } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -75,12 +76,23 @@ export function readUpscaleConfig(): UpscaleConfig {
 // Валидация путей и PNG
 // ---------------------------------------------------------------------------
 
-/** Имя результата генерации: gen_<uuid>.png (см. generation.ts). Только .png —
- *  jpg-результаты Gemini сознательно не апскейлятся (модель и валидация
- *  заточены под PNG-пайплайн). */
-const GEN_PNG_RE = /^gen_[A-Za-z0-9-]{1,64}\.png$/;
+/** Имя результата генерации: gen_<uuid>.png|.jpg|.jpeg (см. generation.ts —
+ *  формат выбирает сам Gemini, оба встречаются в реальности). Расширение
+ *  задаёт ожидаемый формат; фактическая сигнатура файла обязана ему
+ *  соответствовать (проверяется в runTask до запуска Python). */
+const GEN_IMAGE_RE = /^gen_[A-Za-z0-9-]{1,64}\.(png|jpg|jpeg)$/;
 
-export type PathCheck = { ok: true; base: string } | { ok: false; reason: string };
+export type ImageKind = 'png' | 'jpeg';
+
+/** Ожидаемый формат по расширению серверного имени файла (только lowercase —
+ *  имена генерирует сервер). null — неизвестное расширение. */
+export function kindFromName(base: string): ImageKind | null {
+  if (base.endsWith('.png')) return 'png';
+  if (base.endsWith('.jpg') || base.endsWith('.jpeg')) return 'jpeg';
+  return null;
+}
+
+export type PathCheck = { ok: true; base: string; kind: ImageKind } | { ok: false; reason: string };
 
 export function validateSourcePath(filePath: string, tempDir: string): PathCheck {
   if (typeof filePath !== 'string' || filePath.length === 0 || filePath.includes('\0')) {
@@ -93,8 +105,10 @@ export function validateSourcePath(filePath: string, tempDir: string): PathCheck
     return { ok: false, reason: 'outside_temp_dir' };
   }
   const base = path.basename(resolved);
-  if (!GEN_PNG_RE.test(base)) return { ok: false, reason: 'bad_name' };
-  return { ok: true, base };
+  if (!GEN_IMAGE_RE.test(base)) return { ok: false, reason: 'bad_name' };
+  const kind = kindFromName(base);
+  if (!kind) return { ok: false, reason: 'bad_name' };
+  return { ok: true, base, kind };
 }
 
 /** Минимальная безопасная проверка PNG: сигнатура + IHDR + размеры.
@@ -111,14 +125,64 @@ export function readPngSize(buf: Buffer): { width: number; height: number } | nu
   return { width, height };
 }
 
-async function readPngSizeFromFile(filePath: string): Promise<{ width: number; height: number } | null> {
+/** Безопасный парсер размеров JPEG: SOI + последовательный обход сегментов до
+ *  первого SOF-маркера с размерами кадра (baseline SOF0..SOF3, progressive
+ *  SOF9..SOF11 и др.; DHT/JPG/DAC — не SOF). Никогда не читает за границы
+ *  буфера, отвергает нулевые/усечённые длины сегментов, ограничен числом
+ *  итераций — на специально повреждённом файле возвращает null, не зависает. */
+export function readJpegSize(buf: Buffer): { width: number; height: number } | null {
+  // SOI (FF D8) + начало следующего маркера
+  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) return null;
+  let off = 2;
+  for (let guard = 0; guard < 4096; guard++) {
+    if (off >= buf.length) return null;
+    if (buf[off] !== 0xff) return null; // ожидали маркер — повреждённый поток
+    while (off < buf.length && buf[off] === 0xff) off++; // fill-байты FF
+    if (off >= buf.length) return null;
+    const marker = buf[off];
+    off++;
+    // Standalone-маркеры без поля длины: TEM (01), RST0–RST7 (D0–D7).
+    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+    if (marker === 0xd9) return null; // EOI раньше SOF — размеров нет
+    if (marker === 0xda) return null; // SOS раньше SOF — в валидном JPEG не бывает
+    if (off + 2 > buf.length) return null; // усечено на поле длины
+    const segLen = buf.readUInt16BE(off); // big-endian, включает сами 2 байта
+    if (segLen < 2) return null; // некорректная длина сегмента
+    const isSof =
+      marker >= 0xc0 && marker <= 0xcf &&
+      marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc; // DHT/JPG/DAC — не SOF
+    if (isSof) {
+      // SOF payload: длина(2) точность(1) высота(2) ширина(2) ...
+      if (segLen < 7 || off + 7 > buf.length) return null;
+      const height = buf.readUInt16BE(off + 3);
+      const width = buf.readUInt16BE(off + 5);
+      if (width === 0 || height === 0) return null;
+      return { width, height };
+    }
+    off += segLen;
+    if (off > buf.length) return null; // сегмент выходит за конец буфера
+  }
+  return null;
+}
+
+export function readImageSize(buf: Buffer, kind: ImageKind): { width: number; height: number } | null {
+  return kind === 'png' ? readPngSize(buf) : readJpegSize(buf);
+}
+
+/** Сколько байт заголовка достаточно прочитать: PNG — фиксированные 33;
+ *  JPEG — SOF может лежать за APPn/EXIF-сегментами, ограничиваем скан 256 КиБ. */
+const HEADER_BYTES: Record<ImageKind, number> = { png: 33, jpeg: 256 * 1024 };
+
+async function readImageSizeFromFile(
+  filePath: string,
+  kind: ImageKind,
+): Promise<{ width: number; height: number } | null> {
   let fh: fsp.FileHandle | null = null;
   try {
     fh = await fsp.open(filePath, 'r');
-    const buf = Buffer.alloc(33);
-    const { bytesRead } = await fh.read(buf, 0, 33, 0);
-    if (bytesRead < 33) return null;
-    return readPngSize(buf);
+    const buf = Buffer.alloc(HEADER_BYTES[kind]);
+    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
+    return readImageSize(buf.subarray(0, bytesRead), kind);
   } catch {
     return null;
   } finally {
@@ -281,9 +345,17 @@ export class UpscaleQueue {
       return;
     }
 
-    const srcSize = await readPngSizeFromFile(src);
+    // Формат задаётся расширением; сигнатура файла обязана ему соответствовать —
+    // парсер выбирается ПО РАСШИРЕНИЮ, поэтому JPEG-байты под .png (и наоборот)
+    // дают null и безопасный skip ещё до запуска Python.
+    const kind = kindFromName(base);
+    if (!kind) {
+      this.note('skipped', { file: base, reason: 'bad_name' });
+      return;
+    }
+    const srcSize = await readImageSizeFromFile(src, kind);
     if (!srcSize) {
-      this.note('skipped', { file: base, reason: 'source_not_png' });
+      this.note('skipped', { file: base, reason: 'source_invalid_image' });
       return;
     }
     const expectedW = srcSize.width * 2;
@@ -300,7 +372,15 @@ export class UpscaleQueue {
       return;
     }
 
-    const tmp = src.replace(/\.png$/, `.upscale-${crypto.randomBytes(6).toString('hex')}.tmp.png`);
+    // Имена tmp/backup — независимо от расширения, через path.parse:
+    // gen_abc.jpg -> gen_abc.upscale-<rand>.tmp.jpg / gen_abc.original.jpg.
+    // Расширение tmp совпадает с исходным — python выбирает формат сохранения
+    // по суффиксу выходного пути.
+    const parsed = path.parse(src);
+    const tmp = path.join(
+      parsed.dir,
+      `${parsed.name}.upscale-${crypto.randomBytes(6).toString('hex')}.tmp${parsed.ext}`,
+    );
     let renamed = false;
     try {
       // nice/ionice — только если реально есть (на dev-Windows их нет).
@@ -337,9 +417,12 @@ export class UpscaleQueue {
         this.note('failed', { file: base, reason: 'output_too_small', bytes: outStat.size });
         return;
       }
-      const outSize = await readPngSizeFromFile(tmp);
+      // Сигнатура результата обязана соответствовать исходному расширению:
+      // .png -> PNG magic, .jpg/.jpeg -> FF D8 FF (тот же формат-по-расширению
+      // парсер, что и для входа).
+      const outSize = await readImageSizeFromFile(tmp, kind);
       if (!outSize) {
-        this.note('failed', { file: base, reason: 'output_not_png' });
+        this.note('failed', { file: base, reason: 'output_invalid_image' });
         return;
       }
       if (outSize.width !== expectedW || outSize.height !== expectedH) {
@@ -368,7 +451,7 @@ export class UpscaleQueue {
       await fsp.utimes(tmp, srcStat.atime, srcStat.mtime);
 
       // --- Бэкап оригинала + атомарная замена ---
-      const backup = src.replace(/\.png$/, '.original.png');
+      const backup = path.join(parsed.dir, `${parsed.name}.original${parsed.ext}`);
       await fsp.copyFile(src, backup);
       await fsp.rename(tmp, src);
       renamed = true;
