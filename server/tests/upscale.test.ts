@@ -276,7 +276,7 @@ test('нехватка RAM: задача пропускается, оригин�
   const { spawnFn, state } = makeFakeSpawn(successBehavior);
   const logs: string[] = [];
   const queue = new UpscaleQueue({
-    config: makeConfig(dir, { minAvailableRamMb: 1400 }),
+    config: makeConfig(dir, { minAvailableRamMb: 1800 }),
     spawnFn,
     availableRamMb: () => 100, // симулируем занятый сервер
     fileExists: (p) => !p.startsWith('/usr/bin/'),
