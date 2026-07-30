@@ -86,8 +86,18 @@ interface ResolveError {
   body: { error: string; code?: string };
 }
 
+// Внутренние артефакты фонового upscale (бэкап оригинала gen_<id>.original.png
+// и временные gen_<id>.upscale-<random>.tmp.png) не должны быть доступны через
+// публичный API — для клиента существует только gen_<id>.png.
+export function isInternalArtifactName(name: string): boolean {
+  return /\.original\.\w+$/i.test(name) || /\.tmp\.\w+$/i.test(name) || name.includes('.upscale-');
+}
+
 function resolveFile(rawName: string): ResolvedFile | ResolveError {
   const safe = path.basename(rawName);
+  if (isInternalArtifactName(safe)) {
+    return { ok: false, status: 404, body: { error: 'Photo not found or expired' } };
+  }
   const filePath = path.resolve(TEMP_DIR, safe);
   if (!filePath.startsWith(path.resolve(TEMP_DIR))) {
     return { ok: false, status: 400, body: { error: 'Bad filename' } };

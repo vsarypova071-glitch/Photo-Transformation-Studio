@@ -9,6 +9,7 @@ import { buildPrompt, buildSocialPortraitShortPrompt, buildSocialPortraitMinimal
 import { buildPairPrompt } from '../services/pairPrompts';
 import { getFilteredParts, WISH_MAX_LENGTH } from '../services/wishFilter';
 import { createSignedLink } from '../services/signedPhotoLink';
+import { enqueueUpscale } from '../services/upscale';
 
 const TEMP_DIR = process.env.PHOTO_TEMP_DIR || '/var/www/ai-fotosessia.ru/temp-photos';
 const TTL_MIN = Number(process.env.PHOTO_TTL_MINUTES ?? 30);
@@ -321,6 +322,10 @@ router.post('/single', async (req, res) => {
     const resultPath = path.join(TEMP_DIR, resultName);
     await fs.writeFile(resultPath, Buffer.from(m[2], 'base64'));
 
+    // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
+    // Ошибка постановки в очередь не должна влиять на успешную генерацию.
+    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
+
     // === 7. Mark generation done + return ===
     const { rows: balRows } = await db.query(
       `SELECT balance FROM credit_accounts WHERE id = $1`,
@@ -505,6 +510,9 @@ router.post('/pair', async (req, res) => {
     const resultName = `gen_${generationId}${ext}`;
     const resultPath = path.join(TEMP_DIR, resultName);
     await fs.writeFile(resultPath, Buffer.from(m[2], 'base64'));
+
+    // Фоновый HD-апскейл: не участвует в ответе, кредитах и транзакции.
+    try { enqueueUpscale(resultPath); } catch (e: any) { console.error('[upscale] enqueue:', e?.message); }
 
     // === 6. Mark generation done + return ===
     const { rows: balRows } = await db.query(
