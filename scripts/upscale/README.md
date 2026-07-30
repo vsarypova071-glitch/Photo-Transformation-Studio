@@ -11,8 +11,10 @@ mkdir -p /opt/upscale/model
 cd /opt/upscale
 
 # 1. venv (нужен пакет python3.12-venv — на VPS уже установлен)
+#    Версии зафиксированы: именно с ними проведён и заверен тест 30.07.2026.
+#    Не обновлять без повторного smoke-check.
 python3 -m venv venv
-./venv/bin/pip install onnxruntime numpy pillow
+./venv/bin/pip install onnxruntime==1.28.0 numpy==2.5.1 Pillow==12.3.0
 
 # 2. Модель — официальный ONNX-экспорт Qualcomm AI Hub
 #    (huggingface.co/qualcomm/Real-ESRGAN-General-x4v3, лицензия исходной

@@ -59,7 +59,9 @@ export function readUpscaleConfig(): UpscaleConfig {
     upscaleDir: process.env.UPSCALE_DIR || '/opt/upscale',
     tempDir: process.env.PHOTO_TEMP_DIR || '/var/www/ai-fotosessia.ru/temp-photos',
     timeoutMs: readInt('UPSCALE_TIMEOUT_MS', 180_000, 1_000, 600_000),
-    minAvailableRamMb: readInt('UPSCALE_MIN_AVAILABLE_RAM_MB', 1400, 0, 1_000_000),
+    // 1800: пик python может достигать ~1.5 ГБ на максимально допустимом входе
+    // (2000 px по стороне) — запас гварда обязан его перекрывать (ревью L-3).
+    minAvailableRamMb: readInt('UPSCALE_MIN_AVAILABLE_RAM_MB', 1800, 0, 1_000_000),
     maxQueueSize: readInt('UPSCALE_MAX_QUEUE_SIZE', 10, 1, 100),
     // M-1: согласовано с MAX_INPUT_DIMENSION=2000 в upscale.py (вход ≤2000 px
     // по стороне ⇒ результат ≤4000). Больший вход означал бы float32-буфер
